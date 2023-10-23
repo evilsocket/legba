@@ -264,7 +264,7 @@ legba mssql \
     --target localhost:1433
 ```
 
-#### PostgresSQL Password Authentication:
+#### PostgresSQL Password Authentication:
 
 ```sh
 legba pgsql \
