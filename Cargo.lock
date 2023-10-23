@@ -222,8 +222,9 @@ checksum = "5b49bd4c5b769125ea6323601c39815848972880efd33ffb2d01f9f909adc699"
 
 [[package]]
 name = "async-pop"
-version = "1.0.1"
-source = "git+https://github.com/evilsocket/async-pop.git#21e083805a78256038c4271b4752cd937f50312e"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cde34c2032147f9db08bd2fd44c11f9d7113f8358e799c0d08b8bc1847355dc"
 dependencies = [
  "async-native-tls",
  "bytes",
