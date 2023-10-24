@@ -4,7 +4,6 @@ mod plugin;
 
 pub(crate) use plugin::Plugin;
 
-// TODO: IBM MQ Series, ActiveMQ, RabbitMQ, Artemis, ZeroMQ (just STOMP?)
 // TODO: AFP
 // TODO: SNMP
 // TODO: SMB
@@ -37,6 +36,8 @@ pub(crate) mod smtp;
 mod sql;
 #[cfg(feature = "ssh")]
 mod ssh;
+#[cfg(feature = "stomp")]
+pub(crate) mod stomp;
 #[cfg(feature = "telnet")]
 pub(crate) mod telnet;
 #[cfg(feature = "vnc")]

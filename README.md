@@ -27,6 +27,7 @@ Currently supported protocols / plugins (use `legba --list-plugins` to print thi
 | sftp       | SFTP password authentication. |
 | smtp       | SMTP password authentication. |
 | ssh        | SSH password authentication. |
+| stomp      | STOMP password authentication (ActiveMQ, RabbitMQ, HornetQ and OpenMQ). |
 | telnet     | Telnet password authentication. |
 | vnc        | VNC password authentication. |
 
@@ -337,6 +338,17 @@ legba kerberos \
 ```sh
 legba vnc \
     --target localhost:5901 \
+    --password data/passwords.txt
+```
+
+#### STOMP Password Authentication:
+
+The STOMP protocol allows interaction with message queueing services like ActiveMQ, RabbitMQ, HornetQ and OpenMQ.
+
+```sh
+legba stomp \
+    --target localhost:61613 \
+    --username admin \
     --password data/passwords.txt
 ```
 

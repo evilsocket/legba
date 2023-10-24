@@ -94,6 +94,7 @@ default = [
     "mongodb",
     "rdp",
     # "oracle", optional as it requires libclntsh that's a pain to install and configure
+    "stomp",
 ]
 http = ["dep:url", "dep:regex", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver"]
@@ -116,6 +117,7 @@ vnc = ["dep:vnc-rs"]
 mongodb = ["dep:mongodb"]
 oracle = ["dep:sibyl"]
 rdp = ["dep:rdp-rs"]
+stomp = []
 
 [profile.release]
 debug = true
