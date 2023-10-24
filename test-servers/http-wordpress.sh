@@ -1,0 +1,1 @@
+docker-compose -f http-wordpress.docker-compose.yml up

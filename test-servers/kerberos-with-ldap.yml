@@ -1,0 +1,30 @@
+version: '3'
+services:
+  ldap:
+    image: nugaon/openldap-with-kerberos
+    container_name: ldap
+    volumes:
+      - /dev/urandom:/dev/random
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - TZ=Europe/Rome
+    ports:
+      - 389:389
+      - 636:10636
+
+  kerberos:
+    image: nugaon/kerberos-with-ldap
+    container_name: kerberos
+    volumes:
+      - /dev/urandom:/dev/random
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - TZ=Europe/Rome
+      - REALM=example.org
+      - DOMAIN_REALM=example.org
+      - SEARCH_DOMAINS=example.org
+      - LDAP_DC=dc=example,dc=org
+    ports:
+      - 88:88
+    depends_on:
+      - ldap

@@ -1,0 +1,23 @@
+docker run -t -i \
+	-e "DOMAIN=CORP.EXAMPLE.COM" \
+	-e "DOMAINPASS=ThisIsMyAdmin.Password" \
+	-p 1053:53 \
+	-p 1053:53/udp \
+	-p 88:88 \
+	-p 88:88/udp \
+	-p 1135:135 \
+	-p 1137-1138:137-138/udp \
+	-p 1139:139 \
+	-p 1389:389 \
+	-p 1389:389/udp \
+	-p 1445:445 \
+	-p 1464:464 \
+	-p 1464:464/udp \
+	-p 1636:636 \
+	-p 1024-1044:1024-1044 \
+	-p 3268-3269:3268-3269 \
+	--dns-search corp.example.com \
+    --privileged \
+	-h localdc \
+	--name samba \
+	nowsci/samba-domain

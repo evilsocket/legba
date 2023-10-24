@@ -1,0 +1,1 @@
+docker run -p 2222:22 atmoz/sftp admin666:test12345:::upload
