@@ -71,7 +71,31 @@ For instance:
 * `legba <plugin name> --username admin` will always use `admin` as username and attempt all permutations of the default printable ASCII charset between 4 and 8 characters (this is the default behaviour when a value is not passed).
 * `legba <plugin name> --username data/users.txt --passwords '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
 
-For the full list of arguments run `legba --help`.
+### Main Options
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| `--list-plugins` | | List all available protocol plugins and exit. |
+| `-t, --target <TARGET>` | | Target host, url or IP address with optional port if different than the protocol default. |
+| `--data, --username <USERNAME>` | `#4-8` | Constant, filename or range as #min-max:charset / #min-max |
+| `--password <USERNAME>` | `#4-8` | Constant, filename or range as #min-max:charset / #min-max |
+| `-s, --session <FILENAME>` | | Save and restore session information from this file. |
+| `-o, --output <OUTPUT>` | | Save results to this file. |
+| `--output-format <FORMAT>` | `text` | Output file format [possible values: text, jsonl] |
+| `--timeout <TIMEOUT>` | `1000` | Connection timeout in milliseconds. |
+| `--retries <RETRIES>` | `10` | Number of attempts if a request fails. |
+| `--retry-time <TIME>` | `1000` | Delay in milliseconds to wait before a retry. |
+| `--single-match` | |  Exit after the first positive match is found. | 
+| `--ulimit <ULIMIT>` | `10000` | Value for ulimit (max open file descriptors). | 
+| `--concurrency <VALUE>` | `10` |  Number of concurrent workers. |
+| `--rate-limit <LIMIT>` | `0` | Limit the number of requests per second. |
+| `--jitter-min <VALUE>` | `0` | Minimum number of milliseconds for random request jittering. |
+| `--jitter-max <VALUE>` | `0` | Maximum number of milliseconds for random request jittering. |
+| `--quiet` | | Do not report statistics. |
+| `-h, --help` | | Print help. |
+| `-V, --version` | | Print version. |
+
+For the full list of arguments including plugin specific ones run `legba --help`.
 
 ### Examples
 
