@@ -95,6 +95,7 @@ default = [
     "rdp",
     # "oracle", optional as it requires libclntsh that's a pain to install and configure
     "stomp",
+    "amqp",
 ]
 http = ["dep:url", "dep:regex", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver"]
@@ -118,6 +119,7 @@ mongodb = ["dep:mongodb"]
 oracle = ["dep:sibyl"]
 rdp = ["dep:rdp-rs"]
 stomp = []
+amqp = []
 
 [profile.release]
 debug = true

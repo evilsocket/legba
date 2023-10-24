@@ -7,6 +7,7 @@ Currently supported protocols / plugins (use `legba --list-plugins` to print thi
 
 | Plugin Name  | Description |
 | ------------- | ------------- |
+| amqp       | AMQP password authentication (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace). |
 | dns        | DNS subdomain enumeration. |
 | ftp        | FTP password authentication. |
 | http       | HTTP request for custom web logins supporting CSRF. |
@@ -343,11 +344,22 @@ legba vnc \
 
 #### STOMP Password Authentication:
 
-The STOMP protocol allows interaction with message queueing services like ActiveMQ, RabbitMQ, HornetQ and OpenMQ.
+The STOMP text protocol allows interaction with message queueing services like ActiveMQ, RabbitMQ, HornetQ and OpenMQ.
 
 ```sh
 legba stomp \
     --target localhost:61613 \
+    --username admin \
+    --password data/passwords.txt
+```
+
+#### AMQP Password Authentication:
+
+The AMQP binary protocol allows interaction with message queueing services like ActiveMQ, RabbitMQ, Qpid, JORAM and Solace.
+
+```sh
+legba amqp \
+    --target localhost:5672 \
     --username admin \
     --password data/passwords.txt
 ```

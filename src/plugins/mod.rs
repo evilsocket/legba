@@ -8,6 +8,8 @@ pub(crate) use plugin::Plugin;
 // TODO: SNMP
 // TODO: SMB
 
+#[cfg(feature = "amqp")]
+pub(crate) mod amqp;
 #[cfg(feature = "dns")]
 pub(crate) mod dns;
 #[cfg(feature = "ftp")]
