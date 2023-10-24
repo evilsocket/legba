@@ -86,11 +86,11 @@ impl Plugin for AMQP {
         .concat();
 
         let frame_args = [
-            &vec![0x00, 0x00, 0x00, 0x00],              // 0 client properties
-            &vec![0x05, b'P', b'L', b'A', b'I', b'N'],  // mechanism
+            &[0x00, 0x00, 0x00, 0x00][..],              // 0 client properties
+            &[0x05, b'P', b'L', b'A', b'I', b'N'],      // mechanism
             (auth.len() as u32).to_be_bytes().as_ref(), // auth len + auth
             &auth,
-            &vec![0x05, b'e', b'n', b'_', b'U', b'S'], // locale
+            &[0x05, b'e', b'n', b'_', b'U', b'S'], // locale
         ]
         .concat();
 
