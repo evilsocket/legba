@@ -17,7 +17,6 @@ pub(crate) use crate::options::Options;
 pub(crate) use crate::plugins::Plugin;
 pub(crate) use crate::session::Session;
 
-// TODO: Plugin specific documentation.
 // TODO: Benchmark table.
 
 fn setup() -> Result<Options, session::Error> {
