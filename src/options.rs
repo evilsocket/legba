@@ -20,11 +20,11 @@ pub(crate) struct Options {
     /// Target host, url or IP address.
     #[clap(short, long)]
     pub target: Option<String>,
-    /// Constant, filename or range as #min-max:charset / #min-max
+    /// Constant, filename, glob expression as @/some/path/*.txt or range as #min-max:charset / #min-max
     #[clap(long, visible_alias = "data")]
     pub username: Option<String>,
-    /// Constant, filename or range as #min-max:charset / #min-max
-    #[clap(long)]
+    /// Constant, filename, glob expression as @/some/path/*.txt or range as #min-max:charset / #min-max
+    #[clap(long, visible_alias = "key")]
     pub password: Option<String>,
 
     /// Save and restore session information to this file.
@@ -76,6 +76,9 @@ pub(crate) struct Options {
     #[cfg(feature = "telnet")]
     #[clap(flatten, next_help_heading = "TELNET")]
     pub telnet: crate::plugins::telnet::options::Options,
+    #[cfg(feature = "ssh")]
+    #[clap(flatten, next_help_heading = "SSH")]
+    pub ssh: crate::plugins::ssh::options::Options,
     #[cfg(feature = "smtp")]
     #[clap(flatten, next_help_heading = "SMTP")]
     pub smtp: crate::plugins::smtp::options::Options,

@@ -11,6 +11,8 @@ use crate::utils;
 use crate::Options;
 use crate::Plugin;
 
+pub(crate) mod options;
+
 #[ctor]
 fn register() {
     let ssh = Box::new(SSH::new());
@@ -22,6 +24,8 @@ fn register() {
 pub(crate) struct SSH {
     host: String,
     port: u16,
+    mode: options::Mode,
+    passphrase: Option<String>,
 }
 
 impl SSH {
@@ -29,6 +33,8 @@ impl SSH {
         SSH {
             host: String::new(),
             port: 22,
+            mode: options::Mode::default(),
+            passphrase: None,
         }
     }
 }
@@ -36,21 +42,34 @@ impl SSH {
 #[async_trait]
 impl Plugin for SSH {
     fn description(&self) -> &'static str {
-        "SSH/SFTP password authentication."
+        "SSH/SFTP password and private key authentication."
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 22)?;
+        self.mode = opts.ssh.ssh_auth_mode.clone();
+        self.passphrase = opts.ssh.ssh_key_passphrase.clone();
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let (method, key_label) = match self.mode {
+            options::Mode::Password => (
+                AuthMethod::with_password(&creds.password),
+                "password".to_owned(),
+            ),
+            options::Mode::Key => (
+                AuthMethod::with_key_file(&creds.password, self.passphrase.as_deref()),
+                "key".to_owned(),
+            ),
+        };
+
         let res = tokio::time::timeout(
             timeout,
             Client::connect(
                 (self.host.clone(), self.port),
                 &creds.username,
-                AuthMethod::with_password(&creds.password),
+                method,
                 ServerCheckMethod::NoCheck,
             ),
         )
@@ -60,7 +79,7 @@ impl Plugin for SSH {
         if res.is_ok() {
             Ok(Some(Loot::from([
                 ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
+                (key_label, creds.password.to_owned()),
             ])))
         } else if let Err(async_ssh2_tokio::Error::PasswordWrong) = res {
             Ok(None)

@@ -37,7 +37,7 @@ pub(crate) mod smtp;
 #[cfg(feature = "sql")]
 mod sql;
 #[cfg(feature = "ssh")]
-mod ssh;
+pub(crate) mod ssh;
 #[cfg(feature = "stomp")]
 pub(crate) mod stomp;
 #[cfg(feature = "telnet")]

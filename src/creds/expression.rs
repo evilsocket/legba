@@ -25,6 +25,9 @@ pub(crate) enum Expression {
         max: usize,
         charset: String,
     },
+    Glob {
+        pattern: String,
+    },
 }
 
 impl Default for Expression {
@@ -45,6 +48,7 @@ impl fmt::Display for Expression {
             Expression::Range { min, max, charset } => {
                 write!(f, "range (min:{} max:{} charset:{})", min, max, charset)
             }
+            Expression::Glob { pattern } => write!(f, "glob {}", pattern),
         }
     }
 }
@@ -82,6 +86,21 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                 // constant value casually starting with #
                 return Expression::Constant {
                     value: expr.to_owned(),
+                };
+            }
+            // glob expression or constant
+            '@' => {
+                return if expr.contains('*') {
+                    // in order to be considered a glob expression at least one * must be used
+                    // constant value casually starting with @
+                    Expression::Glob {
+                        pattern: expr[1..].to_owned(),
+                    }
+                } else {
+                    // constant value casually starting with @
+                    Expression::Constant {
+                        value: expr.to_owned(),
+                    }
                 };
             }
             // file name or constant
@@ -181,6 +200,17 @@ mod tests {
                 min: 1,
                 max: 10,
                 charset: "abcdef".to_owned(),
+            }
+        )
+    }
+
+    #[test]
+    fn can_parse_glob() {
+        let res = parse_expression(Some("@/etc/*".to_owned()).as_ref());
+        assert_eq!(
+            res,
+            Expression::Glob {
+                pattern: "/etc/*".to_owned()
             }
         )
     }

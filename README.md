@@ -25,9 +25,9 @@ Currently supported protocols / plugins (use `legba --list-plugins` to print thi
 | pgsql      | PostgreSQL password authentication. |
 | pop3       | POP3 password authentication. |
 | rdp        | Microsoft Remote Desktop password authentication. |
-| sftp       | SFTP password authentication. |
+| sftp       | SFTP password and key based authentication. |
 | smtp       | SMTP password authentication. |
-| ssh        | SSH password authentication. |
+| ssh        | SSH password and key based authentication. |
 | stomp      | STOMP password authentication (ActiveMQ, RabbitMQ, HornetQ and OpenMQ). |
 | telnet     | Telnet password authentication. |
 | vnc        | VNC password authentication. |
@@ -60,10 +60,11 @@ docker run legba --help # or any other command line
 
 The tool requires a plugin name, a `--target` argument specifying the ip, hostname and (optionally) the port of the target and, depending on the selected plugin, a pair of `--username` and `--password` arguments or a single `--data` argument (like in the case of the `dns.enum` plugin which requires a single enumeration element).
 
-The `--username`, `--password` and `--data` arguments all support the same logic depending on the value passed to them:
+The `--username`/`--data` and `--password`/`--key` arguments all support the same logic depending on the value passed to them:
 
 * If the value provided is an existing file name, it'll be loaded as a wordlist.
-* If instead the value provided is in the form of `#<NUMBER>-<NUMBER>:<OPTIONAL CHARSET>`, it'll be used to generate all possible permutations of the given charset (or the default one if not provided) and of the given length. For instance: `#1-3` will generate all permutations from 1 to 3 characters using the default ASCII printable charset, while `#4-5:0123456789` will generate all permutations of digits of 4 and 5 characters.
+* If the value provided is in the form of `@/some/path/*.txt` it'll be used as a [glob expression](https://docs.rs/glob/latest/glob/) to iterate matching files.
+* If the value provided is in the form of `#<NUMBER>-<NUMBER>:<OPTIONAL CHARSET>`, it'll be used to generate all possible permutations of the given charset (or the default one if not provided) and of the given length. For instance: `#1-3` will generate all permutations from 1 to 3 characters using the default ASCII printable charset, while `#4-5:0123456789` will generate all permutations of digits of 4 and 5 characters.
 * Anything else will be considered as a constant string.
 
 For instance:
@@ -71,7 +72,8 @@ For instance:
 * `legba <plugin name> --username admin --password data/passwords.txt` will always use `admin` as username while loading the passwords from a wordlist.
 * `legba <plugin name> --username data/users.txt --password data/passwords.txt` will load both from wordlists and use all combinations.
 * `legba <plugin name> --username admin` will always use `admin` as username and attempt all permutations of the default printable ASCII charset between 4 and 8 characters (this is the default behaviour when a value is not passed).
-* `legba <plugin name> --username data/users.txt --passwords '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
+* `legba <plugin name> --username data/users.txt --password '@/some/path/*.key'` will load users from a wordlist while testing all key files inside `/some/path`.
+* `legba <plugin name> --username data/users.txt --password '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
 
 ### Main Options
 
@@ -79,8 +81,8 @@ For instance:
 | ------ | ------- | ----------- |
 | `--list-plugins` | | List all available protocol plugins and exit. |
 | `-t, --target <TARGET>` | | Target host, url or IP address with optional port if different than the protocol default. |
-| `--data, --username <USERNAME>` | `#4-8` | Constant, filename or range as #min-max:charset / #min-max |
-| `--password <USERNAME>` | `#4-8` | Constant, filename or range as #min-max:charset / #min-max |
+| `--data, --username <USERNAME>` | `#4-8` | Constant, filename, glob expression as `@/some/path/*.txt` or range as `#min-max:charset` / `#min-max`. |
+| `--key, --password <USERNAME>` | `#4-8` | Constant, filename, glob expression as `@/some/path/*.txt` or range as `#min-max:charset` / `#min-max`. |
 | `-s, --session <FILENAME>` | | Save and restore session information from this file. |
 | `-o, --output <OUTPUT>` | | Save results to this file. |
 | `--output-format <FORMAT>` | `text` | Output file format [possible values: text, jsonl] |
@@ -202,7 +204,9 @@ legba dns \
     --dns-resolvers "1.1.1.1" # comma separated list of DNS resolvers, do not pass to use the system resolver
 ```
 
-#### SSH Password Authentication:
+#### SSH:
+
+Password based authentication:
 
 ```sh
 legba ssh \
@@ -211,12 +215,34 @@ legba ssh \
     --target localhost:22
 ```
 
-#### SFTP Password Authentication:
+Key based authentication, testing keys inside /some/path:
+
+```sh
+legba ssh \
+    --username admin \
+    --password '@/some/path/*' \
+    --ssh-auth-mode key \
+    --target localhost:22
+```
+
+#### SFTP:
+
+Password based authentication:
 
 ```sh
 legba sftp \
     --username admin \
     --password wordlists/passwords.txt \
+    --target localhost:22
+```
+
+Key based authentication, testing keys inside /some/path:
+
+```sh
+legba sftp \
+    --username admin \
+    --password '@/some/path/*' \
+    --ssh-auth-mode key \
     --target localhost:22
 ```
 
