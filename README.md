@@ -1,7 +1,13 @@
+<p align="center">
+  <p align="center">
+    <a href="https://github.com/evilsocket/legba/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square"></a>
+    <a href="https://github.com/evilsocket/legba/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
+    <a href="https://crates.io/crates/legba"><img alt="Crate" src="https://img.shields.io/crates/v/legba.svg"></a>
+  </p>
+</p>
+
 `Legba` is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve
 better performances and stability while consuming less resources than similar tools.
-
-**Work in progress:** while the tool is functioning well overall, it still requires some testing and the integration of more protocols. If you want to contribute with code and/or testing, feel free to check the list of TODOs with `grep -ri --include "*.rs" TODO` ^_^
 
 For the building instructions, usage and the list of supported protocols [check the project Wiki](https://github.com/evilsocket/legba/wiki).
 
