@@ -73,6 +73,7 @@ sibyl = { version = "0.6.16", optional = true, features = [
 rdp-rs = { version = "0.1.0", optional = true }
 hex = "0.4.3"
 glob = "0.3.1"
+redis = { version = "0.23.3", features = ["tokio-comp", "tokio-native-tls-comp"], optional = true }
 
 [dev-dependencies]
 tempfile = "3.8.0"
@@ -97,6 +98,7 @@ default = [
     # "oracle", optional as it requires libclntsh that's a pain to install and configure
     "stomp",
     "amqp",
+    "redis_server",
 ]
 http = ["dep:url", "dep:regex", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver"]
@@ -121,6 +123,7 @@ oracle = ["dep:sibyl"]
 rdp = ["dep:rdp-rs"]
 stomp = []
 amqp = []
+redis_server = ["dep:redis"]
 
 [profile.release]
 debug = true
