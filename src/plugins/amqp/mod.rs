@@ -12,6 +12,8 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
+pub(crate) mod options;
+
 const PROTOCOL_HEADER_091: &[u8] = &[b'A', b'M', b'Q', b'P', 0, 0, 9, 1];
 
 #[ctor]
@@ -24,6 +26,7 @@ pub(crate) struct AMQP {
     host: String,
     port: u16,
     address: String,
+    ssl: bool,
 }
 
 impl AMQP {
@@ -32,29 +35,18 @@ impl AMQP {
             host: String::new(),
             port: 5672,
             address: String::new(),
+            ssl: false,
         }
     }
-}
 
-#[async_trait]
-impl Plugin for AMQP {
-    fn description(&self) -> &'static str {
-        "AMQP password authentication (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace)."
-    }
-
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 5672)?;
-        self.address = format!("{}:{}", &self.host, self.port);
-        Ok(())
-    }
-
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        // TODO: SSL
-        let mut stream = tokio::time::timeout(timeout, TcpStream::connect(&self.address))
-            .await
-            .map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
-
+    async fn attempt_with_stream<S>(
+        &self,
+        creds: &Credentials,
+        mut stream: S,
+    ) -> Result<Option<Loot>, Error>
+    where
+        S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
+    {
         // send proto header
         stream
             .write_all(PROTOCOL_HEADER_091)
@@ -117,6 +109,42 @@ impl Plugin for AMQP {
             ])))
         } else {
             Ok(None)
+        }
+    }
+}
+
+#[async_trait]
+impl Plugin for AMQP {
+    fn description(&self) -> &'static str {
+        "AMQP password authentication (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace)."
+    }
+
+    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 5672)?;
+        self.address = format!("{}:{}", &self.host, self.port);
+        self.ssl = opts.amqp.amqp_ssl;
+        Ok(())
+    }
+
+    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let tcp_stream = tokio::time::timeout(timeout, TcpStream::connect(&self.address))
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?;
+
+        if !self.ssl {
+            self.attempt_with_stream(creds, tcp_stream).await
+        } else {
+            let tls = async_native_tls::TlsConnector::new()
+                .danger_accept_invalid_certs(true)
+                .danger_accept_invalid_hostnames(true);
+
+            let stream = tokio::time::timeout(timeout, tls.connect(&self.host, tcp_stream))
+                .await
+                .map_err(|e| e.to_string())?
+                .map_err(|e| e.to_string())?;
+
+            self.attempt_with_stream(creds, stream).await
         }
     }
 }

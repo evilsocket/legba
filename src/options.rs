@@ -67,6 +67,9 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = false)]
     pub quiet: bool,
 
+    #[cfg(feature = "amqp")]
+    #[clap(flatten, next_help_heading = "AMQP")]
+    pub amqp: crate::plugins::amqp::options::Options,
     #[cfg(feature = "http")]
     #[clap(flatten, next_help_heading = "HTTP")]
     pub http: crate::plugins::http::options::Options,
