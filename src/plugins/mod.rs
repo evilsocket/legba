@@ -7,7 +7,6 @@ pub(crate) use plugin::Plugin;
 // TODO: AFP
 // TODO: SNMP
 // TODO: SMB
-// TODO: Redis
 
 #[cfg(feature = "amqp")]
 pub(crate) mod amqp;
@@ -33,6 +32,8 @@ pub(crate) mod oracle; // optional as it requires libclntsh that's a pain to ins
 pub(crate) mod pop3;
 #[cfg(feature = "rdp")]
 pub(crate) mod rdp;
+#[cfg(feature = "redis_server")]
+pub(crate) mod redis_server;
 #[cfg(feature = "smtp")]
 pub(crate) mod smtp;
 #[cfg(feature = "sql")]
