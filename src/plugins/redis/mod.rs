@@ -20,6 +20,7 @@ pub(crate) struct Redis {
     host: String,
     port: u16,
     ssl: bool,
+    command: String,
 }
 
 impl Redis {
@@ -28,6 +29,7 @@ impl Redis {
             host: String::new(),
             port: 6379,
             ssl: false,
+            command: String::new(),
         }
     }
 }
@@ -41,6 +43,7 @@ impl Plugin for Redis {
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 6379)?;
         self.ssl = opts.redis.redis_ssl;
+        self.command = opts.redis.redis_command.to_owned();
 
         Ok(())
     }
@@ -62,7 +65,7 @@ impl Plugin for Redis {
             .map_err(|e| e.to_string())?
             .map_err(|e| e.to_string())?;
 
-        redis::cmd("PING")
+        redis::cmd(&self.command)
             .query_async(&mut conn)
             .await
             .map_err(|e| e.to_string())?;
