@@ -50,27 +50,14 @@ impl Plugin for Redis {
         creds: &Credentials,
         _timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
-        let mut url = String::from("");
-
-        if self.ssl {
-            url = format!(
-                "rediss://{}:{}@{}:{}",
-                creds.username.to_owned(),
-                creds.password.to_owned(),
-                self.host,
-                self.port
-            )
-            .to_string()
-        } else {
-            url = format!(
-                "redis://{}:{}@{}:{}",
-                creds.username.to_owned(),
-                creds.password.to_owned(),
-                self.host,
-                self.port
-            )
-            .to_string()
-        }
+        let url = format!(
+            "{}://{}:{}@{}:{}",
+            if self.ssl { "rediss" } else { "redis" },
+            &creds.username,
+            &creds.password,
+            &self.host,
+            self.port
+        );
 
         let client = redis::Client::open(url).map_err(|e| e.to_string())?;
         let mut conn = client
