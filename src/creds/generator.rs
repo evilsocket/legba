@@ -5,30 +5,96 @@ use crate::creds::expression::Expression;
 use crate::creds::permutator::Permutator;
 use crate::session::Error;
 
-#[derive(Default, Debug)]
-pub(crate) struct Generator {
-    constant: Option<String>,
-    lines: Option<Lines<BufReader<File>>>,
-    permutator: Option<Permutator>,
-    paths: Option<glob::Paths>,
+pub(crate) trait Generator: Iterator<Item = String> {
+    fn search_space_size(&self) -> usize;
+}
+
+pub(crate) fn new(expr: Expression) -> Result<Box<dyn Generator>, Error> {
+    match expr {
+        Expression::Constant { value } => {
+            let gen = Constant::new(value)?;
+            Ok(Box::new(gen))
+        }
+        Expression::Wordlist { filename } => {
+            let gen = Wordlist::new(filename)?;
+            Ok(Box::new(gen))
+        }
+        Expression::Range { min, max, charset } => {
+            let gen = Range::new(charset, min, max)?;
+            Ok(Box::new(gen))
+        }
+        Expression::Glob { pattern } => {
+            let gen = Glob::new(pattern)?;
+            Ok(Box::new(gen))
+        }
+    }
+}
+
+pub(crate) fn empty() -> Result<Box<dyn Generator>, Error> {
+    Ok(Box::new(Empty::new()))
+}
+
+struct Empty {}
+
+impl Empty {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Generator for Empty {
+    fn search_space_size(&self) -> usize {
+        0
+    }
+}
+
+impl Iterator for Empty {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        None
+    }
+}
+
+struct Constant {
+    done: bool,
+    value: String,
+}
+
+impl Constant {
+    pub fn new(value: String) -> Result<Self, Error> {
+        let done = false;
+        Ok(Self { done, value })
+    }
+}
+
+impl Generator for Constant {
+    fn search_space_size(&self) -> usize {
+        1
+    }
+}
+
+impl Iterator for Constant {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            None
+        } else {
+            self.done = true;
+            Some(self.value.to_owned())
+        }
+    }
+}
+
+struct Wordlist {
+    lines: Lines<BufReader<File>>,
     current: usize,
     elements: usize,
 }
 
-// TODO: this should probably be refactored into a trait
-impl Generator {
-    fn from_constant_value(value: String) -> Self {
-        Generator {
-            constant: Some(value),
-            permutator: None,
-            paths: None,
-            elements: 1,
-            current: 0,
-            lines: None,
-        }
-    }
-
-    fn from_wordlist(path: String) -> Result<Self, Error> {
+impl Wordlist {
+    pub fn new(path: String) -> Result<Self, Error> {
         log::debug!("loading wordlist from {} ...", &path);
 
         // count the number of lines first
@@ -40,70 +106,27 @@ impl Generator {
         let file = File::open(path).map_err(|e| e.to_string())?;
         let reader = BufReader::new(file);
 
-        Ok(Generator {
-            constant: None,
-            permutator: None,
-            paths: None,
+        Ok(Self {
             elements,
             current: 0,
-            lines: Some(reader.lines()),
+            lines: reader.lines(),
         })
     }
+}
 
-    fn from_range(charset: String, min_length: usize, max_length: usize) -> Result<Self, Error> {
-        if min_length == 0 {
-            return Err("min length can't be zero".to_owned());
-        } else if min_length > max_length {
-            return Err("min length can't be greater than max length".to_owned());
-        }
-
-        let gen = Permutator::new(charset.chars().collect(), min_length, max_length);
-        let tot = gen.search_space_size();
-        let generator = Some(gen);
-
-        Ok(Generator {
-            lines: None,
-            permutator: generator,
-            paths: None,
-            current: 0,
-            elements: tot,
-            constant: None,
-        })
-    }
-
-    fn from_glob(pattern: String) -> Result<Self, Error> {
-        // validate the pattern and count the elements first
-        let paths = match glob::glob(&pattern) {
-            Err(e) => return Err(e.to_string()),
-            Ok(paths) => paths,
-        };
-
-        Ok(Generator {
-            constant: None,
-            lines: None,
-            permutator: None,
-            paths: Some(glob::glob(&pattern).unwrap()),
-            current: 0,
-            elements: paths.count(),
-        })
-    }
-
-    pub fn new(expr: Expression) -> Result<Self, Error> {
-        match expr {
-            Expression::Constant { value } => Ok(Self::from_constant_value(value)),
-            Expression::Wordlist { filename } => Self::from_wordlist(filename),
-            Expression::Range { min, max, charset } => Self::from_range(charset, min, max),
-            Expression::Glob { pattern } => Self::from_glob(pattern),
-        }
-    }
-
-    pub fn search_space_size(&self) -> usize {
+impl Generator for Wordlist {
+    fn search_space_size(&self) -> usize {
         self.elements
     }
+}
 
-    fn next_line(&mut self) -> Option<String> {
-        if let Some(lines) = &mut self.lines {
-            if let Some(res) = lines.next() {
+impl Iterator for Wordlist {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current < self.elements {
+            self.current += 1;
+            if let Some(res) = self.lines.next() {
                 if let Ok(line) = res {
                     return Some(line);
                 } else {
@@ -115,26 +138,77 @@ impl Generator {
     }
 }
 
-impl Iterator for Generator {
+struct Range {
+    permutator: Permutator,
+    elements: usize,
+}
+
+impl Range {
+    pub fn new(charset: String, min_length: usize, max_length: usize) -> Result<Self, Error> {
+        if min_length == 0 {
+            return Err("min length can't be zero".to_owned());
+        } else if min_length > max_length {
+            return Err("min length can't be greater than max length".to_owned());
+        }
+
+        let permutator = Permutator::new(charset.chars().collect(), min_length, max_length);
+        let elements = permutator.search_space_size();
+
+        Ok(Self {
+            permutator,
+            elements,
+        })
+    }
+}
+
+impl Generator for Range {
+    fn search_space_size(&self) -> usize {
+        self.elements
+    }
+}
+
+impl Iterator for Range {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current < self.elements {
-            self.current += 1;
-            if let Some(value) = &self.constant {
-                return Some(value.to_owned());
-            } else if self.lines.is_some() {
-                return self.next_line();
-            } else if let Some(permutator) = self.permutator.as_mut() {
-                return permutator.next();
-            } else if let Some(paths) = &mut self.paths {
-                if let Some(next) = paths.next() {
-                    if let Ok(path) = next {
-                        return Some(path.to_str().unwrap().to_owned());
-                    } else {
-                        log::error!("glob error: {:?}", next);
-                    }
-                }
+        self.permutator.next()
+    }
+}
+
+struct Glob {
+    paths: glob::Paths,
+    elements: usize,
+}
+
+impl Glob {
+    pub fn new(pattern: String) -> Result<Self, Error> {
+        // validate the pattern and count the elements first
+        let paths = match glob::glob(&pattern) {
+            Err(e) => return Err(e.to_string()),
+            Ok(paths) => paths,
+        };
+        let elements = paths.count();
+        let paths = glob::glob(&pattern).unwrap();
+
+        Ok(Self { paths, elements })
+    }
+}
+
+impl Generator for Glob {
+    fn search_space_size(&self) -> usize {
+        self.elements
+    }
+}
+
+impl Iterator for Glob {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(next) = self.paths.next() {
+            if let Ok(path) = next {
+                return Some(path.to_str().unwrap().to_owned());
+            } else {
+                log::error!("glob error: {:?}", next);
             }
         }
         None
@@ -146,12 +220,11 @@ mod tests {
     use std::fs::File;
     use std::io::Write;
 
-    use super::Generator;
-    use crate::creds::Expression;
+    use crate::creds::{generator, Expression};
 
     #[test]
     fn can_handle_constant() {
-        let gen = Generator::new(Expression::Constant {
+        let gen = generator::new(Expression::Constant {
             value: "hi".to_owned(),
         })
         .unwrap();
@@ -177,7 +250,7 @@ mod tests {
         tmpwordlist.flush().unwrap();
         drop(tmpwordlist);
 
-        let gen = Generator::new(Expression::Wordlist {
+        let gen = generator::new(Expression::Wordlist {
             filename: tmppath.to_str().unwrap().to_owned(),
         })
         .unwrap();
@@ -193,7 +266,7 @@ mod tests {
         let expected = vec![
             "a", "b", "c", "aa", "ab", "ac", "ba", "bb", "bc", "ca", "cb", "cc",
         ];
-        let gen = Generator::new(Expression::Range {
+        let gen = generator::new(Expression::Range {
             min: 1,
             max: 2,
             charset: "abc".to_owned(),
@@ -225,7 +298,7 @@ mod tests {
             expected.push(format!("{}/{}", &tmpdirname, filename));
         }
 
-        let gen = Generator::new(Expression::Glob {
+        let gen = generator::new(Expression::Glob {
             pattern: format!("{}/*.txt", tmpdirname),
         })
         .unwrap();

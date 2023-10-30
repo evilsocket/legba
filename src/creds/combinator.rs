@@ -1,18 +1,17 @@
 use std::time;
 
 use crate::{
-    creds::{self, expression, Credentials, Generator},
+    creds::{self, expression, generator, Credentials},
     options::Options,
     session::Error,
 };
 
-#[derive(Default, Debug)]
 pub(crate) struct Combinator {
     options: Options,
     user_expr: creds::Expression,
-    user_it: creds::Generator,
+    user_it: Box<dyn creds::Generator>,
     current_user: Option<String>,
-    pass_it: creds::Generator,
+    pass_it: Box<dyn creds::Generator>,
     pass_expr: creds::Expression,
     dispatched: usize,
     total: usize,
@@ -28,25 +27,25 @@ impl Combinator {
             } else {
                 expression::parse_expression(options.password.as_ref())
             };
-            let user_it = Generator::new(user_expr.clone())?;
+            let user_it = generator::new(user_expr.clone())?;
 
             (
                 user_expr,
                 user_it,
                 creds::Expression::default(),
-                creds::Generator::default(),
+                generator::empty()?,
             )
         } else {
             // get both
             let user_expr = expression::parse_expression(options.username.as_ref());
-            let user_it = Generator::new(user_expr.clone())?;
+            let user_it = generator::new(user_expr.clone())?;
 
             let expr = expression::parse_expression(options.password.as_ref());
             (
                 user_expr,
                 user_it,
                 expr.clone(),
-                Generator::new(expr.clone())?,
+                generator::new(expr.clone())?,
             )
         };
 
@@ -96,7 +95,7 @@ impl Combinator {
             (false, next_pass)
         } else {
             // reset internal iterator
-            self.pass_it = Generator::new(self.pass_expr.clone()).unwrap();
+            self.pass_it = generator::new(self.pass_expr.clone()).unwrap();
             (true, self.pass_it.next().unwrap())
         }
     }
