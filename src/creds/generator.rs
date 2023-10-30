@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::io::{prelude::*, BufReader, Lines};
 
-use glob;
-
 use crate::creds::expression::Expression;
 use crate::creds::permutator::Permutator;
 use crate::session::Error;
