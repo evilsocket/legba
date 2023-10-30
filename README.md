@@ -29,8 +29,8 @@ Far from being an exhaustive benchmark (some legba features are simply not suppo
 | MySQL | 4 ** | 162% | 9.819s | 4 ** | 47% | 2.542s **(🚀 3.8x faster)** |
 | Microsoft SQL | 16 | 2% | 7.609s | 16 | 2% | 4.789s **(🚀 1.5x faster)** |
 
-<sup><sup>* While this result would suggest a default delay between connection attempts used by Hydra. I've tried to study the source code to find such delay but to my knowledge there's none. For some reason it's simply very slow.</sup></sup>
-<sup><sup>** For MySQL hydra automatically reduces the amount of tasks to 4, therefore legba's concurrency level has been adjusted to 4 as well.</sup></sup>
+<sup>* While this result would suggest a default delay between connection attempts used by Hydra. I've tried to study the source code to find such delay but to my knowledge there's none. For some reason it's simply very slow.</sup><br/>
+<sup>** For MySQL hydra automatically reduces the amount of tasks to 4, therefore legba's concurrency level has been adjusted to 4 as well.</sup>
 
 ## License
 
