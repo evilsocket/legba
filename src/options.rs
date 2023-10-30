@@ -98,6 +98,6 @@ pub(crate) struct Options {
     #[clap(flatten, next_help_heading = "RDP")]
     pub rdp: crate::plugins::rdp::options::Options,
     #[cfg(feature = "redis")]
-    #[clap(flatten, next_help_heading = "Redis")]
+    #[clap(flatten, next_help_heading = "REDIS")]
     pub redis: crate::plugins::redis::options::Options,
 }

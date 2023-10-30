@@ -73,10 +73,6 @@ sibyl = { version = "0.6.16", optional = true, features = [
 rdp-rs = { version = "0.1.0", optional = true }
 hex = "0.4.3"
 glob = "0.3.1"
-redis = { version = "0.23.3", features = [
-    "tokio-comp",
-    "tokio-native-tls-comp",
-], optional = true }
 
 [dev-dependencies]
 tempfile = "3.8.0"
@@ -126,7 +122,7 @@ oracle = ["dep:sibyl"]
 rdp = ["dep:rdp-rs"]
 stomp = []
 amqp = []
-redis = ["dep:redis"]
+redis = []
 
 [profile.release]
 debug = true
