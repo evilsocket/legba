@@ -29,7 +29,8 @@ fn generate_salt(realm: &str, client_name: &str) -> Vec<u8> {
 
 pub(crate) fn create_as_req(realm: &str, creds: &Credentials, for_linux: bool) -> AsReq {
     // create cipher and derive key with salt from user data
-    // FIXME: technically the etype should be negotiated with the DC ... is this actually needed?
+
+    // technically the etype should be negotiated with the DC, but we already know the DC will agree with us ... so ...
     let cipher = kerberos_crypto::new_kerberos_cipher(etypes::AES256_CTS_HMAC_SHA1_96).unwrap();
 
     let salt = if for_linux {
