@@ -74,7 +74,7 @@ impl Combinator {
         Ok(combinator)
     }
 
-    pub fn total(&self) -> usize {
+    pub fn search_space_size(&self) -> usize {
         self.total
     }
 
@@ -179,7 +179,7 @@ mod tests {
         opts.password = Some(tmppasspath.to_str().unwrap().to_owned());
 
         let comb = Combinator::create(opts, 0, false).unwrap();
-        let tot = comb.total();
+        let tot = comb.search_space_size();
         let mut got = vec![];
 
         for cred in comb {
@@ -218,7 +218,7 @@ mod tests {
         opts.username = Some(tmppath.to_str().unwrap().to_owned());
 
         let comb = Combinator::create(opts, 0, true).unwrap();
-        let tot = comb.total();
+        let tot = comb.search_space_size();
         let mut got = vec![];
 
         for cred in comb {

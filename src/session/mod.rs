@@ -198,7 +198,7 @@ impl Session {
 
     pub fn combinations(&self, single: bool) -> Result<Combinator, Error> {
         let combinator = Combinator::create(self.options.clone(), self.get_done(), single)?;
-        self.set_total(combinator.total());
+        self.set_total(combinator.search_space_size());
 
         if single {
             log::info!("using -> {}\n", combinator.username_expression());
