@@ -14,7 +14,7 @@ pub(crate) struct Combinator {
     pass_it: Box<dyn creds::Generator>,
     pass_expr: creds::Expression,
     dispatched: usize,
-    total: usize,
+    search_space_size: usize,
     single: bool,
 }
 
@@ -49,17 +49,20 @@ impl Combinator {
             )
         };
 
-        let total = user_it.search_space_size() * std::cmp::max(pass_it.search_space_size(), 1);
+        let search_space_size =
+            user_it.search_space_size() * std::cmp::max(pass_it.search_space_size(), 1);
+        let dispatched = 0;
+        let current_user = None;
         let mut combinator = Self {
             user_expr,
             user_it,
             pass_it,
             pass_expr,
             options,
-            total,
+            search_space_size,
             single,
-            dispatched: 0,
-            current_user: None,
+            dispatched,
+            current_user,
         };
 
         // restore from last state if needed
@@ -75,7 +78,7 @@ impl Combinator {
     }
 
     pub fn search_space_size(&self) -> usize {
-        self.total
+        self.search_space_size
     }
 
     pub fn username_expression(&self) -> &creds::Expression {
@@ -106,7 +109,7 @@ impl Iterator for Combinator {
 
     fn next(&mut self) -> Option<Self::Item> {
         // we're done
-        if self.dispatched == self.total {
+        if self.dispatched == self.search_space_size {
             return None;
         }
 
