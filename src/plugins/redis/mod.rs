@@ -45,11 +45,7 @@ impl Plugin for Redis {
         Ok(())
     }
 
-    async fn attempt(
-        &self,
-        creds: &Credentials,
-        _timeout: Duration,
-    ) -> Result<Option<Loot>, Error> {
+    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
         let url = format!(
             "{}://{}:{}@{}:{}",
             if self.ssl { "rediss" } else { "redis" },
@@ -60,9 +56,10 @@ impl Plugin for Redis {
         );
 
         let client = redis::Client::open(url).map_err(|e| e.to_string())?;
-        let mut conn = client
-            .get_async_connection() // there is no get_async_connection_with_timeout() method
+
+        let mut conn = tokio::time::timeout(timeout, client.get_async_connection())
             .await
+            .map_err(|e| e.to_string())?
             .map_err(|e| e.to_string())?;
 
         redis::cmd("PING")
