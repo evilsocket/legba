@@ -12,19 +12,19 @@ pub(crate) mod options;
 
 #[ctor]
 fn register() {
-    crate::plugins::manager::register("redis", Box::new(RedisServer::new()));
+    crate::plugins::manager::register("redis", Box::new(Redis::new()));
 }
 
 #[derive(Clone)]
-pub(crate) struct RedisServer {
+pub(crate) struct Redis {
     host: String,
     port: u16,
     ssl: bool,
 }
 
-impl RedisServer {
+impl Redis {
     pub fn new() -> Self {
-        RedisServer {
+        Redis {
             host: String::new(),
             port: 6379,
             ssl: false,
@@ -33,14 +33,14 @@ impl RedisServer {
 }
 
 #[async_trait]
-impl Plugin for RedisServer {
+impl Plugin for Redis {
     fn description(&self) -> &'static str {
-        "Redis password authentication."
+        "Redis ACL password authentication."
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 6379)?;
-        self.ssl = opts.redis_server.redis_ssl;
+        self.ssl = opts.redis.redis_ssl;
 
         Ok(())
     }
