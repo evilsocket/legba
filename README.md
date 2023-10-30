@@ -3,6 +3,7 @@
     <a href="https://github.com/evilsocket/legba/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square"></a>
     <a href="https://crates.io/crates/legba"><img alt="Crate" src="https://img.shields.io/crates/v/legba.svg"></a>
     <a href="https://hub.docker.com/r/evilsocket/legba"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/legba?logo=docker"></a>
+    <a href="https://rust-reportcard.xuri.me/report/github.com/evilsocket/legba"><img alt="Rust Report" src="https://rust-reportcard.xuri.me/badge/github.com/evilsocket/legba"></a>
     <a href="https://github.com/evilsocket/legba/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
   </p>
 </p>
