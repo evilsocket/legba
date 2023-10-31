@@ -52,7 +52,7 @@ impl Plugin for Scylla {
             .build()
             .await;
 
-        if let Ok(_) = session {
+        if session.is_ok() {
             Ok(Some(Loot::from([
                 ("username".to_owned(), creds.username.to_owned()),
                 ("password".to_owned(), creds.password.to_owned()),
