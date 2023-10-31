@@ -10,6 +10,8 @@ pub(crate) use plugin::Plugin;
 
 #[cfg(feature = "amqp")]
 pub(crate) mod amqp;
+#[cfg(feature = "cassandra")]
+pub(crate) mod cassandra;
 #[cfg(feature = "dns")]
 pub(crate) mod dns;
 #[cfg(feature = "ftp")]
@@ -34,6 +36,8 @@ pub(crate) mod pop3;
 pub(crate) mod rdp;
 #[cfg(feature = "redis")]
 pub(crate) mod redis;
+#[cfg(feature = "scylla")]
+pub(crate) mod scylla;
 #[cfg(feature = "smtp")]
 pub(crate) mod smtp;
 #[cfg(feature = "sql")]

@@ -73,6 +73,7 @@ sibyl = { version = "0.6.16", optional = true, features = [
 rdp-rs = { version = "0.1.0", optional = true }
 hex = "0.4.3"
 glob = "0.3.1"
+scylla = { version = "0.10.1", optional = true }
 
 [dev-dependencies]
 tempfile = "3.8.0"
@@ -98,6 +99,7 @@ default = [
     "stomp",
     "amqp",
     "redis",
+    "scylla",
 ]
 http = ["dep:url", "dep:regex", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver"]
@@ -123,6 +125,7 @@ rdp = ["dep:rdp-rs"]
 stomp = []
 amqp = []
 redis = []
+scylla = ["dep:scylla"]
 
 [profile.release]
 debug = true
