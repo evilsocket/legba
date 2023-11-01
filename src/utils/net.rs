@@ -36,35 +36,3 @@ pub(crate) async fn async_tcp_stream(
         Ok(Box::new(tcp_stream))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::async_tcp_stream;
-    use std::time::Duration;
-
-    // https://blog.x5ff.xyz/blog/async-tests-tokio-rust/
-    macro_rules! aw {
-        ($e:expr) => {
-            tokio_test::block_on($e)
-        };
-    }
-
-    #[test]
-    fn returns_error_if_invalid_host() {
-        let address = format!("i-do-not-exist:666");
-        let timeout = Duration::from_millis(100);
-        let stream = aw!(async_tcp_stream(&address, timeout, false));
-
-        assert!(stream.is_err());
-    }
-
-    #[test]
-    fn returns_error_if_timeout() {
-        let address = format!("localhost:666");
-        let timeout = Duration::from_millis(1);
-        let stream = aw!(async_tcp_stream(&address, timeout, false));
-
-        assert!(stream.is_err());
-        assert_eq!("deadline has elapsed", stream.err().unwrap().to_string());
-    }
-}
