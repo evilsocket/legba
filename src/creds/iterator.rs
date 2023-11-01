@@ -5,11 +5,11 @@ use crate::creds::expression::Expression;
 use crate::creds::permutator::Permutator;
 use crate::session::Error;
 
-pub(crate) trait Generator: Iterator<Item = String> {
+pub(crate) trait Iterator: std::iter::Iterator<Item = String> {
     fn search_space_size(&self) -> usize;
 }
 
-pub(crate) fn new(expr: Expression) -> Result<Box<dyn Generator>, Error> {
+pub(crate) fn new(expr: Expression) -> Result<Box<dyn Iterator>, Error> {
     match expr {
         Expression::Constant { value } => {
             let gen = Constant::new(value)?;
@@ -30,7 +30,7 @@ pub(crate) fn new(expr: Expression) -> Result<Box<dyn Generator>, Error> {
     }
 }
 
-pub(crate) fn empty() -> Result<Box<dyn Generator>, Error> {
+pub(crate) fn empty() -> Result<Box<dyn Iterator>, Error> {
     Ok(Box::new(Empty::new()))
 }
 
@@ -42,13 +42,13 @@ impl Empty {
     }
 }
 
-impl Generator for Empty {
+impl Iterator for Empty {
     fn search_space_size(&self) -> usize {
         0
     }
 }
 
-impl Iterator for Empty {
+impl std::iter::Iterator for Empty {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -68,13 +68,13 @@ impl Constant {
     }
 }
 
-impl Generator for Constant {
+impl Iterator for Constant {
     fn search_space_size(&self) -> usize {
         1
     }
 }
 
-impl Iterator for Constant {
+impl std::iter::Iterator for Constant {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -114,13 +114,13 @@ impl Wordlist {
     }
 }
 
-impl Generator for Wordlist {
+impl Iterator for Wordlist {
     fn search_space_size(&self) -> usize {
         self.elements
     }
 }
 
-impl Iterator for Wordlist {
+impl std::iter::Iterator for Wordlist {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -161,13 +161,13 @@ impl Range {
     }
 }
 
-impl Generator for Range {
+impl Iterator for Range {
     fn search_space_size(&self) -> usize {
         self.elements
     }
 }
 
-impl Iterator for Range {
+impl std::iter::Iterator for Range {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -194,13 +194,13 @@ impl Glob {
     }
 }
 
-impl Generator for Glob {
+impl Iterator for Glob {
     fn search_space_size(&self) -> usize {
         self.elements
     }
 }
 
-impl Iterator for Glob {
+impl std::iter::Iterator for Glob {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -220,11 +220,11 @@ mod tests {
     use std::fs::File;
     use std::io::Write;
 
-    use crate::creds::{generator, Expression};
+    use crate::creds::{iterator, Expression};
 
     #[test]
     fn can_handle_constant() {
-        let gen = generator::new(Expression::Constant {
+        let gen = iterator::new(Expression::Constant {
             value: "hi".to_owned(),
         })
         .unwrap();
@@ -250,7 +250,7 @@ mod tests {
         tmpwordlist.flush().unwrap();
         drop(tmpwordlist);
 
-        let gen = generator::new(Expression::Wordlist {
+        let gen = iterator::new(Expression::Wordlist {
             filename: tmppath.to_str().unwrap().to_owned(),
         })
         .unwrap();
@@ -266,7 +266,7 @@ mod tests {
         let expected = vec![
             "a", "b", "c", "aa", "ab", "ac", "ba", "bb", "bc", "ca", "cb", "cc",
         ];
-        let gen = generator::new(Expression::Range {
+        let gen = iterator::new(Expression::Range {
             min: 1,
             max: 2,
             charset: "abc".to_owned(),
@@ -298,7 +298,7 @@ mod tests {
             expected.push(format!("{}/{}", &tmpdirname, filename));
         }
 
-        let gen = generator::new(Expression::Glob {
+        let gen = iterator::new(Expression::Glob {
             pattern: format!("{}/*.txt", tmpdirname),
         })
         .unwrap();

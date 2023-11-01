@@ -1,11 +1,11 @@
 mod combinator;
 mod expression;
-mod generator;
+mod iterator;
 mod permutator;
 
 pub(crate) use combinator::Combinator;
 pub(crate) use expression::Expression;
-pub(crate) use generator::Generator;
+pub(crate) use iterator::Iterator;
 
 use serde::{Deserialize, Serialize};
 
