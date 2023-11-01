@@ -1,7 +1,6 @@
 mod combinator;
 mod expression;
 mod iterator;
-mod permutator;
 
 pub(crate) use combinator::Combinator;
 pub(crate) use expression::Expression;
