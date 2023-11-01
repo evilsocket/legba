@@ -34,6 +34,4 @@ Far from being an exhaustive benchmark (some legba features are simply not suppo
 
 ## License
 
-Legba was made with ♥  by [Simone Margaritelli](https://www.evilsocket.net/) and it's released under the GPL 3 license.
-
-To see the licenses of the project dependencies, install cargo license with `cargo install cargo-license` and then run `cargo license`.
+Legba is released under the GPL 3 license. To see the licenses of the project dependencies, install cargo license with `cargo install cargo-license` and then run `cargo license`.
