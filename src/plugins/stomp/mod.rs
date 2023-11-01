@@ -3,7 +3,6 @@ use std::time::Duration;
 use async_trait::async_trait;
 use ctor::ctor;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
 
 use crate::session::{Error, Loot};
 use crate::utils;
@@ -21,16 +20,12 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct STOMP {
-    host: String,
-    port: u16,
     address: String,
 }
 
 impl STOMP {
     pub fn new() -> Self {
         STOMP {
-            host: String::new(),
-            port: 61613,
             address: String::new(),
         }
     }
@@ -43,24 +38,22 @@ impl Plugin for STOMP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 61613)?;
-        self.address = format!("{}:{}", &self.host, self.port);
+        let (host, port) = utils::parse_target(opts.target.as_ref(), 61613)?;
+        self.address = format!("{}:{}", host, port);
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let mut stream = tokio::time::timeout(timeout, TcpStream::connect(&self.address))
-            .await
-            .map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
-
-        let frame = format!(
-            "CONNECT\nlogin:{}\npasscode:{}\n\n\x00\n",
-            &creds.username, &creds.password
-        );
+        let mut stream = crate::utils::net::async_tcp_stream(&self.address, timeout, false).await?;
 
         stream
-            .write_all(frame.as_bytes())
+            .write_all(
+                format!(
+                    "CONNECT\nlogin:{}\npasscode:{}\n\n\x00\n",
+                    &creds.username, &creds.password
+                )
+                .as_bytes(),
+            )
             .await
             .map_err(|e| e.to_string())?;
 

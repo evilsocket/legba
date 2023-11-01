@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use ctor::ctor;
-use tokio::net::TcpStream;
 use vnc::{PixelFormat, VncConnector};
 
 use crate::session::{Error, Loot};
@@ -18,17 +17,13 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct VNC {
-    host: String,
-    port: u16,
     address: String,
 }
 
 impl VNC {
     pub fn new() -> Self {
         VNC {
-            host: String::new(),
             address: String::new(),
-            port: 5900,
         }
     }
 }
@@ -44,18 +39,14 @@ impl Plugin for VNC {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 5900)?;
-        self.address = format!("{}:{}", &self.host, self.port);
+        let (host, port) = utils::parse_target(opts.target.as_ref(), 5900)?;
+        self.address = format!("{}:{}", host, port);
 
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let stream = tokio::time::timeout(timeout, TcpStream::connect(&self.address))
-            .await
-            .map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
-
+        let stream = crate::utils::net::async_tcp_stream(&self.address, timeout, false).await?;
         // being this plugin single credentials, this is going to be the password
         let password = creds.single().to_owned();
         let vnc = tokio::time::timeout(

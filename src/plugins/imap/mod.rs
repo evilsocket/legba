@@ -1,10 +1,7 @@
 use std::time::Duration;
 
-extern crate async_native_tls;
-
 use async_trait::async_trait;
 use ctor::ctor;
-use tokio::net::TcpStream;
 
 use crate::session::{Error, Loot};
 use crate::Options;
@@ -20,15 +17,13 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct IMAP {
-    host: String,
-    port: u16,
+    address: String,
 }
 
 impl IMAP {
     pub fn new() -> Self {
         IMAP {
-            host: String::new(),
-            port: 993,
+            address: String::new(),
         }
     }
 }
@@ -40,27 +35,14 @@ impl Plugin for IMAP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 993)?;
+        let (host, port) = utils::parse_target(opts.target.as_ref(), 993)?;
+        self.address = format!("{}:{}", host, port);
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let address = (self.host.as_ref(), self.port);
-        let tcp_stream = tokio::time::timeout(timeout, TcpStream::connect(address))
-            .await
-            .map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
-
-        let tls = async_native_tls::TlsConnector::new()
-            .danger_accept_invalid_certs(true)
-            .danger_accept_invalid_hostnames(true);
-
-        let tls_stream = tokio::time::timeout(timeout, tls.connect(&self.host, tcp_stream))
-            .await
-            .map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
-
-        let client = async_imap::Client::new(tls_stream);
+        let stream = crate::utils::net::async_tcp_stream(&self.address, timeout, true).await?;
+        let client = async_imap::Client::new(stream);
         if client.login(&creds.username, &creds.password).await.is_ok() {
             return Ok(Some(Loot::from([
                 ("username".to_owned(), creds.username.to_owned()),

@@ -3,7 +3,6 @@ use std::time::Duration;
 use async_trait::async_trait;
 use ctor::ctor;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
 
 use crate::session::{Error, Loot};
 use crate::Options;
@@ -94,6 +93,8 @@ impl Plugin for MSSQL {
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let mut stream = crate::utils::net::async_tcp_stream(&self.address, timeout, false).await?;
+
         let username = if creds.username.len() > MS_MAX_LEN {
             creds.username[..MS_MAX_LEN].to_owned()
         } else {
@@ -130,11 +131,6 @@ impl Plugin for MSSQL {
             MS_PACKET_3,
         ]
         .concat();
-
-        let mut stream = tokio::time::timeout(timeout, TcpStream::connect(&self.address))
-            .await
-            .map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
 
         tokio::time::timeout(timeout, stream.write_all(&data))
             .await
