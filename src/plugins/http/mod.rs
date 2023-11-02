@@ -45,6 +45,12 @@ pub(crate) enum Strategy {
     Enumeration,
 }
 
+struct Success {
+    pub status: u16,
+    pub content_type: String,
+    pub content_length: usize,
+}
+
 #[derive(Clone)]
 pub(crate) struct HTTP {
     strategy: Strategy,
@@ -160,23 +166,37 @@ impl HTTP {
         request
     }
 
-    async fn is_success(&self, response: Response) -> bool {
+    async fn is_success(&self, response: Response) -> Option<Success> {
         let status = response.status().as_u16();
         if !self.success_codes.contains(&status) {
-            return false;
+            return None;
         }
 
+        let content_type = if let Some(ctype) = response.headers().get("content-type") {
+            ctype
+                .to_str()
+                .unwrap()
+                .to_owned()
+                .split(';')
+                .collect::<Vec<&str>>()[0]
+                .to_owned()
+        } else {
+            String::new()
+        };
+        let body = response.text().await.unwrap_or(String::new());
+        let content_length = body.len();
+
         if let Some(success_string) = self.success_string.as_ref() {
-            let body = response.text().await;
-            if let Ok(body) = body {
-                return body.contains(success_string);
-            } else {
-                log::error!("could not fetch response body: {:?}", body);
-                return false;
+            if !body.contains(success_string) {
+                return None;
             }
         }
 
-        true
+        Some(Success {
+            status,
+            content_type,
+            content_length,
+        })
     }
 
     fn setup_headers(&self) -> HeaderMap {
@@ -257,7 +277,7 @@ impl HTTP {
                 } else {
                     "".to_owned()
                 };
-                Ok(if self.is_success(res).await {
+                Ok(if self.is_success(res).await.is_some() {
                     Some(Loot::from([
                         ("username".to_owned(), creds.username.to_owned()),
                         ("password".to_owned(), creds.password.to_owned()),
@@ -302,29 +322,16 @@ impl HTTP {
         match request.send().await {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
-                let status = res.status().as_u16();
-                Ok(if self.success_codes.contains(&status) {
-                    let content_type = if let Some(ctype) = res.headers().get("content-type") {
-                        ctype
-                            .to_str()
-                            .unwrap()
-                            .to_owned()
-                            .split(';')
-                            .collect::<Vec<&str>>()[0]
-                            .to_owned()
-                    } else {
-                        String::new()
-                    };
-                    let body = res.text().await.unwrap_or(String::new());
-                    Some(Loot::from([
+                if let Some(success) = self.is_success(res).await {
+                    Ok(Some(Loot::from([
                         ("page".to_owned(), url),
-                        ("status".to_owned(), status.to_string()),
-                        ("size".to_owned(), body.len().to_string()),
-                        ("type".to_owned(), content_type),
-                    ]))
+                        ("status".to_owned(), success.status.to_string()),
+                        ("size".to_owned(), success.content_length.to_string()),
+                        ("type".to_owned(), success.content_type),
+                    ])))
                 } else {
-                    None
-                })
+                    Ok(None)
+                }
             }
         }
     }
