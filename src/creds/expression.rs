@@ -9,7 +9,7 @@ const DEFAULT_MAX_LEN: usize = 8;
 const DEFAULT_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ !\"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~";
 
 lazy_static! {
-    static ref RANGE_PARSER: Regex = Regex::new(r"^#(\d+)-(\d+)(:.+)?$").unwrap();
+    static ref PERMUTATIONS_PARSER: Regex = Regex::new(r"^#(\d+)-(\d+)(:.+)?$").unwrap();
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -20,7 +20,7 @@ pub(crate) enum Expression {
     Wordlist {
         filename: String,
     },
-    Range {
+    Permutations {
         min: usize,
         max: usize,
         charset: String,
@@ -32,7 +32,7 @@ pub(crate) enum Expression {
 
 impl Default for Expression {
     fn default() -> Self {
-        Expression::Range {
+        Expression::Permutations {
             min: DEFAULT_MIN_LEN,
             max: DEFAULT_MAX_LEN,
             charset: DEFAULT_CHARSET.to_owned(),
@@ -45,8 +45,12 @@ impl fmt::Display for Expression {
         match self {
             Expression::Constant { value } => write!(f, "string '{}'", value),
             Expression::Wordlist { filename } => write!(f, "wordlist {}", filename),
-            Expression::Range { min, max, charset } => {
-                write!(f, "range (min:{} max:{} charset:{})", min, max, charset)
+            Expression::Permutations { min, max, charset } => {
+                write!(
+                    f,
+                    "permutations (min:{} max:{} charset:{})",
+                    min, max, charset
+                )
             }
             Expression::Glob { pattern } => write!(f, "glob {}", pattern),
         }
@@ -56,13 +60,13 @@ impl fmt::Display for Expression {
 pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
     if let Some(expr) = expr {
         match expr.chars().next().unwrap_or(' ') {
-            // range or constant
+            // permutations or constant
             '#' => {
-                // range expression
-                if let Some(captures) = RANGE_PARSER.captures(expr) {
+                // permutations expression
+                if let Some(captures) = PERMUTATIONS_PARSER.captures(expr) {
                     if captures.get(3).is_some() {
                         // with custom charset
-                        return Expression::Range {
+                        return Expression::Permutations {
                             min: captures.get(1).unwrap().as_str().parse().unwrap(),
                             max: captures.get(2).unwrap().as_str().parse().unwrap(),
                             charset: captures
@@ -75,7 +79,7 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                         };
                     } else {
                         // with default charset
-                        return Expression::Range {
+                        return Expression::Permutations {
                             min: captures.get(1).unwrap().as_str().parse().unwrap(),
                             max: captures.get(2).unwrap().as_str().parse().unwrap(),
                             charset: DEFAULT_CHARSET.to_owned(),
@@ -137,7 +141,7 @@ mod tests {
         let res = parse_expression(None);
         assert_eq!(
             res,
-            Expression::Range {
+            Expression::Permutations {
                 min: DEFAULT_MIN_LEN,
                 max: DEFAULT_MAX_LEN,
                 charset: DEFAULT_CHARSET.to_owned(),
@@ -179,11 +183,11 @@ mod tests {
     }
 
     #[test]
-    fn can_parse_range_with_default_charset() {
+    fn can_parse_permutations_with_default_charset() {
         let res = parse_expression(Some("#1-3".to_owned()).as_ref());
         assert_eq!(
             res,
-            Expression::Range {
+            Expression::Permutations {
                 min: 1,
                 max: 3,
                 charset: DEFAULT_CHARSET.to_owned(),
@@ -192,11 +196,11 @@ mod tests {
     }
 
     #[test]
-    fn can_parse_range_with_custom_charset() {
+    fn can_parse_permutations_with_custom_charset() {
         let res = parse_expression(Some("#1-10:abcdef".to_owned()).as_ref());
         assert_eq!(
             res,
-            Expression::Range {
+            Expression::Permutations {
                 min: 1,
                 max: 10,
                 charset: "abcdef".to_owned(),

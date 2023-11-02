@@ -20,10 +20,10 @@ pub(crate) struct Options {
     /// Target host, url or IP address.
     #[clap(short, long)]
     pub target: Option<String>,
-    /// Constant, filename, glob expression as @/some/path/*.txt or range as #min-max:charset / #min-max
+    /// Constant, filename, glob expression as @/some/path/*.txt or permutations as #min-max:charset / #min-max
     #[clap(long, visible_alias = "payloads")]
     pub username: Option<String>,
-    /// Constant, filename, glob expression as @/some/path/*.txt or range as #min-max:charset / #min-max
+    /// Constant, filename, glob expression as @/some/path/*.txt or permutations as #min-max:charset / #min-max
     #[clap(long, visible_alias = "key")]
     pub password: Option<String>,
 
