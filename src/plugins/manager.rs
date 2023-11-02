@@ -140,7 +140,7 @@ pub(crate) async fn run(
     }
 
     // loop credentials for this session
-    for creds in session.combinations(plugin.single_credential())? {
+    for creds in session.combinations(plugin)? {
         // exit on ctrl-c if we have to, otherwise send the new credentials to the workers
         if session.is_stop() {
             log::debug!("exiting loop");

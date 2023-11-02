@@ -46,6 +46,8 @@ mod sql;
 pub(crate) mod ssh;
 #[cfg(feature = "stomp")]
 pub(crate) mod stomp;
+#[cfg(feature = "tcp_ports")]
+pub(crate) mod tcp_ports;
 #[cfg(feature = "telnet")]
 pub(crate) mod telnet;
 #[cfg(feature = "vnc")]

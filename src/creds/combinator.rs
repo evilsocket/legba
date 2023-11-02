@@ -6,6 +6,8 @@ use crate::{
     session::Error,
 };
 
+use super::Expression;
+
 pub(crate) struct Combinator {
     options: Options,
     user_expr: creds::Expression,
@@ -19,7 +21,7 @@ pub(crate) struct Combinator {
 }
 
 impl Combinator {
-    pub fn create(options: Options, from: usize, single: bool) -> Result<Self, Error> {
+    pub fn from_options(options: Options, from: usize, single: bool) -> Result<Self, Error> {
         let (user_expr, user_it, pass_expr, pass_it) = if single {
             // get either username or password
             let user_expr = if options.username.is_some() {
@@ -61,6 +63,41 @@ impl Combinator {
             options,
             search_space_size,
             single,
+            dispatched,
+            current_user,
+        };
+
+        // restore from last state if needed
+        if from > 0 {
+            let start = time::Instant::now();
+            while combinator.dispatched < from {
+                let _ = combinator.next();
+            }
+            log::info!("restored from credential {} in {:?}", from, start.elapsed());
+        }
+
+        Ok(combinator)
+    }
+
+    pub fn from_plugin_override(
+        expression: Expression,
+        from: usize,
+        options: Options,
+    ) -> Result<Self, Error> {
+        let pass_expr = creds::Expression::default();
+        let pass_it = iterator::empty()?;
+        let payload_it = iterator::new(expression.clone())?;
+        let search_space_size = payload_it.search_space_size();
+        let dispatched = 0;
+        let current_user = None;
+        let mut combinator = Self {
+            user_expr: expression,
+            user_it: payload_it,
+            pass_it,
+            pass_expr,
+            options,
+            search_space_size,
+            single: true,
             dispatched,
             current_user,
         };
@@ -145,9 +182,62 @@ mod tests {
     use std::fs::File;
     use std::io::Write;
 
-    use crate::creds::Credentials;
+    use crate::creds::{Credentials, Expression};
 
     use super::Combinator;
+
+    #[test]
+    fn returns_plugin_overrides_min_max() {
+        let expr = Expression::Range {
+            min: 1,
+            max: 10,
+            set: vec![],
+        };
+        let opts = crate::Options::default();
+        let comb = Combinator::from_plugin_override(expr, 0, opts).unwrap();
+        let mut expected = vec![];
+        let mut got = vec![];
+
+        for i in 1..=10 {
+            expected.push(Credentials {
+                username: i.to_string(),
+                password: "".to_owned(),
+            });
+        }
+
+        for cred in comb {
+            got.push(cred);
+        }
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn returns_plugin_overrides_set() {
+        let set = vec![5, 12, 777, 666];
+        let expr = Expression::Range {
+            min: 0,
+            max: 0,
+            set: set.clone(),
+        };
+        let opts = crate::Options::default();
+        let comb = Combinator::from_plugin_override(expr, 0, opts).unwrap();
+        let mut expected = vec![];
+        let mut got = vec![];
+
+        for i in set {
+            expected.push(Credentials {
+                username: i.to_string(),
+                password: "".to_owned(),
+            });
+        }
+
+        for cred in comb {
+            got.push(cred);
+        }
+
+        assert_eq!(expected, got);
+    }
 
     #[test]
     fn returns_all_combinations_of_two_wordlists() {
@@ -181,7 +271,7 @@ mod tests {
         opts.username = Some(tmpuserspath.to_str().unwrap().to_owned());
         opts.password = Some(tmppasspath.to_str().unwrap().to_owned());
 
-        let comb = Combinator::create(opts, 0, false).unwrap();
+        let comb = Combinator::from_options(opts, 0, false).unwrap();
         let tot = comb.search_space_size();
         let mut got = vec![];
 
@@ -220,7 +310,7 @@ mod tests {
         let mut opts = crate::Options::default();
         opts.username = Some(tmppath.to_str().unwrap().to_owned());
 
-        let comb = Combinator::create(opts, 0, true).unwrap();
+        let comb = Combinator::from_options(opts, 0, true).unwrap();
         let tot = comb.search_space_size();
         let mut got = vec![];
 

@@ -3,7 +3,7 @@ mod expression;
 mod iterator;
 
 pub(crate) use combinator::Combinator;
-pub(crate) use expression::Expression;
+pub(crate) use expression::{parse_expression, Expression};
 pub(crate) use iterator::Iterator;
 
 use serde::{Deserialize, Serialize};

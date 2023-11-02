@@ -101,6 +101,7 @@ default = [
     "amqp",
     "redis",
     "scylla",
+    "tcp_ports",
 ]
 http = ["dep:url", "dep:regex", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver"]
@@ -127,6 +128,7 @@ stomp = []
 amqp = []
 redis = []
 scylla = ["dep:scylla"]
+tcp_ports = []
 
 [profile.release]
 debug = true

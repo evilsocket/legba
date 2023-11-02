@@ -9,6 +9,7 @@ use crate::Options;
 
 pub(crate) mod loot;
 
+use crate::plugins::Plugin;
 pub(crate) use crate::Credentials;
 pub(crate) use loot::Loot;
 
@@ -196,8 +197,15 @@ impl Session {
         self.runtime.speed.load(Ordering::Relaxed)
     }
 
-    pub fn combinations(&self, single: bool) -> Result<Combinator, Error> {
-        let combinator = Combinator::create(self.options.clone(), self.get_done(), single)?;
+    pub fn combinations(&self, plugin: &'static dyn Plugin) -> Result<Combinator, Error> {
+        let single = plugin.single_credential();
+
+        let combinator = if let Some(expr) = plugin.override_payload() {
+            Combinator::from_plugin_override(expr, self.get_done(), self.options.clone())?
+        } else {
+            Combinator::from_options(self.options.clone(), self.get_done(), single)?
+        };
+
         self.set_total(combinator.search_space_size());
 
         if single {
