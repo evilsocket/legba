@@ -342,7 +342,15 @@ impl Plugin for HTTP {
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         if let Some(target) = opts.target.as_ref() {
-            let target_url = Url::parse(target).map_err(|e| e.to_string())?;
+            // add default schema if not present
+            let target = if !target.contains("://") {
+                format!("http://{}", target)
+            } else {
+                target.to_owned()
+            };
+
+            // parse as url
+            let target_url = Url::parse(&target).map_err(|e| e.to_string())?;
             self.target = if self.strategy == Strategy::Enumeration {
                 let port_part = if let Some(port) = target_url.port() {
                     format!(":{}", port)
