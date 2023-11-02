@@ -183,11 +183,12 @@ impl HTTP {
         } else {
             String::new()
         };
+        let headers = format!("{:?}", response.headers());
         let body = response.text().await.unwrap_or(String::new());
         let content_length = body.len();
 
         if let Some(success_string) = self.success_string.as_ref() {
-            if !body.contains(success_string) {
+            if !body.contains(success_string) && !headers.contains(success_string) {
                 return None;
             }
         }
