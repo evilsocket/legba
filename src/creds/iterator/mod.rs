@@ -6,6 +6,7 @@ mod empty;
 mod glob;
 mod permutations;
 mod permutator;
+mod range;
 mod wordlist;
 
 pub(crate) trait Iterator: std::iter::Iterator<Item = String> {
@@ -28,6 +29,10 @@ pub(crate) fn new(expr: Expression) -> Result<Box<dyn Iterator>, Error> {
         }
         Expression::Glob { pattern } => {
             let it = glob::Glob::new(pattern)?;
+            Ok(Box::new(it))
+        }
+        Expression::Range { min, max, set } => {
+            let it = range::Range::new(min, max, set)?;
             Ok(Box::new(it))
         }
     }

@@ -10,6 +10,8 @@ const DEFAULT_PERMUTATIONS_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJ
 
 lazy_static! {
     static ref PERMUTATIONS_PARSER: Regex = Regex::new(r"^#(\d+)-(\d+)(:.+)?$").unwrap();
+    static ref RANGE_MIN_MAX_PARSER: Regex = Regex::new(r"^\[(\d+)-(\d+)\]$").unwrap();
+    static ref RANGE_SET_PARSER: Regex = Regex::new(r"^\[(\d+(,\s*\d+)*)?\]$").unwrap();
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -24,6 +26,11 @@ pub(crate) enum Expression {
         min: usize,
         max: usize,
         charset: String,
+    },
+    Range {
+        min: usize,
+        max: usize,
+        set: Vec<usize>,
     },
     Glob {
         pattern: String,
@@ -53,6 +60,13 @@ impl fmt::Display for Expression {
                 )
             }
             Expression::Glob { pattern } => write!(f, "glob {}", pattern),
+            Expression::Range { min, max, set } => {
+                if set.is_empty() {
+                    write!(f, "range {} -> {}", min, max)
+                } else {
+                    write!(f, "range {:?}", set)
+                }
+            }
         }
     }
 }
@@ -102,6 +116,35 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                     }
                 } else {
                     // constant value casually starting with @
+                    Expression::Constant {
+                        value: expr.to_owned(),
+                    }
+                };
+            }
+            // range expression or constant
+            '[' => {
+                return if let Some(captures) = RANGE_MIN_MAX_PARSER.captures(expr) {
+                    // [min-max]
+                    Expression::Range {
+                        min: captures.get(1).unwrap().as_str().parse().unwrap(),
+                        max: captures.get(2).unwrap().as_str().parse().unwrap(),
+                        set: vec![],
+                    }
+                } else if let Some(captures) = RANGE_SET_PARSER.captures(expr) {
+                    // [n, n, n, ...]
+                    Expression::Range {
+                        min: 0,
+                        max: 0,
+                        set: captures
+                            .get(1)
+                            .unwrap()
+                            .as_str()
+                            .split(',')
+                            .map(|s| s.trim().parse().unwrap())
+                            .collect(),
+                    }
+                } else {
+                    // constant value casually starting with [
                     Expression::Constant {
                         value: expr.to_owned(),
                     }
@@ -183,6 +226,17 @@ mod tests {
     }
 
     #[test]
+    fn can_parse_constant_with_bracket() {
+        let res = parse_expression(Some("[m_n0t_@_range]".to_owned()).as_ref());
+        assert_eq!(
+            res,
+            Expression::Constant {
+                value: "[m_n0t_@_range]".to_owned()
+            }
+        )
+    }
+
+    #[test]
     fn can_parse_permutations_with_default_charset() {
         let res = parse_expression(Some("#1-3".to_owned()).as_ref());
         assert_eq!(
@@ -204,6 +258,32 @@ mod tests {
                 min: 1,
                 max: 10,
                 charset: "abcdef".to_owned(),
+            }
+        )
+    }
+
+    #[test]
+    fn can_parse_range_with_min_max() {
+        let res = parse_expression(Some("[1-3]".to_owned()).as_ref());
+        assert_eq!(
+            res,
+            Expression::Range {
+                min: 1,
+                max: 3,
+                set: vec![],
+            }
+        )
+    }
+
+    #[test]
+    fn can_parse_range_with_set() {
+        let res = parse_expression(Some("[1,3,4, 5, 6, 7, 8, 12,666]".to_owned()).as_ref());
+        assert_eq!(
+            res,
+            Expression::Range {
+                min: 0,
+                max: 0,
+                set: vec![1, 3, 4, 5, 6, 7, 8, 12, 666],
             }
         )
     }
