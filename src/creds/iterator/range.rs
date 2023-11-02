@@ -46,21 +46,19 @@ impl std::iter::Iterator for Range {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.set.is_empty() {
-            return if self.current <= self.max {
+            if self.current <= self.max {
                 let ret = self.current;
                 self.current += 1;
                 Some(ret.to_string())
             } else {
                 None
-            };
+            }
+        } else if self.current < self.elements {
+            let ret = self.set[self.current];
+            self.current += 1;
+            Some(ret.to_string())
         } else {
-            return if self.current < self.elements {
-                let ret = self.set[self.current];
-                self.current += 1;
-                Some(ret.to_string())
-            } else {
-                None
-            };
+            None
         }
     }
 }
