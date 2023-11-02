@@ -4,9 +4,9 @@ use std::path::Path;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-const DEFAULT_MIN_LEN: usize = 4;
-const DEFAULT_MAX_LEN: usize = 8;
-const DEFAULT_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ !\"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~";
+const DEFAULT_PERMUTATIONS_MIN_LEN: usize = 4;
+const DEFAULT_PERMUTATIONS_MAX_LEN: usize = 8;
+const DEFAULT_PERMUTATIONS_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ !\"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~";
 
 lazy_static! {
     static ref PERMUTATIONS_PARSER: Regex = Regex::new(r"^#(\d+)-(\d+)(:.+)?$").unwrap();
@@ -33,9 +33,9 @@ pub(crate) enum Expression {
 impl Default for Expression {
     fn default() -> Self {
         Expression::Permutations {
-            min: DEFAULT_MIN_LEN,
-            max: DEFAULT_MAX_LEN,
-            charset: DEFAULT_CHARSET.to_owned(),
+            min: DEFAULT_PERMUTATIONS_MIN_LEN,
+            max: DEFAULT_PERMUTATIONS_MAX_LEN,
+            charset: DEFAULT_PERMUTATIONS_CHARSET.to_owned(),
         }
     }
 }
@@ -82,7 +82,7 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                         return Expression::Permutations {
                             min: captures.get(1).unwrap().as_str().parse().unwrap(),
                             max: captures.get(2).unwrap().as_str().parse().unwrap(),
-                            charset: DEFAULT_CHARSET.to_owned(),
+                            charset: DEFAULT_PERMUTATIONS_CHARSET.to_owned(),
                         };
                     }
                 }
@@ -132,9 +132,9 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
 mod tests {
     use super::parse_expression;
     use super::Expression;
-    use super::DEFAULT_CHARSET;
-    use super::DEFAULT_MAX_LEN;
-    use super::DEFAULT_MIN_LEN;
+    use super::DEFAULT_PERMUTATIONS_CHARSET;
+    use super::DEFAULT_PERMUTATIONS_MAX_LEN;
+    use super::DEFAULT_PERMUTATIONS_MIN_LEN;
 
     #[test]
     fn can_parse_none() {
@@ -142,9 +142,9 @@ mod tests {
         assert_eq!(
             res,
             Expression::Permutations {
-                min: DEFAULT_MIN_LEN,
-                max: DEFAULT_MAX_LEN,
-                charset: DEFAULT_CHARSET.to_owned(),
+                min: DEFAULT_PERMUTATIONS_MIN_LEN,
+                max: DEFAULT_PERMUTATIONS_MAX_LEN,
+                charset: DEFAULT_PERMUTATIONS_CHARSET.to_owned(),
             }
         )
     }
@@ -190,7 +190,7 @@ mod tests {
             Expression::Permutations {
                 min: 1,
                 max: 3,
-                charset: DEFAULT_CHARSET.to_owned(),
+                charset: DEFAULT_PERMUTATIONS_CHARSET.to_owned(),
             }
         )
     }
