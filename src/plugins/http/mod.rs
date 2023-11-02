@@ -276,13 +276,20 @@ impl HTTP {
         timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
         let headers = self.setup_headers();
-        let page = format!(
-            "/{}",
-            creds
-                .username
-                .replace(&self.enum_ext_placeholder, &self.enum_ext)
-        );
-        let url = format!("{}{}", self.target, &page);
+
+        let url = if self.target.contains("{PAYLOAD}") {
+            // by interpolation
+            self.target.replace("{PAYLOAD}", &creds.username)
+        } else {
+            // by appending
+            format!(
+                "{}{}",
+                &self.target,
+                creds
+                    .username
+                    .replace(&self.enum_ext_placeholder, &self.enum_ext)
+            )
+        };
 
         // build base request object
         let request = self
@@ -358,11 +365,25 @@ impl Plugin for HTTP {
                     "".to_owned()
                 };
 
+                let path = target_url
+                    .path()
+                    .replace("%7BUSERNAME%7D", "{USERNAME}")
+                    .replace("%7BPASSWORD%7D", "{PASSWORD}")
+                    .replace("%7BPAYLOAD%7D", "{PAYLOAD}"); // undo query encoding of interpolation params
+
+                let query = if let Some(query) = target_url.query() {
+                    format!("?{}", query)
+                } else {
+                    "".to_owned()
+                };
+
                 format!(
-                    "{}://{}{}",
+                    "{}://{}{}{}{}",
                     target_url.scheme(),
                     target_url.host().unwrap(),
                     port_part,
+                    path,
+                    query
                 )
             } else {
                 target_url.to_string()

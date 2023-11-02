@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
 pub(crate) struct Options {
-    #[clap(long, default_value = "200, 301, 302")]
+    #[clap(long, default_value = "200")]
     /// Comma separated status codes to consider as successful authentication attempts for HTTP based plugins.
     pub http_success_codes: String,
     #[clap(long)]
