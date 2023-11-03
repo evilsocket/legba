@@ -80,7 +80,8 @@ impl Plugin for TcpPortScanner {
             let service = services::SERVICES.get(&creds.username);
 
             Ok(Some(Loot::from([
-                ("port".to_owned(), creds.username.to_owned()),
+                ("host".to_owned(), self.address.to_owned()),
+                ("tcp.port".to_owned(), creds.username.to_owned()),
                 ("time".to_owned(), format!("{:?}", time)),
                 ("service".to_owned(), service.unwrap_or(&"").to_string()),
             ])))
