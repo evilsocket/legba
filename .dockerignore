@@ -1,0 +1,5 @@
+/.github
+/.vscode
+/data
+/test-servers
+/release.py
