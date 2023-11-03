@@ -47,7 +47,7 @@ print("cargo publish")
 print()
 
 # build and push docker image
-print("docker build -t evilsocket/legba:latest .")
-print("docker tag evilsocket/legba:latest evilsocket/legba:%s" % next_ver)
-print("docker push evilsocket/legba:latest")
-print("docker push evilsocket/legba:%s" % next_ver)
+print("docker buildx create --name legbabuilder --use --bootstrap")
+
+print("docker buildx build --tag evilsocket/legba:latest --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push .")
+print("docker buildx build --tag evilsocket/legba:%s --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push ." % next_ver)
