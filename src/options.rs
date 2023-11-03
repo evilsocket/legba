@@ -48,9 +48,12 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = false)]
     /// Exit after the first positive match is found.
     pub single_match: bool,
+
     /// Value for ulimit (max open file descriptors).
+    #[cfg(not(windows))]
     #[clap(long, default_value_t = 10000)]
     pub ulimit: u64,
+
     /// Number of concurrent workers.
     #[clap(long, default_value_t = num_cpus::get())]
     pub concurrency: usize,
