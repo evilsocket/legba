@@ -3,8 +3,10 @@ use std::time;
 
 use clap::Parser;
 use creds::Credentials;
-use rlimit::{setrlimit, Resource};
 use tokio::task;
+
+#[cfg(not(windows))]
+use rlimit::{setrlimit, Resource};
 
 mod creds;
 mod options;
@@ -44,6 +46,7 @@ fn setup() -> Result<Options, session::Error> {
     }
 
     // set file descriptors limits
+    #[cfg(not(windows))]
     setrlimit(Resource::NOFILE, options.ulimit, options.ulimit).map_err(|e| {
         format!(
             "can't adjust max open files limit to {}: {:?}",
