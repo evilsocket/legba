@@ -492,8 +492,9 @@ impl Plugin for HTTP {
                     self.proxy_pass.as_ref().unwrap(),
                 );
             }
+
             reqwest::Client::builder()
-                .proxy(proxy)
+                .proxy(proxy) // sets auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
                 .danger_accept_invalid_certs(true)
                 .redirect(redirect_policy)
                 .build()
@@ -501,6 +502,7 @@ impl Plugin for HTTP {
         } else {
             // plain client
             reqwest::Client::builder()
+                .no_proxy() // used to set auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
                 .danger_accept_invalid_certs(true)
                 .redirect(redirect_policy)
                 .build()
