@@ -32,83 +32,23 @@ impl Combinator {
         }
     }
 
-    pub fn from_options(
+    fn for_single_payload(
         targets: &Vec<String>,
         options: Options,
-        from: usize,
-        single: bool,
+        override_expr: Option<Expression>,
     ) -> Result<Self, Error> {
         let dispatched = 0;
-        let targets = targets.to_owned();
-
-        let mut combinator = if single {
-            // get either username or password
-            let payload_expr = if options.username.is_some() {
-                expression::parse_expression(options.username.as_ref())
-            } else {
-                expression::parse_expression(options.password.as_ref())
-            };
-            let payload_it = iterator::new(payload_expr.clone())?;
-            let search_space_size: usize = targets.len() * payload_it.search_space_size();
-            let product = Box::new(
-                targets
-                    .into_iter()
-                    .cartesian_product(payload_it)
-                    .map(|(t, payload)| (t.to_owned(), payload, "".to_owned())),
-            );
-
-            Self {
-                options,
-                user_expr: payload_expr,
-                pass_expr: creds::Expression::default(),
-                product,
-                search_space_size,
-                dispatched,
-            }
+        let targets: Vec<String> = targets.to_owned();
+        // get either override, username or password
+        let payload_expr = if let Some(override_expr) = override_expr {
+            override_expr
+        } else if options.username.is_some() {
+            expression::parse_expression(options.username.as_ref())
         } else {
-            // get both
-            let user_expr = expression::parse_expression(options.username.as_ref());
-            let user_it = iterator::new(user_expr.clone())?;
-            let pass_expr = expression::parse_expression(options.password.as_ref());
-            let pass_it = iterator::new(pass_expr.clone())?;
-            let search_space_size =
-                targets.len() * user_it.search_space_size() * pass_it.search_space_size();
-
-            let product = Box::new(
-                targets
-                    .into_iter()
-                    .cartesian_product(user_it)
-                    .cartesian_product(pass_it)
-                    .map(|((t, u), p)| (t.to_owned(), u, p)),
-            );
-
-            Self {
-                options,
-                user_expr,
-                pass_expr,
-                product,
-                search_space_size,
-                dispatched,
-            }
+            expression::parse_expression(options.password.as_ref())
         };
-
-        // restore from last state if needed
-        combinator.reset_from(from);
-
-        Ok(combinator)
-    }
-
-    pub fn from_plugin_override(
-        targets: &Vec<String>,
-        expression: Expression,
-        from: usize,
-        options: Options,
-    ) -> Result<Self, Error> {
-        let targets = targets.to_owned();
-        let pass_expr = creds::Expression::default();
-        let payload_it = iterator::new(expression.clone())?;
-        let search_space_size = targets.len() * payload_it.search_space_size();
-        let dispatched = 0;
+        let payload_it = iterator::new(payload_expr.clone())?;
+        let search_space_size: usize = targets.len() * payload_it.search_space_size();
         let product = Box::new(
             targets
                 .into_iter()
@@ -116,13 +56,56 @@ impl Combinator {
                 .map(|(t, payload)| (t.to_owned(), payload, "".to_owned())),
         );
 
-        let mut combinator = Self {
+        Ok(Self {
             options,
-            user_expr: expression,
+            user_expr: payload_expr,
+            pass_expr: creds::Expression::default(),
+            product,
+            search_space_size,
+            dispatched,
+        })
+    }
+
+    fn for_double_payload(targets: &Vec<String>, options: Options) -> Result<Self, Error> {
+        let dispatched = 0;
+        let targets: Vec<String> = targets.to_owned();
+        // get both
+        let user_expr = expression::parse_expression(options.username.as_ref());
+        let user_it = iterator::new(user_expr.clone())?;
+        let pass_expr = expression::parse_expression(options.password.as_ref());
+        let pass_it = iterator::new(pass_expr.clone())?;
+        let search_space_size =
+            targets.len() * user_it.search_space_size() * pass_it.search_space_size();
+
+        let product = Box::new(
+            targets
+                .into_iter()
+                .cartesian_product(user_it)
+                .cartesian_product(pass_it)
+                .map(|((t, u), p)| (t.to_owned(), u, p)),
+        );
+
+        Ok(Self {
+            options,
+            user_expr,
             pass_expr,
             product,
             search_space_size,
             dispatched,
+        })
+    }
+
+    pub fn create(
+        targets: &Vec<String>,
+        options: Options,
+        from: usize,
+        single: bool,
+        override_expression: Option<Expression>,
+    ) -> Result<Self, Error> {
+        let mut combinator = if single {
+            Self::for_single_payload(targets, options, override_expression)?
+        } else {
+            Self::for_double_payload(targets, options)?
         };
 
         // restore from last state if needed
@@ -184,7 +167,7 @@ mod tests {
         opts.username = Some("[1, 2, 3]".to_owned());
         opts.password = Some("[1, 2, 3]".to_owned());
 
-        let comb = Combinator::from_options(&targets, opts, 0, false).unwrap();
+        let comb = Combinator::create(&targets, opts, 0, false, None).unwrap();
         let mut expected = vec![];
         let mut got = vec![];
 
@@ -214,7 +197,7 @@ mod tests {
 
         opts.username = Some("[1, 2, 3]".to_owned());
 
-        let comb = Combinator::from_options(&targets, opts, 0, true).unwrap();
+        let comb = Combinator::create(&targets, opts, 0, true, None).unwrap();
         let mut expected = vec![];
         let mut got = vec![];
 
@@ -243,8 +226,7 @@ mod tests {
             set: vec![],
         };
         let opts = crate::Options::default();
-        let comb =
-            Combinator::from_plugin_override(&vec!["foo".to_owned()], expr, 0, opts).unwrap();
+        let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, true, Some(expr)).unwrap();
         let mut expected = vec![];
         let mut got = vec![];
 
@@ -272,8 +254,7 @@ mod tests {
             set: set.clone(),
         };
         let opts = crate::Options::default();
-        let comb =
-            Combinator::from_plugin_override(&vec!["foo".to_owned()], expr, 0, opts).unwrap();
+        let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, true, Some(expr)).unwrap();
         let mut expected = vec![];
         let mut got = vec![];
 
@@ -325,7 +306,7 @@ mod tests {
         opts.username = Some(tmpuserspath.to_str().unwrap().to_owned());
         opts.password = Some(tmppasspath.to_str().unwrap().to_owned());
 
-        let comb = Combinator::from_options(&vec!["foo".to_owned()], opts, 0, false).unwrap();
+        let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, false, None).unwrap();
         let tot = comb.search_space_size();
         let mut got = vec![];
 
@@ -365,7 +346,7 @@ mod tests {
         let mut opts = crate::Options::default();
         opts.username = Some(tmppath.to_str().unwrap().to_owned());
 
-        let comb = Combinator::from_options(&vec!["foo".to_owned()], opts, 0, true).unwrap();
+        let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, true, None).unwrap();
         let tot = comb.search_space_size();
         assert_eq!(expected.len(), tot);
 

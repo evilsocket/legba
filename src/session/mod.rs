@@ -223,16 +223,13 @@ impl Session {
         override_payload: Option<Expression>,
         single: bool,
     ) -> Result<Combinator, Error> {
-        let combinator = if let Some(expr) = override_payload {
-            Combinator::from_plugin_override(
-                &self.targets,
-                expr,
-                self.get_done(),
-                self.options.clone(),
-            )?
-        } else {
-            Combinator::from_options(&self.targets, self.options.clone(), self.get_done(), single)?
-        };
+        let combinator = Combinator::create(
+            &self.targets,
+            self.options.clone(),
+            self.get_done(),
+            single,
+            override_payload,
+        )?;
 
         self.set_total(combinator.search_space_size());
 
