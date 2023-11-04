@@ -1,3 +1,8 @@
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+};
+
 use crate::session::Error;
 
 use cidr_utils::cidr::IpCidr;
@@ -10,7 +15,16 @@ lazy_static! {
 }
 
 pub(crate) fn parse_multiple_targets(expression: &str) -> Result<Vec<String>, Error> {
-    if expression.contains(',') {
+    if let Some(path) = expression.strip_prefix('@') {
+        // load from file
+        let file = File::open(path).map_err(|e| e.to_string())?;
+        let reader = BufReader::new(file);
+        return Ok(reader
+            .lines()
+            .map(|l| l.unwrap_or_default())
+            .filter(|s| !s.is_empty())
+            .collect());
+    } else if expression.contains(',') {
         // comma separated targets
         return Ok(expression
             .split(',')
@@ -79,7 +93,35 @@ pub(crate) fn parse_multiple_targets(expression: &str) -> Result<Vec<String>, Er
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::Write;
+
     use super::parse_multiple_targets;
+
+    #[test]
+    fn can_parse_from_file() {
+        let num_items = 5;
+        let tmpdir = tempfile::tempdir().unwrap();
+        let tmppath = tmpdir.path().join("targets.txt");
+        let mut tmptargets = File::create(&tmppath).unwrap();
+        let mut expected = vec![];
+
+        for i in 0..num_items {
+            write!(tmptargets, "127.0.0.1:{}\n", i).unwrap();
+            expected.push(format!("127.0.0.1:{}", i));
+        }
+        tmptargets.flush().unwrap();
+        drop(tmptargets);
+
+        let res = parse_multiple_targets(&format!("@{}", tmppath.to_str().unwrap())).unwrap();
+        assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn returns_error_for_wrong_filename() {
+        let res = parse_multiple_targets("@i-do-not-exist.lol");
+        assert!(res.is_err());
+    }
 
     #[test]
     fn can_parse_comma_separated() {

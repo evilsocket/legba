@@ -20,7 +20,7 @@ pub(crate) struct Options {
     /// Single target host, url or IP address.
     #[clap(short = 'T', long)]
     pub target: Option<String>,
-    /// Multiple target hosts, urls, IP addresses, IP range or CIDR.
+    /// Multiple target hosts, urls, IP addresses, IP range, CIDR or @filename.
     #[clap(short = 'M', long)]
     pub multiple: Option<String>,
 
