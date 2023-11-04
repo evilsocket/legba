@@ -70,6 +70,29 @@ pub(crate) fn setup(options: &Options) -> Result<&'static mut dyn Plugin, Error>
     Ok(plugin)
 }
 
+pub(crate) async fn run(
+    plugin: &'static mut dyn Plugin,
+    session: Arc<Session>,
+) -> Result<(), Error> {
+    // spawn worker threads
+    for _ in 0..session.options.concurrency {
+        task::spawn(worker(plugin, session.clone()));
+    }
+
+    // loop credentials for this session
+    for creds in session.combinations(plugin)? {
+        // exit on ctrl-c if we have to, otherwise send the new credentials to the workers
+        if session.is_stop() {
+            log::debug!("exiting loop");
+            return Ok(());
+        } else if let Err(e) = session.dispatch_new_credentials(creds).await {
+            log::error!("{}", e.to_string());
+        }
+    }
+
+    Ok(())
+}
+
 async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
     log::debug!("worker started");
 
@@ -128,27 +151,4 @@ async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
     }
 
     log::debug!("worker exit");
-}
-
-pub(crate) async fn run(
-    plugin: &'static mut dyn Plugin,
-    session: Arc<Session>,
-) -> Result<(), Error> {
-    // spawn worker threads
-    for _ in 0..session.options.concurrency {
-        task::spawn(worker(plugin, session.clone()));
-    }
-
-    // loop credentials for this session
-    for creds in session.combinations(plugin)? {
-        // exit on ctrl-c if we have to, otherwise send the new credentials to the workers
-        if session.is_stop() {
-            log::debug!("exiting loop");
-            return Ok(());
-        } else if let Err(e) = session.dispatch_new_credentials(creds).await {
-            log::error!("{}", e.to_string());
-        }
-    }
-
-    Ok(())
 }

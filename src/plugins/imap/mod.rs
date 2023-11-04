@@ -44,10 +44,13 @@ impl Plugin for IMAP {
         let stream = crate::utils::net::async_tcp_stream(&self.address, timeout, true).await?;
         let client = async_imap::Client::new(stream);
         if client.login(&creds.username, &creds.password).await.is_ok() {
-            return Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])));
+            return Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )));
         }
 
         Ok(None)

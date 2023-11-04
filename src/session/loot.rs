@@ -3,6 +3,7 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 
 use ansi_term::Colour;
+use chrono::{DateTime, Local};
 use clap::ValueEnum;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -18,16 +19,28 @@ pub(crate) enum OutputFormat {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub(crate) struct Loot {
+    found_at: DateTime<Local>,
+    target: String,
     data: IndexMap<String, String>,
-    pub partial: bool,
+    partial: bool,
 }
 
 impl Loot {
-    pub fn from<I: IntoIterator<Item = (String, String)>>(iterable: I) -> Self {
+    pub fn from<I: IntoIterator<Item = (String, String)>>(target: &str, iterable: I) -> Self {
+        let found_at = chrono::Local::now();
+        let target = target.to_string();
+        let data = IndexMap::from_iter(iterable);
+        let partial = false;
         Self {
-            data: IndexMap::from_iter(iterable),
-            partial: false,
+            data,
+            target,
+            found_at,
+            partial,
         }
+    }
+
+    pub fn is_partial(&self) -> bool {
+        self.partial
     }
 
     pub fn set_partial(mut self) -> Self {
@@ -35,15 +48,27 @@ impl Loot {
         self
     }
 
+    fn found_at_string(&self) -> String {
+        self.found_at.format("%Y-%m-%d %H:%M:%S").to_string()
+    }
+
     pub fn append_to_file(&self, path: &str, format: &OutputFormat) -> Result<(), Error> {
         let data = match format {
             OutputFormat::JSONL => serde_json::to_string(self).map_err(|e| e.to_string())?,
-            OutputFormat::Text => self
-                .data
-                .keys()
-                .map(|k| format!("{}={}", k, self.data.get(k).unwrap()))
-                .collect::<Vec<String>>()
-                .join("\t"),
+            OutputFormat::Text => {
+                let data = self
+                    .data
+                    .keys()
+                    .map(|k| format!("{}={}", k, self.data.get(k).unwrap()))
+                    .collect::<Vec<String>>()
+                    .join("\t");
+
+                if self.target.is_empty() {
+                    format!("[{}] {}", self.found_at_string(), data)
+                } else {
+                    format!("[{}] <{}> {}", self.found_at_string(), &self.target, data)
+                }
+            }
         };
 
         let mut file = OpenOptions::new()
@@ -65,6 +90,17 @@ impl fmt::Display for Loot {
                 str.push_str(&format!("{}={} ", key, Colour::Green.bold().paint(value)));
             }
         }
-        write!(f, "{}", str.trim_end())
+
+        if self.target.is_empty() {
+            write!(f, "[{}] {}", self.found_at_string(), str.trim_end())
+        } else {
+            write!(
+                f,
+                "[{}] <{}> {}",
+                self.found_at_string(),
+                &self.target,
+                str.trim_end()
+            )
+        }
     }
 }

@@ -62,10 +62,13 @@ impl Plugin for STOMP {
         stream.read(&mut buffer).await.map_err(|e| e.to_string())?;
 
         if buffer.starts_with(CONNECTED_RESPONSE) {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }

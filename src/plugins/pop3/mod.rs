@@ -21,6 +21,7 @@ fn register() {
 pub(crate) struct POP3 {
     host: String,
     port: u16,
+    address: String,
     ssl: bool,
 }
 
@@ -29,6 +30,7 @@ impl POP3 {
         POP3 {
             host: String::new(),
             port: 110,
+            address: String::new(),
             ssl: false,
         }
     }
@@ -43,7 +45,7 @@ impl Plugin for POP3 {
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 110)?;
         self.ssl = opts.pop3.pop3_ssl;
-
+        self.address = format!("{}:{}", &self.host, self.port);
         Ok(())
     }
 
@@ -62,10 +64,13 @@ impl Plugin for POP3 {
                     .map_err(|e| e.to_string())?;
 
             if client.login(&creds.username, &creds.password).await.is_ok() {
-                return Ok(Some(Loot::from([
-                    ("username".to_owned(), creds.username.to_owned()),
-                    ("password".to_owned(), creds.password.to_owned()),
-                ])));
+                return Ok(Some(Loot::from(
+                    &self.address,
+                    [
+                        ("username".to_owned(), creds.username.to_owned()),
+                        ("password".to_owned(), creds.password.to_owned()),
+                    ],
+                )));
             }
         } else {
             let mut client = tokio::time::timeout(timeout, async_pop::connect_plain(address))
@@ -74,10 +79,13 @@ impl Plugin for POP3 {
                 .map_err(|e| e.to_string())?;
 
             if client.login(&creds.username, &creds.password).await.is_ok() {
-                return Ok(Some(Loot::from([
-                    ("username".to_owned(), creds.username.to_owned()),
-                    ("password".to_owned(), creds.password.to_owned()),
-                ])));
+                return Ok(Some(Loot::from(
+                    &self.address,
+                    [
+                        ("username".to_owned(), creds.username.to_owned()),
+                        ("password".to_owned(), creds.password.to_owned()),
+                    ],
+                )));
             }
         }
 

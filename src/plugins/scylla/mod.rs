@@ -53,10 +53,13 @@ impl Plugin for Scylla {
             .await;
 
         if session.is_ok() {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             // this client library doesn't differentiate between a connection error and bad credentials
             let err = session.err().unwrap().to_string();

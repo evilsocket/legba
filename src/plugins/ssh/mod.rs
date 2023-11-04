@@ -24,6 +24,7 @@ fn register() {
 pub(crate) struct SSH {
     host: String,
     port: u16,
+    address: String,
     mode: options::Mode,
     passphrase: Option<String>,
 }
@@ -33,6 +34,7 @@ impl SSH {
         SSH {
             host: String::new(),
             port: 22,
+            address: String::new(),
             mode: options::Mode::default(),
             passphrase: None,
         }
@@ -49,6 +51,7 @@ impl Plugin for SSH {
         (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 22)?;
         self.mode = opts.ssh.ssh_auth_mode.clone();
         self.passphrase = opts.ssh.ssh_key_passphrase.clone();
+        self.address = format!("{}:{}", &self.host, self.port);
         Ok(())
     }
 
@@ -77,10 +80,13 @@ impl Plugin for SSH {
         .map_err(|e| e.to_string())?;
 
         if res.is_ok() {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                (key_label, creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    (key_label, creds.password.to_owned()),
+                ],
+            )))
         } else if let Err(async_ssh2_tokio::Error::PasswordWrong) = res {
             Ok(None)
         } else {

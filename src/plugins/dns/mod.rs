@@ -88,17 +88,20 @@ impl Plugin for DNS {
         if let Ok(response) = self.resolver.as_ref().unwrap().lookup_ip(&subdomain).await {
             let addresses: Vec<IpAddr> = response.iter().filter(|ip| !ip.is_loopback()).collect();
             if !addresses.is_empty() {
-                return Ok(Some(Loot::from([
-                    ("subdomain".to_owned(), subdomain),
-                    (
-                        "addresses".to_owned(),
-                        addresses
-                            .iter()
-                            .map(|a| a.to_string())
-                            .collect::<Vec<String>>()
-                            .join(", "),
-                    ),
-                ])));
+                return Ok(Some(Loot::from(
+                    "",
+                    [
+                        ("subdomain".to_owned(), subdomain),
+                        (
+                            "addresses".to_owned(),
+                            addresses
+                                .iter()
+                                .map(|a| a.to_string())
+                                .collect::<Vec<String>>()
+                                .join(", "),
+                        ),
+                    ],
+                )));
             }
         }
 

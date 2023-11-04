@@ -69,10 +69,13 @@ impl Plugin for SMTP {
             authentication::Credentials::new(creds.username.clone(), creds.password.clone());
 
         if transport.auth(self.mechanism, &credentials).await.is_ok() {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }

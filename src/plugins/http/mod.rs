@@ -279,11 +279,14 @@ impl HTTP {
                     "".to_owned()
                 };
                 Ok(if self.is_success(res).await.is_some() {
-                    Some(Loot::from([
-                        ("username".to_owned(), creds.username.to_owned()),
-                        ("password".to_owned(), creds.password.to_owned()),
-                        ("cookie".to_owned(), cookie),
-                    ]))
+                    Some(Loot::from(
+                        &self.target,
+                        [
+                            ("username".to_owned(), creds.username.to_owned()),
+                            ("password".to_owned(), creds.password.to_owned()),
+                            ("cookie".to_owned(), cookie),
+                        ],
+                    ))
                 } else {
                     None
                 })
@@ -324,12 +327,15 @@ impl HTTP {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
                 if let Some(success) = self.is_success(res).await {
-                    Ok(Some(Loot::from([
-                        ("page".to_owned(), url),
-                        ("status".to_owned(), success.status.to_string()),
-                        ("size".to_owned(), success.content_length.to_string()),
-                        ("type".to_owned(), success.content_type),
-                    ])))
+                    Ok(Some(Loot::from(
+                        &self.target,
+                        [
+                            ("page".to_owned(), url),
+                            ("status".to_owned(), success.status.to_string()),
+                            ("size".to_owned(), success.content_length.to_string()),
+                            ("type".to_owned(), success.content_type),
+                        ],
+                    )))
                 } else {
                     Ok(None)
                 }

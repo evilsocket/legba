@@ -108,10 +108,13 @@ impl Plugin for AMQP {
         stream.read(&mut buffer).await.map_err(|e| e.to_string())?;
 
         if buffer[0] == 0x01 {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }

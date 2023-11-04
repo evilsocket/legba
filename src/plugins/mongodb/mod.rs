@@ -63,11 +63,14 @@ impl Plugin for MongoDB {
         let dbs = cli.list_database_names(None, None).await;
 
         if let Ok(dbs) = dbs {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-                ("databases".to_owned(), dbs.join(", ")),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                    ("databases".to_owned(), dbs.join(", ")),
+                ],
+            )))
         } else {
             Ok(None)
         }

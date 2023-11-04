@@ -11,7 +11,6 @@ use crate::{creds, utils};
 use crate::creds::{Credentials, Expression};
 
 pub(crate) mod options;
-mod services;
 
 #[ctor]
 fn register() {
@@ -76,15 +75,14 @@ impl Plugin for TcpPortScanner {
             .await
             .is_ok()
         {
-            let time = start.elapsed();
-            let service = services::SERVICES.get(&creds.username);
-
-            Ok(Some(Loot::from([
-                ("host".to_owned(), self.address.to_owned()),
-                ("tcp.port".to_owned(), creds.username.to_owned()),
-                ("time".to_owned(), format!("{:?}", time)),
-                ("service".to_owned(), service.unwrap_or(&"").to_string()),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("proto".to_owned(), "tcp".to_owned()),
+                    ("port".to_owned(), creds.username.to_owned()),
+                    ("time".to_owned(), format!("{:?}", start.elapsed())),
+                ],
+            )))
         } else {
             Ok(None)
         };

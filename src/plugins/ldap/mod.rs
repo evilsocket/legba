@@ -81,10 +81,13 @@ impl Plugin for LDAP {
             .await
         {
             return Ok(if res.success().is_ok() {
-                Some(Loot::from([
-                    ("username".to_owned(), creds.username.to_owned()),
-                    ("password".to_owned(), creds.password.to_owned()),
-                ]))
+                Some(Loot::from(
+                    &self.url,
+                    [
+                        ("username".to_owned(), creds.username.to_owned()),
+                        ("password".to_owned(), creds.password.to_owned()),
+                    ],
+                ))
             } else {
                 None
             });

@@ -49,7 +49,6 @@ async fn periodic_saver(session: Arc<Session>, persistent: bool) {
 
 #[derive(Debug)]
 struct Runtime {
-    started_at: time::Instant,
     stop: AtomicBool,
     creds_tx: async_channel::Sender<Credentials>,
     creds_rx: async_channel::Receiver<Credentials>,
@@ -60,7 +59,6 @@ impl Default for Runtime {
     fn default() -> Self {
         let (creds_tx, creds_rx) = async_channel::unbounded();
         Self {
-            started_at: time::Instant::now(),
             stop: AtomicBool::new(false),
             speed: AtomicUsize::new(0),
             creds_tx,
@@ -73,7 +71,6 @@ impl Runtime {
     fn new(concurrency: usize) -> Self {
         let (creds_tx, creds_rx) = async_channel::bounded(concurrency);
         Self {
-            started_at: time::Instant::now(),
             stop: AtomicBool::new(false),
             speed: AtomicUsize::new(0),
             creds_tx,
@@ -241,11 +238,7 @@ impl Session {
                 results.push(loot.clone());
 
                 // report credentials to screen
-                log::info!(
-                    "[{:?}] result found: {}",
-                    self.runtime.started_at.elapsed(),
-                    &loot
-                );
+                log::info!("{}", &loot);
 
                 // check if we have to output to file
                 if let Some(path) = &self.options.output {
@@ -255,7 +248,7 @@ impl Session {
                 }
 
                 // if we only need one match, stop
-                if !loot.partial && self.options.single_match {
+                if !loot.is_partial() && self.options.single_match {
                     self.set_stop();
                 }
 

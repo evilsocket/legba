@@ -59,8 +59,11 @@ impl Kerberos {
                         true,
                         true,
                         Some(
-                            Loot::from([("username".to_owned(), creds.username.to_owned())])
-                                .set_partial(),
+                            Loot::from(
+                                &self.server.to_string(),
+                                [("username".to_owned(), creds.username.to_owned())],
+                            )
+                            .set_partial(),
                         ),
                     );
                 }
@@ -70,10 +73,13 @@ impl Kerberos {
                         true,
                         false,
                         Some(
-                            Loot::from([
-                                ("username".to_owned(), creds.username.to_owned()),
-                                ("expired_password".to_owned(), creds.password.to_owned()),
-                            ])
+                            Loot::from(
+                                &self.server.to_string(),
+                                [
+                                    ("username".to_owned(), creds.username.to_owned()),
+                                    ("expired_password".to_owned(), creds.password.to_owned()),
+                                ],
+                            )
                             .set_partial(),
                         ),
                     );
@@ -84,10 +90,13 @@ impl Kerberos {
                         true,
                         false,
                         Some(
-                            Loot::from([
-                                ("username".to_owned(), creds.username.to_owned()),
-                                ("revoked_password".to_owned(), creds.password.to_owned()),
-                            ])
+                            Loot::from(
+                                &self.server.to_string(),
+                                [
+                                    ("username".to_owned(), creds.username.to_owned()),
+                                    ("revoked_password".to_owned(), creds.password.to_owned()),
+                                ],
+                            )
                             .set_partial(),
                         ),
                     );
@@ -105,11 +114,14 @@ impl Kerberos {
         if AsRep::parse(raw).is_ok() {
             return (
                 true,
-                Some(Loot::from([
-                    ("username".to_owned(), creds.username.to_owned()),
-                    ("password".to_owned(), creds.password.to_owned()),
-                    // ("ticket".to_owned(), format!("{:?}", &as_rep.ticket)),
-                ])),
+                Some(Loot::from(
+                    &self.server.to_string(),
+                    [
+                        ("username".to_owned(), creds.username.to_owned()),
+                        ("password".to_owned(), creds.password.to_owned()),
+                        // ("ticket".to_owned(), format!("{:?}", &as_rep.ticket)),
+                    ],
+                )),
             );
         }
 

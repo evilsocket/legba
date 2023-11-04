@@ -41,6 +41,7 @@ pub(crate) struct SQL {
     flavour: Flavour,
     host: String,
     port: u16,
+    address: String,
 }
 
 impl SQL {
@@ -50,6 +51,7 @@ impl SQL {
             flavour,
             port,
             host: String::new(),
+            address: String::new(),
         }
     }
 
@@ -62,18 +64,21 @@ impl SQL {
         let pool = tokio::time::timeout(
             timeout,
             PoolOptions::<DB>::new().connect(&format!(
-                "{}://{}:{}@{}:{}/",
-                scheme, &creds.username, &creds.password, &self.host, self.port
+                "{}://{}:{}@{}/",
+                scheme, &creds.username, &creds.password, &self.address
             )),
         )
         .await
         .map_err(|e| e.to_string())?;
 
         if pool.is_ok() {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::from(
+                &self.address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }
@@ -88,6 +93,7 @@ impl Plugin for SQL {
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         (self.host, self.port) = utils::parse_target(opts.target.as_ref(), self.port)?;
+        self.address = format!("{}:{}", &self.host, self.port);
         Ok(())
     }
 
