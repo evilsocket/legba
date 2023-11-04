@@ -8,6 +8,20 @@ pub(crate) fn parse_target(target: &str, default_port: u16) -> Result<(String, u
         ));
     }
 
+    // remove <proto>:// if present
+    let target = if target.contains("://") {
+        target.split_once("://").unwrap().1
+    } else {
+        target
+    };
+
+    // remove /<whatever> if present
+    let target = if target.contains('/') {
+        target.split_once('/').unwrap().0
+    } else {
+        target
+    };
+
     let num_colons = target.matches(':').count();
     let (address, port) = if num_colons <= 1 {
         // domain or ipv4

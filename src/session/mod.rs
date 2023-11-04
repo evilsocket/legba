@@ -108,9 +108,7 @@ impl Session {
 
         // perform pre-emptive target validation
         for target in &targets {
-            if let Err(e) = parse_target(target, 0) {
-                return Err(e);
-            }
+            parse_target(target, 0)?;
         }
 
         let runtime = Runtime::new(options.concurrency);
