@@ -2,7 +2,7 @@ mod combinator;
 mod expression;
 mod iterator;
 
-pub(crate) use combinator::Combinator;
+pub(crate) use combinator::{Combinator, IterationStrategy};
 pub(crate) use expression::{parse_expression, Expression};
 pub(crate) use iterator::{Iterator, IteratorClone};
 

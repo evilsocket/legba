@@ -1,7 +1,7 @@
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::session;
+use crate::{creds, session};
 
 // NOTE: normally we'd be using clap subcommands, but this approach allows us more flexibility
 // for plugins registered at runtime, aliases (like ssh/sftp) and so on.
@@ -30,6 +30,10 @@ pub(crate) struct Options {
     /// Constant, filename, glob expression as @/some/path/*.txt or permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
     #[clap(long, visible_alias = "key")]
     pub password: Option<String>,
+
+    /// Whether to iterate by user or by password.
+    #[clap(long, value_enum)]
+    pub iterate_by: creds::IterationStrategy,
 
     /// Save and restore session information to this file.
     #[clap(short, long)]

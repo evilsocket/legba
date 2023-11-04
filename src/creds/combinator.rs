@@ -1,6 +1,8 @@
 use std::time;
 
+use clap::ValueEnum;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     creds::{self, expression, iterator, Credentials},
@@ -9,6 +11,13 @@ use crate::{
 };
 
 use super::Expression;
+
+#[derive(ValueEnum, Serialize, Deserialize, Debug, Default, Clone)]
+pub(crate) enum IterationStrategy {
+    #[default]
+    User,
+    Password,
+}
 
 pub(crate) struct Combinator {
     options: Options,
@@ -32,13 +41,41 @@ impl Combinator {
         }
     }
 
+    fn combine_iterators(
+        options: &Options,
+        targets: Vec<String>,
+        user_it: Box<dyn creds::Iterator>,
+        pass_it: Option<Box<dyn creds::Iterator>>,
+    ) -> Box<dyn Iterator<Item = (String, String, String)>> {
+        if let Some(pass_it) = pass_it {
+            let (outer, inner) = match options.iterate_by {
+                IterationStrategy::User => (user_it, pass_it),
+                IterationStrategy::Password => (pass_it, user_it),
+            };
+
+            Box::new(
+                targets
+                    .into_iter()
+                    .cartesian_product(outer)
+                    .cartesian_product(inner)
+                    .map(|((t, out), inn)| (t.to_owned(), out, inn)),
+            )
+        } else {
+            Box::new(
+                targets
+                    .into_iter()
+                    .cartesian_product(user_it)
+                    .map(|(t, payload)| (t.to_owned(), payload, "".to_owned())),
+            )
+        }
+    }
+
     fn for_single_payload(
         targets: &Vec<String>,
         options: Options,
         override_expr: Option<Expression>,
     ) -> Result<Self, Error> {
         let dispatched = 0;
-        let targets: Vec<String> = targets.to_owned();
         // get either override, username or password
         let payload_expr = if let Some(override_expr) = override_expr {
             override_expr
@@ -49,12 +86,7 @@ impl Combinator {
         };
         let payload_it = iterator::new(payload_expr.clone())?;
         let search_space_size: usize = targets.len() * payload_it.search_space_size();
-        let product = Box::new(
-            targets
-                .into_iter()
-                .cartesian_product(payload_it)
-                .map(|(t, payload)| (t.to_owned(), payload, "".to_owned())),
-        );
+        let product = Self::combine_iterators(&options, targets.to_owned(), payload_it, None);
 
         Ok(Self {
             options,
@@ -68,7 +100,6 @@ impl Combinator {
 
     fn for_double_payload(targets: &Vec<String>, options: Options) -> Result<Self, Error> {
         let dispatched = 0;
-        let targets: Vec<String> = targets.to_owned();
         // get both
         let user_expr = expression::parse_expression(options.username.as_ref());
         let user_it = iterator::new(user_expr.clone())?;
@@ -76,14 +107,7 @@ impl Combinator {
         let pass_it = iterator::new(pass_expr.clone())?;
         let search_space_size =
             targets.len() * user_it.search_space_size() * pass_it.search_space_size();
-
-        let product = Box::new(
-            targets
-                .into_iter()
-                .cartesian_product(user_it)
-                .cartesian_product(pass_it)
-                .map(|((t, u), p)| (t.to_owned(), u, p)),
-        );
+        let product = Self::combine_iterators(&options, targets.to_owned(), user_it, Some(pass_it));
 
         Ok(Self {
             options,
@@ -133,11 +157,16 @@ impl Iterator for Combinator {
 
     fn next(&mut self) -> Option<Self::Item> {
         // we're done
-        if let Some((target, username, password)) = self.product.next() {
+        if let Some((target, outer, inner)) = self.product.next() {
             // check if we have to rate limit
             if self.options.rate_limit > 0 && self.dispatched % self.options.rate_limit == 0 {
                 std::thread::sleep(time::Duration::from_secs(1));
             }
+
+            let (username, password) = match self.options.iterate_by {
+                IterationStrategy::User => (outer, inner),
+                IterationStrategy::Password => (inner, outer),
+            };
 
             Some(Credentials {
                 target,
@@ -155,9 +184,120 @@ mod tests {
     use std::fs::File;
     use std::io::Write;
 
-    use crate::creds::{Credentials, Expression};
+    use crate::creds::{Credentials, Expression, IterationStrategy};
 
     use super::Combinator;
+
+    #[test]
+    fn can_handle_user_iteration_strategy() {
+        let targets = vec!["foo".to_owned()];
+        let mut opts = crate::Options::default();
+
+        opts.iterate_by = IterationStrategy::User; // default
+        opts.username = Some("#1-2:u".to_owned());
+        opts.password = Some("#1-2:p".to_owned());
+
+        let comb = Combinator::create(&targets, opts, 0, false, None).unwrap();
+        let expected = vec![
+            Credentials {
+                target: "foo".to_owned(),
+                username: "u".to_owned(),
+                password: "p".to_owned(),
+            },
+            Credentials {
+                target: "foo".to_owned(),
+                username: "u".to_owned(),
+                password: "pp".to_owned(),
+            },
+            Credentials {
+                target: "foo".to_owned(),
+                username: "uu".to_owned(),
+                password: "p".to_owned(),
+            },
+            Credentials {
+                target: "foo".to_owned(),
+                username: "uu".to_owned(),
+                password: "pp".to_owned(),
+            },
+        ];
+        let mut got = vec![];
+        for cred in comb {
+            got.push(cred);
+        }
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn can_handle_password_iteration_strategy() {
+        let targets = vec!["foo".to_owned()];
+        let mut opts = crate::Options::default();
+
+        opts.iterate_by = IterationStrategy::Password;
+        opts.username = Some("#1-2:u".to_owned());
+        opts.password = Some("#1-2:p".to_owned());
+
+        let comb = Combinator::create(&targets, opts, 0, false, None).unwrap();
+        let expected = vec![
+            Credentials {
+                target: "foo".to_owned(),
+                username: "u".to_owned(),
+                password: "p".to_owned(),
+            },
+            Credentials {
+                target: "foo".to_owned(),
+                username: "uu".to_owned(),
+                password: "p".to_owned(),
+            },
+            Credentials {
+                target: "foo".to_owned(),
+                username: "u".to_owned(),
+                password: "pp".to_owned(),
+            },
+            Credentials {
+                target: "foo".to_owned(),
+                username: "uu".to_owned(),
+                password: "pp".to_owned(),
+            },
+        ];
+        let mut got = vec![];
+        for cred in comb {
+            got.push(cred);
+        }
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn iteration_strategies_return_same_results() {
+        let targets = vec!["foo".to_owned()];
+
+        let mut by_user_opts = crate::Options::default();
+        by_user_opts.iterate_by = IterationStrategy::User;
+        by_user_opts.username = Some("#1-2:u".to_owned());
+        by_user_opts.password = Some("#1-5:p".to_owned());
+
+        let mut by_pass_opts = crate::Options::default();
+        by_pass_opts.iterate_by = IterationStrategy::Password;
+        by_pass_opts.username = Some("#1-2:u".to_owned());
+        by_pass_opts.password = Some("#1-5:p".to_owned());
+
+        let by_user_comb = Combinator::create(&targets, by_user_opts, 0, false, None).unwrap();
+        let by_pass_comb = Combinator::create(&targets, by_pass_opts, 0, false, None).unwrap();
+
+        assert_eq!(
+            by_user_comb.search_space_size(),
+            by_pass_comb.search_space_size()
+        );
+
+        let mut by_user: Vec<Credentials> = by_user_comb.collect();
+        let mut by_pass: Vec<Credentials> = by_pass_comb.collect();
+
+        by_user.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        by_pass.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        assert_eq!(by_user, by_pass);
+    }
 
     #[test]
     fn can_handle_multiple_targets_and_double_credentials() {
