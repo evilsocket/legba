@@ -14,12 +14,16 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = false)]
     /// List all available protocol plugins.
     pub list_plugins: bool,
-
     /// Protocol plugin to use, run with --list-plugins for a list of all available plugins.
     pub plugin: Option<String>,
-    /// Target host, url or IP address.
-    #[clap(short, long)]
+
+    /// Single target host, url or IP address.
+    #[clap(short = 'T', long)]
     pub target: Option<String>,
+    /// Multiple target hosts, urls, IP addresses, IP range or CIDR.
+    #[clap(short = 'M', long)]
+    pub multiple: Option<String>,
+
     /// Constant, filename, glob expression as @/some/path/*.txt, permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
     #[clap(long, visible_alias = "payloads")]
     pub username: Option<String>,

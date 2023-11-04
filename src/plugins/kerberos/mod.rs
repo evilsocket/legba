@@ -28,9 +28,6 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct Kerberos {
-    host: String,
-    port: u16,
-    server: SocketAddr,
     realm: String,
     proto: Protocol,
     linux: bool,
@@ -40,9 +37,6 @@ pub(crate) struct Kerberos {
 impl Kerberos {
     pub fn new() -> Self {
         Kerberos {
-            host: String::new(),
-            port: 88,
-            server: "127.0.0.1:88".parse().unwrap(),
             realm: String::new(),
             proto: Protocol::default(),
             linux: false,
@@ -50,7 +44,12 @@ impl Kerberos {
         }
     }
 
-    fn handle_error(&self, raw: &[u8], creds: &Credentials) -> (bool, bool, Option<Loot>) {
+    fn handle_error(
+        &self,
+        server: &SocketAddr,
+        raw: &[u8],
+        creds: &Credentials,
+    ) -> (bool, bool, Option<Loot>) {
         if let Ok((_, krb_error)) = KrbError::parse(raw) {
             match krb_error.error_code {
                 error_codes::KDC_ERR_PREAUTH_FAILED => {
@@ -60,7 +59,7 @@ impl Kerberos {
                         true,
                         Some(
                             Loot::from(
-                                &self.server.to_string(),
+                                &server.to_string(),
                                 [("username".to_owned(), creds.username.to_owned())],
                             )
                             .set_partial(),
@@ -74,7 +73,7 @@ impl Kerberos {
                         false,
                         Some(
                             Loot::from(
-                                &self.server.to_string(),
+                                &server.to_string(),
                                 [
                                     ("username".to_owned(), creds.username.to_owned()),
                                     ("expired_password".to_owned(), creds.password.to_owned()),
@@ -91,7 +90,7 @@ impl Kerberos {
                         false,
                         Some(
                             Loot::from(
-                                &self.server.to_string(),
+                                &server.to_string(),
                                 [
                                     ("username".to_owned(), creds.username.to_owned()),
                                     ("revoked_password".to_owned(), creds.password.to_owned()),
@@ -110,12 +109,17 @@ impl Kerberos {
         (false, false, None)
     }
 
-    fn handle_as_rep(&self, raw: &[u8], creds: &Credentials) -> (bool, Option<Loot>) {
+    fn handle_as_rep(
+        &self,
+        server: &SocketAddr,
+        raw: &[u8],
+        creds: &Credentials,
+    ) -> (bool, Option<Loot>) {
         if AsRep::parse(raw).is_ok() {
             return (
                 true,
                 Some(Loot::from(
-                    &self.server.to_string(),
+                    &server.to_string(),
                     [
                         ("username".to_owned(), creds.username.to_owned()),
                         ("password".to_owned(), creds.password.to_owned()),
@@ -136,7 +140,6 @@ impl Plugin for Kerberos {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 88)?;
         self.realm = if let Some(realm) = &opts.kerberos.kerberos_realm {
             realm.clone()
         } else {
@@ -144,13 +147,6 @@ impl Plugin for Kerberos {
         };
         self.linux = opts.kerberos.kerberos_linux;
         self.proto = opts.kerberos.kerberos_protocol.clone();
-        self.server = format!("{}:{}", self.host, self.port)
-            .to_socket_addrs()
-            .map_err(|e| e.to_string())?
-            .next()
-            .ok_or("could not convert target address to socket address".to_owned())
-            .map_err(|e| e.to_string())?;
-
         Ok(())
     }
 
@@ -160,17 +156,25 @@ impl Plugin for Kerberos {
             return Ok(None);
         }
 
+        let address = utils::parse_target_address(&creds.target, 88)?;
+        let server = address
+            .to_socket_addrs()
+            .map_err(|e| e.to_string())?
+            .next()
+            .ok_or("could not convert target address to socket address".to_owned())
+            .map_err(|e| e.to_string())?;
+
         // create an AS-REQ message to get an AS-REP response
         let req = builder::create_as_req(&self.realm, creds, self.linux);
 
         // create transport channel, connect and send AS-REQ
-        let transport = transport::get(&self.proto, self.server);
+        let transport = transport::get(&self.proto, server);
         let raw_resp = transport
             .request(timeout, &req.build())
             .map_err(|e| e.to_string())?;
 
         // did we get an error?
-        let (is_error, is_valid_user, loot) = self.handle_error(&raw_resp, creds);
+        let (is_error, is_valid_user, loot) = self.handle_error(&server, &raw_resp, creds);
         if is_error {
             // if this username is not valid, just mark for skipping
             if !is_valid_user {
@@ -183,7 +187,7 @@ impl Plugin for Kerberos {
         }
 
         // did we get an AS-REP?
-        let (is_as_rep, loot) = self.handle_as_rep(&raw_resp, creds);
+        let (is_as_rep, loot) = self.handle_as_rep(&server, &raw_resp, creds);
         if is_as_rep {
             return Ok(loot);
         }

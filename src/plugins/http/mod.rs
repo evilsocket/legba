@@ -56,8 +56,6 @@ pub(crate) struct HTTP {
     strategy: Strategy,
     client: Client,
 
-    target: String,
-
     csrf: Option<csrf::Config>,
 
     domain: String,
@@ -86,7 +84,6 @@ impl HTTP {
         HTTP {
             strategy,
             client: Client::default(),
-            target: String::new(),
             csrf: None,
             domain: String::new(),
             workstation: String::new(),
@@ -102,6 +99,49 @@ impl HTTP {
             proxy_user: None,
             proxy_pass: None,
         }
+    }
+
+    fn get_target_url(&self, target: &str) -> Result<String, Error> {
+        // add default schema if not present
+        let target = if !target.contains("://") {
+            format!("http://{}", target)
+        } else {
+            target.to_owned()
+        };
+
+        // parse as url
+        let target_url = Url::parse(&target).map_err(|e| e.to_string())?;
+
+        return if self.strategy == Strategy::Enumeration {
+            let port_part = if let Some(port) = target_url.port() {
+                format!(":{}", port)
+            } else {
+                "".to_owned()
+            };
+
+            let path = target_url
+                .path()
+                .replace("%7BUSERNAME%7D", "{USERNAME}")
+                .replace("%7BPASSWORD%7D", "{PASSWORD}")
+                .replace("%7BPAYLOAD%7D", "{PAYLOAD}"); // undo query encoding of interpolation params
+
+            let query = if let Some(query) = target_url.query() {
+                format!("?{}", query)
+            } else {
+                "".to_owned()
+            };
+
+            Ok(format!(
+                "{}://{}{}{}{}",
+                target_url.scheme(),
+                target_url.host().unwrap(),
+                port_part,
+                path,
+                query
+            ))
+        } else {
+            Ok(target_url.to_string())
+        };
     }
 
     fn setup_request_body(
@@ -219,6 +259,7 @@ impl HTTP {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
+        let target = self.get_target_url(&creds.target)?;
         let mut headers = self.setup_headers();
 
         // check if we are in a ntlm auth challenge context
@@ -229,7 +270,7 @@ impl HTTP {
                 } else {
                     2
                 },
-                &self.target,
+                &target,
                 self.client.clone(),
                 creds,
                 &self.domain,
@@ -262,7 +303,7 @@ impl HTTP {
         // build base request object
         let mut request = self
             .client
-            .request(self.method.clone(), &self.target)
+            .request(self.method.clone(), &target)
             .headers(headers)
             .timeout(timeout);
 
@@ -280,7 +321,7 @@ impl HTTP {
                 };
                 Ok(if self.is_success(res).await.is_some() {
                     Some(Loot::from(
-                        &self.target,
+                        &target,
                         [
                             ("username".to_owned(), creds.username.to_owned()),
                             ("password".to_owned(), creds.password.to_owned()),
@@ -299,16 +340,16 @@ impl HTTP {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
+        let target = self.get_target_url(&creds.target)?;
         let headers = self.setup_headers();
-
-        let url = if self.target.contains("{PAYLOAD}") {
+        let url = if target.contains("{PAYLOAD}") {
             // by interpolation
-            self.target.replace("{PAYLOAD}", &creds.username)
+            target.replace("{PAYLOAD}", &creds.username)
         } else {
             // by appending
             format!(
                 "{}{}",
-                &self.target,
+                &target,
                 creds
                     .username
                     .replace(&self.enum_ext_placeholder, &self.enum_ext)
@@ -328,7 +369,7 @@ impl HTTP {
             Ok(res) => {
                 if let Some(success) = self.is_success(res).await {
                     Ok(Some(Loot::from(
-                        &self.target,
+                        &target,
                         [
                             ("page".to_owned(), url),
                             ("status".to_owned(), success.status.to_string()),
@@ -362,50 +403,6 @@ impl Plugin for HTTP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        if let Some(target) = opts.target.as_ref() {
-            // add default schema if not present
-            let target = if !target.contains("://") {
-                format!("http://{}", target)
-            } else {
-                target.to_owned()
-            };
-
-            // parse as url
-            let target_url = Url::parse(&target).map_err(|e| e.to_string())?;
-            self.target = if self.strategy == Strategy::Enumeration {
-                let port_part = if let Some(port) = target_url.port() {
-                    format!(":{}", port)
-                } else {
-                    "".to_owned()
-                };
-
-                let path = target_url
-                    .path()
-                    .replace("%7BUSERNAME%7D", "{USERNAME}")
-                    .replace("%7BPASSWORD%7D", "{PASSWORD}")
-                    .replace("%7BPAYLOAD%7D", "{PAYLOAD}"); // undo query encoding of interpolation params
-
-                let query = if let Some(query) = target_url.query() {
-                    format!("?{}", query)
-                } else {
-                    "".to_owned()
-                };
-
-                format!(
-                    "{}://{}{}{}{}",
-                    target_url.scheme(),
-                    target_url.host().unwrap(),
-                    port_part,
-                    path,
-                    query
-                )
-            } else {
-                target_url.to_string()
-            };
-        } else {
-            return Err("no --target url specified".to_string());
-        }
-
         self.random_ua = opts.http.http_random_ua;
 
         self.csrf = if let Some(csrf_page) = opts.http.http_csrf_page.as_ref() {

@@ -19,16 +19,12 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct Oracle {
-    host: String,
-    port: u16,
     database: String,
 }
 
 impl Oracle {
     pub fn new() -> Self {
         Oracle {
-            host: String::new(),
-            port: 1521,
             database: String::new(),
         }
     }
@@ -41,13 +37,14 @@ impl Plugin for Oracle {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 1521)?;
         self.database = opts.oracle.oracle_database.clone();
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let address = utils::parse_target_address(&creds.target, 1521)?;
         let oracle = oracle::env().map_err(|e| e.to_string())?;
+
         let op = tokio::time::timeout(
             timeout,
             oracle.connect(&self.database, &creds.username, &creds.password),

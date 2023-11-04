@@ -20,19 +20,13 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct LDAP {
-    host: String,
-    port: u16,
     domain: String,
-    url: String,
 }
 
 impl LDAP {
     pub fn new() -> Self {
         LDAP {
-            host: String::new(),
             domain: String::new(),
-            url: String::new(),
-            port: 389,
         }
     }
 }
@@ -44,8 +38,6 @@ impl Plugin for LDAP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 389)?;
-        self.url = format!("ldap://{}:{}", &self.host, &self.port);
         self.domain = if let Some(domain) = &opts.ldap.ldap_domain {
             // example.org -> dc=example,dc=org
             format!(
@@ -60,12 +52,15 @@ impl Plugin for LDAP {
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let address = utils::parse_target_address(&creds.target, 389)?;
+        let url = format!("ldap://{}", address);
+
         let (conn, mut ldap) = LdapConnAsync::with_settings(
             LdapConnSettings::new()
                 // .set_starttls(true)
                 .set_conn_timeout(timeout),
             //.set_no_tls_verify(true),
-            &self.url,
+            &url,
         )
         .await
         .map_err(|e| e.to_string())?;
@@ -82,7 +77,7 @@ impl Plugin for LDAP {
         {
             return Ok(if res.success().is_ok() {
                 Some(Loot::from(
-                    &self.url,
+                    &address,
                     [
                         ("username".to_owned(), creds.username.to_owned()),
                         ("password".to_owned(), creds.password.to_owned()),

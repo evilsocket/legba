@@ -19,14 +19,12 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct TcpPortScanner {
-    address: String,
     ports: Expression,
 }
 
 impl TcpPortScanner {
     pub fn new() -> Self {
         TcpPortScanner {
-            address: String::new(),
             ports: Expression::default(),
         }
     }
@@ -47,8 +45,6 @@ impl Plugin for TcpPortScanner {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.address, _) = utils::parse_target(opts.target.as_ref(), 0)?;
-
         self.ports = creds::parse_expression(Some(&format!("[{}]", &opts.tcp_ports.tcp_ports)));
         if !matches!(
             &self.ports,
@@ -68,7 +64,8 @@ impl Plugin for TcpPortScanner {
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let address = format!("{}:{}", &self.address, &creds.username); // username is the port
+        let (target, _) = utils::parse_target(&creds.target, 0)?;
+        let address = format!("{}:{}", &target, &creds.username); // username is the port
         let start: std::time::Instant = std::time::Instant::now();
 
         return if crate::utils::net::async_tcp_stream(&address, timeout, false)
@@ -76,7 +73,7 @@ impl Plugin for TcpPortScanner {
             .is_ok()
         {
             Ok(Some(Loot::from(
-                &self.address,
+                &target,
                 [
                     ("proto".to_owned(), "tcp".to_owned()),
                     ("port".to_owned(), creds.username.to_owned()),

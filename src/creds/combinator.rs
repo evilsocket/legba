@@ -1,5 +1,7 @@
 use std::time;
 
+use itertools::Itertools;
+
 use crate::{
     creds::{self, expression, iterator, Credentials},
     options::Options,
@@ -10,106 +12,121 @@ use super::Expression;
 
 pub(crate) struct Combinator {
     options: Options,
+
     user_expr: creds::Expression,
-    user_it: Box<dyn creds::Iterator>,
-    current_user: Option<String>,
-    pass_it: Box<dyn creds::Iterator>,
     pass_expr: creds::Expression,
+    product: Box<dyn Iterator<Item = (String, String, String)>>,
+
     dispatched: usize,
     search_space_size: usize,
-    single: bool,
 }
 
 impl Combinator {
-    pub fn from_options(options: Options, from: usize, single: bool) -> Result<Self, Error> {
-        let (user_expr, user_it, pass_expr, pass_it) = if single {
+    fn reset_from(&mut self, from: usize) {
+        if from > 0 {
+            let start = time::Instant::now();
+            while self.dispatched < from {
+                let _ = self.next();
+            }
+            log::info!("restored from credential {} in {:?}", from, start.elapsed());
+        }
+    }
+
+    pub fn from_options(
+        targets: &Vec<String>,
+        options: Options,
+        from: usize,
+        single: bool,
+    ) -> Result<Self, Error> {
+        let dispatched = 0;
+        let targets = targets.to_owned();
+
+        let mut combinator = if single {
             // get either username or password
-            let user_expr = if options.username.is_some() {
+            let payload_expr = if options.username.is_some() {
                 expression::parse_expression(options.username.as_ref())
             } else {
                 expression::parse_expression(options.password.as_ref())
             };
-            let user_it = iterator::new(user_expr.clone())?;
+            let payload_it = iterator::new(payload_expr.clone())?;
+            let search_space_size: usize = targets.len() * payload_it.search_space_size();
+            let product = Box::new(
+                targets
+                    .into_iter()
+                    .cartesian_product(payload_it)
+                    .map(|(t, payload)| (t.to_owned(), payload, "".to_owned())),
+            );
 
-            (
-                user_expr,
-                user_it,
-                creds::Expression::default(),
-                iterator::empty()?,
-            )
+            Self {
+                options,
+                user_expr: payload_expr,
+                pass_expr: creds::Expression::default(),
+                product,
+                search_space_size,
+                dispatched,
+            }
         } else {
             // get both
             let user_expr = expression::parse_expression(options.username.as_ref());
             let user_it = iterator::new(user_expr.clone())?;
+            let pass_expr = expression::parse_expression(options.password.as_ref());
+            let pass_it = iterator::new(pass_expr.clone())?;
+            let search_space_size =
+                targets.len() * user_it.search_space_size() * pass_it.search_space_size();
 
-            let expr = expression::parse_expression(options.password.as_ref());
-            (
+            let product = Box::new(
+                targets
+                    .into_iter()
+                    .cartesian_product(user_it)
+                    .cartesian_product(pass_it)
+                    .map(|((t, u), p)| (t.to_owned(), u, p)),
+            );
+
+            Self {
+                options,
                 user_expr,
-                user_it,
-                expr.clone(),
-                iterator::new(expr.clone())?,
-            )
-        };
-
-        let search_space_size =
-            user_it.search_space_size() * std::cmp::max(pass_it.search_space_size(), 1);
-        let dispatched = 0;
-        let current_user = None;
-        let mut combinator = Self {
-            user_expr,
-            user_it,
-            pass_it,
-            pass_expr,
-            options,
-            search_space_size,
-            single,
-            dispatched,
-            current_user,
+                pass_expr,
+                product,
+                search_space_size,
+                dispatched,
+            }
         };
 
         // restore from last state if needed
-        if from > 0 {
-            let start = time::Instant::now();
-            while combinator.dispatched < from {
-                let _ = combinator.next();
-            }
-            log::info!("restored from credential {} in {:?}", from, start.elapsed());
-        }
+        combinator.reset_from(from);
 
         Ok(combinator)
     }
 
     pub fn from_plugin_override(
+        targets: &Vec<String>,
         expression: Expression,
         from: usize,
         options: Options,
     ) -> Result<Self, Error> {
+        let targets = targets.to_owned();
         let pass_expr = creds::Expression::default();
-        let pass_it = iterator::empty()?;
         let payload_it = iterator::new(expression.clone())?;
-        let search_space_size = payload_it.search_space_size();
+        let search_space_size = targets.len() * payload_it.search_space_size();
         let dispatched = 0;
-        let current_user = None;
+        let product = Box::new(
+            targets
+                .into_iter()
+                .cartesian_product(payload_it)
+                .map(|(t, payload)| (t.to_owned(), payload, "".to_owned())),
+        );
+
         let mut combinator = Self {
-            user_expr: expression,
-            user_it: payload_it,
-            pass_it,
-            pass_expr,
             options,
+            user_expr: expression,
+            pass_expr,
+            product,
             search_space_size,
-            single: true,
             dispatched,
-            current_user,
         };
 
         // restore from last state if needed
-        if from > 0 {
-            let start = time::Instant::now();
-            while combinator.dispatched < from {
-                let _ = combinator.next();
-            }
-            log::info!("restored from credential {} in {:?}", from, start.elapsed());
-        }
+        combinator.reset_from(from);
 
         Ok(combinator)
     }
@@ -125,55 +142,28 @@ impl Combinator {
     pub fn password_expression(&self) -> &creds::Expression {
         &self.pass_expr
     }
-
-    fn get_next_pass(&mut self) -> (bool, String) {
-        if self.single {
-            // single credentials mode
-            (false, "".to_owned())
-        } else if let Some(next_pass) = self.pass_it.next() {
-            // return next password
-            (false, next_pass)
-        } else {
-            // reset internal iterator
-            self.pass_it = iterator::new(self.pass_expr.clone()).unwrap();
-            (true, self.pass_it.next().unwrap())
-        }
-    }
 }
 
 impl Iterator for Combinator {
+    // (target, credentials)
     type Item = Credentials;
 
     fn next(&mut self) -> Option<Self::Item> {
         // we're done
-        if self.dispatched == self.search_space_size {
-            return None;
+        if let Some((target, username, password)) = self.product.next() {
+            // check if we have to rate limit
+            if self.options.rate_limit > 0 && self.dispatched % self.options.rate_limit == 0 {
+                std::thread::sleep(time::Duration::from_secs(1));
+            }
+
+            Some(Credentials {
+                target,
+                username,
+                password,
+            })
+        } else {
+            None
         }
-
-        let (is_reset, next_pass) = self.get_next_pass();
-        // if we're in the initial state, or single mode, or the password iterator just completed and resetted,
-        // get the next user. this simulates a nested iteration such as:
-        //
-        //  for user in users {
-        //      for pass in passwords {
-        //          ...
-        //      }
-        //  }
-        if self.single || self.dispatched == 0 || is_reset {
-            self.current_user = self.user_it.next();
-        }
-
-        // check if we have to rate limit
-        if self.options.rate_limit > 0 && self.dispatched % self.options.rate_limit == 0 {
-            std::thread::sleep(time::Duration::from_secs(1));
-        }
-
-        self.dispatched += 1;
-
-        Some(Credentials {
-            username: self.current_user.as_ref().unwrap().to_owned(),
-            password: next_pass,
-        })
     }
 }
 
@@ -187,6 +177,65 @@ mod tests {
     use super::Combinator;
 
     #[test]
+    fn can_handle_multiple_targets_and_double_credentials() {
+        let targets = vec!["foo".to_owned(), "bar".to_owned()];
+        let mut opts = crate::Options::default();
+
+        opts.username = Some("[1, 2, 3]".to_owned());
+        opts.password = Some("[1, 2, 3]".to_owned());
+
+        let comb = Combinator::from_options(&targets, opts, 0, false).unwrap();
+        let mut expected = vec![];
+        let mut got = vec![];
+
+        for t in targets {
+            for u in 1..=3 {
+                for p in 1..=3 {
+                    expected.push(Credentials {
+                        target: t.to_owned(),
+                        username: u.to_string(),
+                        password: p.to_string(),
+                    });
+                }
+            }
+        }
+
+        for cred in comb {
+            got.push(cred);
+        }
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn can_handle_multiple_targets_and_single_credentials() {
+        let targets = vec!["foo".to_owned(), "bar".to_owned()];
+        let mut opts = crate::Options::default();
+
+        opts.username = Some("[1, 2, 3]".to_owned());
+
+        let comb = Combinator::from_options(&targets, opts, 0, true).unwrap();
+        let mut expected = vec![];
+        let mut got = vec![];
+
+        for t in targets {
+            for u in 1..=3 {
+                expected.push(Credentials {
+                    target: t.to_owned(),
+                    username: u.to_string(),
+                    password: "".to_string(),
+                });
+            }
+        }
+
+        for cred in comb {
+            got.push(cred);
+        }
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
     fn returns_plugin_overrides_min_max() {
         let expr = Expression::Range {
             min: 1,
@@ -194,12 +243,14 @@ mod tests {
             set: vec![],
         };
         let opts = crate::Options::default();
-        let comb = Combinator::from_plugin_override(expr, 0, opts).unwrap();
+        let comb =
+            Combinator::from_plugin_override(&vec!["foo".to_owned()], expr, 0, opts).unwrap();
         let mut expected = vec![];
         let mut got = vec![];
 
         for i in 1..=10 {
             expected.push(Credentials {
+                target: "foo".to_owned(),
                 username: i.to_string(),
                 password: "".to_owned(),
             });
@@ -221,12 +272,14 @@ mod tests {
             set: set.clone(),
         };
         let opts = crate::Options::default();
-        let comb = Combinator::from_plugin_override(expr, 0, opts).unwrap();
+        let comb =
+            Combinator::from_plugin_override(&vec!["foo".to_owned()], expr, 0, opts).unwrap();
         let mut expected = vec![];
         let mut got = vec![];
 
         for i in set {
             expected.push(Credentials {
+                target: "foo".to_owned(),
                 username: i.to_string(),
                 password: "".to_owned(),
             });
@@ -262,6 +315,7 @@ mod tests {
         for i in 0..num_items {
             for j in 0..num_items {
                 expected.push(Credentials {
+                    target: "foo".to_owned(),
                     username: format!("user{}", i),
                     password: format!("pass{}", j),
                 })
@@ -271,7 +325,7 @@ mod tests {
         opts.username = Some(tmpuserspath.to_str().unwrap().to_owned());
         opts.password = Some(tmppasspath.to_str().unwrap().to_owned());
 
-        let comb = Combinator::from_options(opts, 0, false).unwrap();
+        let comb = Combinator::from_options(&vec!["foo".to_owned()], opts, 0, false).unwrap();
         let tot = comb.search_space_size();
         let mut got = vec![];
 
@@ -299,9 +353,10 @@ mod tests {
         for i in 0..num_items {
             write!(tmpdata, "test{}\n", i).unwrap();
             expected.push(Credentials {
+                target: "foo".to_owned(),
                 username: format!("test{}", i),
                 password: "".to_owned(),
-            })
+            });
         }
 
         tmpdata.flush().unwrap();
@@ -310,10 +365,11 @@ mod tests {
         let mut opts = crate::Options::default();
         opts.username = Some(tmppath.to_str().unwrap().to_owned());
 
-        let comb = Combinator::from_options(opts, 0, true).unwrap();
+        let comb = Combinator::from_options(&vec!["foo".to_owned()], opts, 0, true).unwrap();
         let tot = comb.search_space_size();
-        let mut got = vec![];
+        assert_eq!(expected.len(), tot);
 
+        let mut got = vec![];
         for cred in comb {
             got.push(cred);
         }
@@ -321,9 +377,7 @@ mod tests {
         expected.sort_by(|a, b| a.partial_cmp(b).unwrap());
         got.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-        assert_eq!(expected.len(), tot);
         assert_eq!(got.len(), tot);
-
         assert_eq!(expected, got);
     }
 }

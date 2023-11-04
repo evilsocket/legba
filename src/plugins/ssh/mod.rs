@@ -22,9 +22,6 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct SSH {
-    host: String,
-    port: u16,
-    address: String,
     mode: options::Mode,
     passphrase: Option<String>,
 }
@@ -32,9 +29,6 @@ pub(crate) struct SSH {
 impl SSH {
     pub fn new() -> Self {
         SSH {
-            host: String::new(),
-            port: 22,
-            address: String::new(),
             mode: options::Mode::default(),
             passphrase: None,
         }
@@ -48,14 +42,13 @@ impl Plugin for SSH {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 22)?;
         self.mode = opts.ssh.ssh_auth_mode.clone();
         self.passphrase = opts.ssh.ssh_key_passphrase.clone();
-        self.address = format!("{}:{}", &self.host, self.port);
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let address = utils::parse_target_address(&creds.target, 22)?;
         let (method, key_label) = match self.mode {
             options::Mode::Password => (
                 AuthMethod::with_password(&creds.password),
@@ -70,7 +63,7 @@ impl Plugin for SSH {
         let res = tokio::time::timeout(
             timeout,
             Client::connect(
-                (self.host.clone(), self.port),
+                &address,
                 &creds.username,
                 method,
                 ServerCheckMethod::NoCheck,
@@ -81,7 +74,7 @@ impl Plugin for SSH {
 
         if res.is_ok() {
             Ok(Some(Loot::from(
-                &self.address,
+                &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     (key_label, creds.password.to_owned()),

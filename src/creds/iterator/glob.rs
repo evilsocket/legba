@@ -1,6 +1,7 @@
 use crate::{creds, session::Error};
 
 pub(crate) struct Glob {
+    pattern: String,
     paths: glob::Paths,
     elements: usize,
 }
@@ -15,13 +16,27 @@ impl Glob {
         let elements = paths.count();
         let paths = glob::glob(&pattern).unwrap();
 
-        Ok(Self { paths, elements })
+        Ok(Self {
+            pattern,
+            paths,
+            elements,
+        })
     }
 }
 
 impl creds::Iterator for Glob {
     fn search_space_size(&self) -> usize {
         self.elements
+    }
+}
+
+impl creds::IteratorClone for Glob {
+    fn create_boxed_copy(&self) -> Box<dyn creds::Iterator> {
+        Box::new(Self {
+            pattern: self.pattern.to_owned(),
+            elements: self.elements,
+            paths: glob::glob(&self.pattern).unwrap(),
+        })
     }
 }
 

@@ -4,12 +4,13 @@ mod iterator;
 
 pub(crate) use combinator::Combinator;
 pub(crate) use expression::{parse_expression, Expression};
-pub(crate) use iterator::Iterator;
+pub(crate) use iterator::{Iterator, IteratorClone};
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Default, Clone, Debug)]
 pub(crate) struct Credentials {
+    pub target: String,
     pub username: String,
     pub password: String,
 }

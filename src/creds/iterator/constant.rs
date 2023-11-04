@@ -18,6 +18,12 @@ impl creds::Iterator for Constant {
     }
 }
 
+impl creds::IteratorClone for Constant {
+    fn create_boxed_copy(&self) -> Box<dyn creds::Iterator> {
+        Box::new(Self::new(self.value.clone()).unwrap())
+    }
+}
+
 impl std::iter::Iterator for Constant {
     type Item = String;
 

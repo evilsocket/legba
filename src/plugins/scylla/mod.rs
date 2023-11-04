@@ -16,19 +16,11 @@ fn register() {
 }
 
 #[derive(Clone)]
-pub(crate) struct Scylla {
-    host: String,
-    port: u16,
-    address: String,
-}
+pub(crate) struct Scylla {}
 
 impl Scylla {
     pub fn new() -> Self {
-        Scylla {
-            host: String::new(),
-            port: 9042,
-            address: String::new(),
-        }
+        Scylla {}
     }
 }
 
@@ -38,15 +30,14 @@ impl Plugin for Scylla {
         "ScyllaDB / Cassandra password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 9042)?;
-        self.address = format!("{}:{}", &self.host, self.port);
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let address: String = utils::parse_target_address(&creds.target, 9042)?;
         let session = scylla::SessionBuilder::new()
-            .known_node(&self.address)
+            .known_node(&address)
             .connection_timeout(timeout)
             .user(&creds.username, &creds.password)
             .build()
@@ -54,7 +45,7 @@ impl Plugin for Scylla {
 
         if session.is_ok() {
             Ok(Some(Loot::from(
-                &self.address,
+                &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),

@@ -19,15 +19,11 @@ fn register() {
 }
 
 #[derive(Clone)]
-pub(crate) struct STOMP {
-    address: String,
-}
+pub(crate) struct STOMP {}
 
 impl STOMP {
     pub fn new() -> Self {
-        STOMP {
-            address: String::new(),
-        }
+        STOMP {}
     }
 }
 
@@ -37,14 +33,13 @@ impl Plugin for STOMP {
         "STOMP password authentication (ActiveMQ, RabbitMQ, HornetQ and OpenMQ)."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        let (host, port) = utils::parse_target(opts.target.as_ref(), 61613)?;
-        self.address = format!("{}:{}", host, port);
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let mut stream = crate::utils::net::async_tcp_stream(&self.address, timeout, false).await?;
+        let address = utils::parse_target_address(&creds.target, 61613)?;
+        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
 
         stream
             .write_all(
@@ -63,7 +58,7 @@ impl Plugin for STOMP {
 
         if buffer.starts_with(CONNECTED_RESPONSE) {
             Ok(Some(Loot::from(
-                &self.address,
+                &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),

@@ -21,14 +21,12 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct SMTP {
-    address: String,
     mechanism: authentication::Mechanism,
 }
 
 impl SMTP {
     pub fn new() -> Self {
         SMTP {
-            address: String::new(),
             mechanism: authentication::Mechanism::Plain,
         }
     }
@@ -41,8 +39,6 @@ impl Plugin for SMTP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        let (host, port) = utils::parse_target(opts.target.as_ref(), 25)?;
-        self.address = format!("{}:{}", host, port);
         self.mechanism = match opts.smtp.smtp_mechanism.as_ref() {
             "PLAIN" => authentication::Mechanism::Plain,
             "LOGIN" => authentication::Mechanism::Login,
@@ -56,7 +52,8 @@ impl Plugin for SMTP {
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let stream = crate::utils::net::async_tcp_stream(&self.address, timeout, false).await?;
+        let address = utils::parse_target_address(&creds.target, 25)?;
+        let stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
 
         let client = SmtpClient::new();
         let mut transport =
@@ -70,7 +67,7 @@ impl Plugin for SMTP {
 
         if transport.auth(self.mechanism, &credentials).await.is_ok() {
             Ok(Some(Loot::from(
-                &self.address,
+                &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),

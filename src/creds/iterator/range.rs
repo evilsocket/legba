@@ -1,6 +1,7 @@
 use crate::{creds, session::Error};
 
 pub(crate) struct Range {
+    min: usize,
     max: usize,
     set: Vec<usize>,
     current: usize,
@@ -18,6 +19,7 @@ impl Range {
 
             let elements = max - min + 1;
             Ok(Self {
+                min,
                 max,
                 current: min,
                 elements,
@@ -26,6 +28,7 @@ impl Range {
         } else {
             let elements = set.len();
             Ok(Self {
+                min,
                 max: 0,
                 current: 0,
                 set,
@@ -38,6 +41,12 @@ impl Range {
 impl creds::Iterator for Range {
     fn search_space_size(&self) -> usize {
         self.elements
+    }
+}
+
+impl creds::IteratorClone for Range {
+    fn create_boxed_copy(&self) -> Box<dyn creds::Iterator> {
+        Box::new(Self::new(self.min, self.max, self.set.clone()).unwrap())
     }
 }
 

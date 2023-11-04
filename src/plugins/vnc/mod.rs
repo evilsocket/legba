@@ -16,15 +16,11 @@ fn register() {
 }
 
 #[derive(Clone)]
-pub(crate) struct VNC {
-    address: String,
-}
+pub(crate) struct VNC {}
 
 impl VNC {
     pub fn new() -> Self {
-        VNC {
-            address: String::new(),
-        }
+        VNC {}
     }
 }
 
@@ -38,15 +34,13 @@ impl Plugin for VNC {
         true
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        let (host, port) = utils::parse_target(opts.target.as_ref(), 5900)?;
-        self.address = format!("{}:{}", host, port);
-
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let stream = crate::utils::net::async_tcp_stream(&self.address, timeout, false).await?;
+        let address = utils::parse_target_address(&creds.target, 5900)?;
+        let stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
         // being this plugin single credentials, this is going to be the password
         let password = creds.single().to_owned();
         let vnc = tokio::time::timeout(
@@ -68,7 +62,7 @@ impl Plugin for VNC {
 
         if vnc.is_ok() && vnc.unwrap().finish().is_ok() {
             return Ok(Some(Loot::from(
-                &self.address,
+                &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),

@@ -2,15 +2,25 @@ use crate::creds::expression::Expression;
 use crate::session::Error;
 
 mod constant;
-mod empty;
 mod glob;
 mod permutations;
 mod permutator;
 mod range;
 mod wordlist;
 
-pub(crate) trait Iterator: std::iter::Iterator<Item = String> {
+// https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
+pub(crate) trait Iterator: IteratorClone + std::iter::Iterator<Item = String> {
     fn search_space_size(&self) -> usize;
+}
+
+pub(crate) trait IteratorClone {
+    fn create_boxed_copy(&self) -> Box<dyn Iterator>;
+}
+
+impl Clone for Box<dyn Iterator> {
+    fn clone(&self) -> Self {
+        self.create_boxed_copy()
+    }
 }
 
 pub(crate) fn new(expr: Expression) -> Result<Box<dyn Iterator>, Error> {
@@ -36,8 +46,4 @@ pub(crate) fn new(expr: Expression) -> Result<Box<dyn Iterator>, Error> {
             Ok(Box::new(it))
         }
     }
-}
-
-pub(crate) fn empty() -> Result<Box<dyn Iterator>, Error> {
-    Ok(Box::new(empty::Empty::new()))
 }

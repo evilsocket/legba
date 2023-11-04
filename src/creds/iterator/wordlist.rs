@@ -6,6 +6,7 @@ use std::{
 use crate::{creds, session::Error};
 
 pub(crate) struct Wordlist {
+    path: String,
     lines: Lines<BufReader<File>>,
     current: usize,
     elements: usize,
@@ -21,10 +22,11 @@ impl Wordlist {
         let elements = reader.lines().count();
 
         // create actual reader
-        let file = File::open(path).map_err(|e| e.to_string())?;
+        let file = File::open(&path).map_err(|e| e.to_string())?;
         let reader = BufReader::new(file);
 
         Ok(Self {
+            path,
             elements,
             current: 0,
             lines: reader.lines(),
@@ -35,6 +37,12 @@ impl Wordlist {
 impl creds::Iterator for Wordlist {
     fn search_space_size(&self) -> usize {
         self.elements
+    }
+}
+
+impl creds::IteratorClone for Wordlist {
+    fn create_boxed_copy(&self) -> Box<dyn creds::Iterator> {
+        Box::new(Self::new(self.path.clone()).unwrap())
     }
 }
 
