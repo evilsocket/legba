@@ -26,6 +26,7 @@ pub(crate) struct Combinator {
     pass_expr: creds::Expression,
     product: Box<dyn Iterator<Item = (String, String, String)>>,
 
+    wait: Option<time::Duration>,
     dispatched: usize,
     search_space_size: usize,
 }
@@ -35,7 +36,8 @@ impl Combinator {
         if from > 0 {
             let start = time::Instant::now();
             while self.dispatched < from {
-                let _ = self.next();
+                let _ = self.product.next();
+                self.dispatched += 1;
             }
             log::info!("restored from credential {} in {:?}", from, start.elapsed());
         }
@@ -76,6 +78,12 @@ impl Combinator {
         override_expr: Option<Expression>,
     ) -> Result<Self, Error> {
         let dispatched = 0;
+        let wait = if options.wait > 0 {
+            Some(time::Duration::from_millis(options.wait as u64))
+        } else {
+            None
+        };
+
         // get either override, username or password
         let payload_expr = if let Some(override_expr) = override_expr {
             override_expr
@@ -90,6 +98,7 @@ impl Combinator {
 
         Ok(Self {
             options,
+            wait,
             user_expr: payload_expr,
             pass_expr: creds::Expression::default(),
             product,
@@ -100,6 +109,12 @@ impl Combinator {
 
     fn for_double_payload(targets: &Vec<String>, options: Options) -> Result<Self, Error> {
         let dispatched = 0;
+        let wait = if options.wait > 0 {
+            Some(time::Duration::from_millis(options.wait as u64))
+        } else {
+            None
+        };
+
         // get both
         let user_expr = expression::parse_expression(options.username.as_ref());
         let user_it = iterator::new(user_expr.clone())?;
@@ -111,6 +126,7 @@ impl Combinator {
 
         Ok(Self {
             options,
+            wait,
             user_expr,
             pass_expr,
             product,
@@ -163,10 +179,17 @@ impl Iterator for Combinator {
                 std::thread::sleep(time::Duration::from_secs(1));
             }
 
+            // check if we have a wait time
+            if let Some(wait) = self.wait {
+                std::thread::sleep(wait);
+            }
+
             let (username, password) = match self.options.iterate_by {
                 IterationStrategy::User => (outer, inner),
                 IterationStrategy::Password => (inner, outer),
             };
+
+            self.dispatched += 1;
 
             Some(Credentials {
                 target,
@@ -187,6 +210,36 @@ mod tests {
     use crate::creds::{Credentials, Expression, IterationStrategy};
 
     use super::Combinator;
+
+    #[test]
+    fn can_restore_from_step() {
+        let targets = vec!["foo".to_owned()];
+        let mut opts = crate::Options::default();
+
+        opts.iterate_by = IterationStrategy::User; // default
+        opts.username = Some("#1-2:u".to_owned());
+        opts.password = Some("#1-2:p".to_owned());
+
+        let comb = Combinator::create(&targets, opts, 2, false, None).unwrap();
+        let expected = vec![
+            Credentials {
+                target: "foo".to_owned(),
+                username: "uu".to_owned(),
+                password: "p".to_owned(),
+            },
+            Credentials {
+                target: "foo".to_owned(),
+                username: "uu".to_owned(),
+                password: "pp".to_owned(),
+            },
+        ];
+        let mut got = vec![];
+        for cred in comb {
+            got.push(cred);
+        }
+
+        assert_eq!(expected, got);
+    }
 
     #[test]
     fn can_handle_user_iteration_strategy() {

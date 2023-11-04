@@ -32,7 +32,7 @@ pub(crate) struct Options {
     pub password: Option<String>,
 
     /// Whether to iterate by user or by password.
-    #[clap(long, value_enum)]
+    #[clap(long, value_enum, default_value_t = creds::IterationStrategy::User)]
     pub iterate_by: creds::IterationStrategy,
 
     /// Save and restore session information to this file.
@@ -68,6 +68,9 @@ pub(crate) struct Options {
     /// Limit the number of requests per second.
     #[clap(long, default_value_t = 0)]
     pub rate_limit: usize,
+    /// Wait time in milliseconds per login attempt.
+    #[clap(long, default_value_t = 0)]
+    pub wait: usize,
     /// Minimum number of milliseconds for random request jittering.
     #[clap(long, default_value_t = 0)]
     pub jitter_min: u64,
