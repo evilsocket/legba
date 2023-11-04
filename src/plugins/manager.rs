@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::time;
 
+use ahash::HashSet;
 use ansi_term::Style;
 use lazy_static::lazy_static;
 use rand::Rng;
@@ -103,6 +104,7 @@ async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
 
     let timeout = time::Duration::from_millis(session.options.timeout);
     let retry_time: time::Duration = time::Duration::from_millis(session.options.retry_time);
+    let mut unreachables: HashSet<String> = HashSet::default();
 
     while let Ok(creds) = session.recv_new_credentials().await {
         if session.is_stop() {
@@ -126,36 +128,43 @@ async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
 
             attempt += 1;
 
-            match plugin.attempt(&creds, timeout).await {
-                Err(err) => {
-                    errors += 1;
-                    if attempt < session.options.retries {
-                        log::debug!(
-                            "[{}] attempt {}/{}: {}",
-                            &creds.target,
-                            attempt,
-                            session.options.retries,
-                            err
-                        );
-                        std::thread::sleep(retry_time);
-                        continue;
-                    } else {
-                        log::error!(
-                            "[{}] attempt {}/{}: {}",
-                            &creds.target,
-                            attempt,
-                            session.options.retries,
-                            err
-                        );
+            // skip attempt if we had enough failures from this specific target
+            if !unreachables.contains(&creds.target) {
+                match plugin.attempt(&creds, timeout).await {
+                    Err(err) => {
+                        errors += 1;
+                        if attempt < session.options.retries {
+                            log::debug!(
+                                "[{}] attempt {}/{}: {}",
+                                &creds.target,
+                                attempt,
+                                session.options.retries,
+                                err
+                            );
+                            std::thread::sleep(retry_time);
+                            continue;
+                        } else {
+                            // add this target to the list of unreachable in order to avoi
+                            // pointless attempts
+                            unreachables.insert(creds.target.clone());
+
+                            log::error!(
+                                "[{}] attempt {}/{}: {}",
+                                &creds.target,
+                                attempt,
+                                session.options.retries,
+                                err
+                            );
+                        }
                     }
-                }
-                Ok(loot) => {
-                    // do we have new loot?
-                    if let Some(loot) = loot {
-                        session.add_loot(loot).await.unwrap();
+                    Ok(loot) => {
+                        // do we have new loot?
+                        if let Some(loot) = loot {
+                            session.add_loot(loot).await.unwrap();
+                        }
                     }
-                }
-            };
+                };
+            }
 
             break;
         }
