@@ -74,6 +74,7 @@ rdp-rs = { version = "0.1.0", optional = true }
 hex = "0.4.3"
 glob = "0.3.1"
 scylla = { version = "0.10.1", optional = true }
+paho-mqtt = { version = "0.12.3", optional = true }
 
 [dev-dependencies]
 tempfile = "3.8.0"
@@ -85,6 +86,7 @@ default = [
     "dns",
     "ssh",
     "mssql",
+    "mqtt",
     "sql",
     "ftp",
     "smtp",
@@ -108,6 +110,7 @@ dns = ["dep:trust-dns-resolver"]
 ssh = ["dep:async-ssh2-tokio"]
 sql = ["dep:sqlx"]
 mssql = []
+mqtt = ["paho-mqtt"]
 ftp = ["dep:async_ftp"]
 smtp = ["dep:async-smtp"]
 pop3 = ["dep:async-native-tls", "dep:async-pop"]

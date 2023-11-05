@@ -28,6 +28,8 @@ pub(crate) mod ldap;
 pub(crate) mod mongodb;
 #[cfg(feature = "mssql")]
 mod mssql;
+#[cfg(feature = "mqtt")]
+pub(crate) mod mqtt;
 #[cfg(feature = "oracle")]
 pub(crate) mod oracle; // optional as it requires libclntsh that's a pain to install and configure
 #[cfg(feature = "pop3")]
