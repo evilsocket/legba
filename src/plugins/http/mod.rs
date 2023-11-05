@@ -84,7 +84,7 @@ impl HTTP {
     pub fn new(strategy: Strategy) -> Self {
         HTTP {
             strategy,
-            client: Client::default(),
+            client: Client::builder().no_proxy().build().unwrap(),
             csrf: None,
             domain: String::new(),
             workstation: String::new(),
