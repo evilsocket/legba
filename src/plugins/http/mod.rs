@@ -64,6 +64,7 @@ pub(crate) struct HTTP {
     random_ua: bool,
     success_codes: Vec<u16>,
     success_string: Option<String>,
+    failure_string: Option<String>,
 
     enum_ext: String,
     enum_ext_placeholder: String,
@@ -89,6 +90,7 @@ impl HTTP {
             workstation: String::new(),
             success_codes: vec![200],
             success_string: None,
+            failure_string: None,
             enum_ext: String::new(),
             enum_ext_placeholder: String::new(),
             method: Method::GET,
@@ -227,17 +229,27 @@ impl HTTP {
         let body = response.text().await.unwrap_or(String::new());
         let content_length = body.len();
 
-        if let Some(success_string) = self.success_string.as_ref() {
-            if !body.contains(success_string) && !headers.contains(success_string) {
-                return None;
-            }
-        }
+        let success_match = if let Some(success_string) = self.success_string.as_ref() {
+            body.contains(success_string) || headers.contains(success_string)
+        } else {
+            true
+        };
 
-        Some(Success {
-            status,
-            content_type,
-            content_length,
-        })
+        let failure_match = if let Some(failure_string) = self.failure_string.as_ref() {
+            body.contains(failure_string) || headers.contains(failure_string)
+        } else {
+            false
+        };
+
+        if success_match && !failure_match {
+            Some(Success {
+                status,
+                content_type,
+                content_length,
+            })
+        } else {
+            None
+        }
     }
 
     fn setup_headers(&self) -> HeaderMap {
@@ -454,6 +466,7 @@ impl Plugin for HTTP {
         };
 
         self.success_string = opts.http.http_success_string.clone();
+        self.failure_string = opts.http.http_failure_string.clone();
         self.success_codes = opts
             .http
             .http_success_codes
@@ -518,5 +531,66 @@ impl Plugin for HTTP {
         } else {
             self.http_request_attempt(creds, timeout).await
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // simplified version of HTTP::is_success
+    fn is_success_logic(
+        success_string: Option<&str>,
+        failure_string: Option<&str>,
+        body: &str,
+    ) -> bool {
+        let success_match = if let Some(success_string) = success_string.as_ref() {
+            body.contains(success_string)
+        } else {
+            true
+        };
+
+        let failure_match = if let Some(failure_string) = failure_string.as_ref() {
+            body.contains(failure_string)
+        } else {
+            false
+        };
+
+        if success_match && !failure_match {
+            true
+        } else {
+            false
+        }
+    }
+
+    #[test]
+    fn test_success_failure_strings_logic() {
+        assert!(is_success_logic(None, None, "anything"));
+
+        assert!(!is_success_logic(Some("login ok"), None, "nope"));
+
+        assert!(is_success_logic(Some("login ok"), None, "sir login ok sir"));
+
+        assert!(is_success_logic(
+            None,
+            Some("wrong credentials"),
+            "all good"
+        ));
+
+        assert!(!is_success_logic(
+            None,
+            Some("wrong credentials"),
+            "you sent the wrong credentials, freaking moron!"
+        ));
+
+        assert!(!is_success_logic(
+            Some("credentials"),
+            Some("wrong credentials"),
+            "you sent the wrong credentials, freaking moron!"
+        ));
+
+        assert!(is_success_logic(
+            Some("credentials"),
+            Some("wrong credentials"),
+            "i like your credentials"
+        ));
     }
 }
