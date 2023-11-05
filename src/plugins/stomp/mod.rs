@@ -57,7 +57,8 @@ impl Plugin for STOMP {
         stream.read(&mut buffer).await.map_err(|e| e.to_string())?;
 
         if buffer.starts_with(CONNECTED_RESPONSE) {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "stomp",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

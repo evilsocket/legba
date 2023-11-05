@@ -76,7 +76,8 @@ impl Plugin for LDAP {
             .await
         {
             return Ok(if res.success().is_ok() {
-                Some(Loot::from(
+                Some(Loot::new(
+                    "ldap",
                     &address,
                     [
                         ("username".to_owned(), creds.username.to_owned()),

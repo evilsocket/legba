@@ -73,7 +73,8 @@ impl Plugin for SSH {
         .map_err(|e| e.to_string())?;
 
         if res.is_ok() {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "ssh",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

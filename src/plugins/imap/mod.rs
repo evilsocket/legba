@@ -39,7 +39,8 @@ impl Plugin for IMAP {
         let stream = crate::utils::net::async_tcp_stream(&address, timeout, true).await?;
         let client = async_imap::Client::new(stream);
         if client.login(&creds.username, &creds.password).await.is_ok() {
-            return Ok(Some(Loot::from(
+            return Ok(Some(Loot::new(
+                "imap",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

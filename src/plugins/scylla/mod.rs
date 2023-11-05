@@ -44,7 +44,8 @@ impl Plugin for Scylla {
             .await;
 
         if session.is_ok() {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "scylla",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

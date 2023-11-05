@@ -332,7 +332,8 @@ impl HTTP {
                     "".to_owned()
                 };
                 Ok(if self.is_success(res).await.is_some() {
-                    Some(Loot::from(
+                    Some(Loot::new(
+                        "http",
                         &target,
                         [
                             ("username".to_owned(), creds.username.to_owned()),
@@ -380,7 +381,8 @@ impl HTTP {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
                 if let Some(success) = self.is_success(res).await {
-                    Ok(Some(Loot::from(
+                    Ok(Some(Loot::new(
+                        "http.enum",
                         &target,
                         [
                             ("page".to_owned(), url),

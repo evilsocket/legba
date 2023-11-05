@@ -45,7 +45,8 @@ impl Plugin for FTP {
             .map_err(|e| e.to_string())?;
 
         if stream.login(&creds.username, &creds.password).await.is_ok() {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "ftp",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

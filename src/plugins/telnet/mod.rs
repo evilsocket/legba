@@ -58,7 +58,8 @@ impl Plugin for Telnet {
             .map_err(|e| e.to_string())?;
 
         if client.login(&creds.username, &creds.password).await.is_ok() {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "telnet",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

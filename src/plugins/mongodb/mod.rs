@@ -54,7 +54,8 @@ impl Plugin for MongoDB {
         let dbs = cli.list_database_names(None, None).await;
 
         if let Ok(dbs) = dbs {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "mongodb",
                 &host,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

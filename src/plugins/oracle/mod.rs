@@ -56,6 +56,7 @@ impl Plugin for Oracle {
             Err("timed out".to_owned())
         } else if let Ok(_) = op.unwrap() {
             Ok(Some(Loot::from(
+                "oracle",
                 &self.host,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

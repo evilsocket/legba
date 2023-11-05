@@ -58,7 +58,8 @@ impl Kerberos {
                         true,
                         true,
                         Some(
-                            Loot::from(
+                            Loot::new(
+                                "kerberos",
                                 &server.to_string(),
                                 [("username".to_owned(), creds.username.to_owned())],
                             )
@@ -72,7 +73,8 @@ impl Kerberos {
                         true,
                         false,
                         Some(
-                            Loot::from(
+                            Loot::new(
+                                "kerberos",
                                 &server.to_string(),
                                 [
                                     ("username".to_owned(), creds.username.to_owned()),
@@ -89,7 +91,8 @@ impl Kerberos {
                         true,
                         false,
                         Some(
-                            Loot::from(
+                            Loot::new(
+                                "kerberos",
                                 &server.to_string(),
                                 [
                                     ("username".to_owned(), creds.username.to_owned()),
@@ -118,7 +121,8 @@ impl Kerberos {
         if AsRep::parse(raw).is_ok() {
             return (
                 true,
-                Some(Loot::from(
+                Some(Loot::new(
+                    "kerberos",
                     &server.to_string(),
                     [
                         ("username".to_owned(), creds.username.to_owned()),

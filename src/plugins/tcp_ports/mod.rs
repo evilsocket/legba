@@ -72,7 +72,8 @@ impl Plugin for TcpPortScanner {
             .await
             .is_ok()
         {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "tcp.ports",
                 &target,
                 [
                     ("proto".to_owned(), "tcp".to_owned()),

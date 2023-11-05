@@ -61,7 +61,8 @@ impl Plugin for VNC {
         .map_err(|e| e.to_string())?;
 
         if vnc.is_ok() && vnc.unwrap().finish().is_ok() {
-            return Ok(Some(Loot::from(
+            return Ok(Some(Loot::new(
+                "vnc",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

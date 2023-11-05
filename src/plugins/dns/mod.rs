@@ -78,7 +78,8 @@ impl Plugin for DNS {
         if let Ok(response) = self.resolver.as_ref().unwrap().lookup_ip(&subdomain).await {
             let addresses: Vec<IpAddr> = response.iter().filter(|ip| !ip.is_loopback()).collect();
             if !addresses.is_empty() {
-                return Ok(Some(Loot::from(
+                return Ok(Some(Loot::new(
+                    "dns",
                     &subdomain,
                     [(
                         "addresses".to_owned(),

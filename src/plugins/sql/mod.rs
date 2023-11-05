@@ -66,7 +66,8 @@ impl SQL {
         .map_err(|e| e.to_string())?;
 
         if pool.is_ok() {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                scheme,
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

@@ -142,7 +142,8 @@ impl Plugin for MSSQL {
             .map_err(|e| e.to_string())?;
 
         if resp.len() > 10 && resp[8] == 0xe3 {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "mssql",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

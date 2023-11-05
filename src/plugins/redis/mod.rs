@@ -56,7 +56,8 @@ impl Plugin for Redis {
             .map_err(|e| e.to_string())?;
 
         if buffer.starts_with(&[b'+', b'O', b'K']) {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "redis",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),

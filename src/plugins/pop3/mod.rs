@@ -54,7 +54,8 @@ impl Plugin for POP3 {
                 .map_err(|e| e.to_string())?;
 
             if client.login(&creds.username, &creds.password).await.is_ok() {
-                return Ok(Some(Loot::from(
+                return Ok(Some(Loot::new(
+                    "pop3",
                     &address.0,
                     [
                         ("username".to_owned(), creds.username.to_owned()),
@@ -69,7 +70,8 @@ impl Plugin for POP3 {
                 .map_err(|e| e.to_string())?;
 
             if client.login(&creds.username, &creds.password).await.is_ok() {
-                return Ok(Some(Loot::from(
+                return Ok(Some(Loot::new(
+                    "pop3",
                     &address.0,
                     [
                         ("username".to_owned(), creds.username.to_owned()),

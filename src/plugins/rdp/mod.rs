@@ -72,7 +72,8 @@ impl Plugin for RDP {
         }
 
         if rdp_connector.connect(stream).is_ok() {
-            Ok(Some(Loot::from(
+            Ok(Some(Loot::new(
+                "rdp",
                 &address.to_string(),
                 [
                     ("username".to_owned(), creds.username.to_owned()),

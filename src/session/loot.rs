@@ -21,20 +21,27 @@ pub(crate) enum OutputFormat {
 pub(crate) struct Loot {
     found_at: DateTime<Local>,
     target: String,
+    plugin: String,
     data: IndexMap<String, String>,
     partial: bool,
 }
 
 impl Loot {
-    pub fn from<I: IntoIterator<Item = (String, String)>>(target: &str, iterable: I) -> Self {
+    pub fn new<I: IntoIterator<Item = (String, String)>>(
+        plugin: &str,
+        target: &str,
+        iterable: I,
+    ) -> Self {
         let found_at = chrono::Local::now();
         let target = target.to_string();
+        let plugin = plugin.to_string();
         let data = IndexMap::from_iter(iterable);
         let partial = false;
         Self {
-            data,
-            target,
             found_at,
+            target,
+            plugin,
+            data,
             partial,
         }
     }
@@ -64,9 +71,15 @@ impl Loot {
                     .join("\t");
 
                 if self.target.is_empty() {
-                    format!("[{}] {}", self.found_at_string(), data)
+                    format!("[{}] ({}) {}", self.found_at_string(), &self.plugin, data)
                 } else {
-                    format!("[{}] <{}> {}", self.found_at_string(), &self.target, data)
+                    format!(
+                        "[{}] ({}) <{}> {}",
+                        self.found_at_string(),
+                        &self.plugin,
+                        &self.target,
+                        data
+                    )
                 }
             }
         };
@@ -92,12 +105,19 @@ impl fmt::Display for Loot {
         }
 
         if self.target.is_empty() {
-            write!(f, "[{}] {}", self.found_at_string(), str.trim_end())
+            write!(
+                f,
+                "[{}] ({}) {}",
+                self.found_at_string(),
+                &self.plugin,
+                str.trim_end()
+            )
         } else {
             write!(
                 f,
-                "[{}] <{}> {}",
+                "[{}] ({}) <{}> {}",
                 self.found_at_string(),
+                &self.plugin,
                 &self.target,
                 str.trim_end()
             )
