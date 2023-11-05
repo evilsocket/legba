@@ -1,7 +1,7 @@
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::session;
+use crate::{creds, session};
 
 // NOTE: normally we'd be using clap subcommands, but this approach allows us more flexibility
 // for plugins registered at runtime, aliases (like ssh/sftp) and so on.
@@ -11,27 +11,38 @@ use crate::session;
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
 #[clap(version, arg_required_else_help(true))]
 pub(crate) struct Options {
-    #[clap(long, default_value_t = false)]
+    #[clap(short = 'L', long, default_value_t = false)]
     /// List all available protocol plugins.
     pub list_plugins: bool,
-
     /// Protocol plugin to use, run with --list-plugins for a list of all available plugins.
     pub plugin: Option<String>,
-    /// Target host, url or IP address.
-    #[clap(short, long)]
+
+    /// Single target host, url or IP address, IP range, CIDR, @filename or comma separated combination of them.
+    #[clap(short = 'T', long)]
     pub target: Option<String>,
+
     /// Constant, filename, glob expression as @/some/path/*.txt, permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
-    #[clap(long, visible_alias = "payloads")]
+    #[clap(short = 'U', long, visible_alias = "payloads")]
     pub username: Option<String>,
     /// Constant, filename, glob expression as @/some/path/*.txt or permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
-    #[clap(long, visible_alias = "key")]
+    #[clap(short = 'P', long, visible_alias = "key")]
     pub password: Option<String>,
+    /// Load username:password combinations from this file.
+    #[clap(short = 'C', long)]
+    pub combinations: Option<String>,
+    /// Separator if using the --combinations/-C argument.
+    #[clap(long, default_value = ":")]
+    pub separator: String,
+
+    /// Whether to iterate by user or by password.
+    #[clap(short = 'I', long, value_enum, default_value_t = creds::IterationStrategy::User)]
+    pub iterate_by: creds::IterationStrategy,
 
     /// Save and restore session information to this file.
-    #[clap(short, long)]
+    #[clap(short = 'S', long)]
     pub session: Option<String>,
     /// Save results to this file.
-    #[clap(short, long)]
+    #[clap(short = 'O', long)]
     pub output: Option<String>,
     /// Output file format.
     #[clap(long, value_enum, default_value_t = session::loot::OutputFormat::Text)]
@@ -60,6 +71,9 @@ pub(crate) struct Options {
     /// Limit the number of requests per second.
     #[clap(long, default_value_t = 0)]
     pub rate_limit: usize,
+    /// Wait time in milliseconds per login attempt.
+    #[clap(short = 'W', long, default_value_t = 0)]
+    pub wait: usize,
     /// Minimum number of milliseconds for random request jittering.
     #[clap(long, default_value_t = 0)]
     pub jitter_min: u64,
@@ -67,7 +81,7 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = 0)]
     pub jitter_max: u64,
     /// Do not report statistics.
-    #[clap(long, default_value_t = false)]
+    #[clap(short = 'Q', long, default_value_t = false)]
     pub quiet: bool,
 
     #[cfg(feature = "amqp")]
@@ -109,6 +123,7 @@ pub(crate) struct Options {
     #[cfg(feature = "redis")]
     #[clap(flatten, next_help_heading = "REDIS")]
     pub redis: crate::plugins::redis::options::Options,
+    #[cfg(feature = "tcp_ports")]
     #[clap(flatten, next_help_heading = "TCP PORT SCANNER")]
     pub tcp_ports: crate::plugins::tcp_ports::options::Options,
 }

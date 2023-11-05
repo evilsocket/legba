@@ -25,9 +25,11 @@ pub(crate) async fn statistics(session: Arc<Session>) {
 
         if errors > 0 {
             log::info!(
-                "tasks={} mem={} done={} ({:.2?}%) errors={} speed={:.2?} reqs/s",
+                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) errors={} speed={:.2?} reqs/s",
                 session.options.concurrency,
                 human_bytes(memory as f64),
+                session.targets.len(),
+                total,
                 done,
                 perc,
                 errors,
@@ -35,9 +37,11 @@ pub(crate) async fn statistics(session: Arc<Session>) {
             );
         } else {
             log::info!(
-                "tasks={} mem={} done={} ({:.2?}%) speed={:.2?} reqs/s",
+                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) speed={:.2?} reqs/s",
                 session.options.concurrency,
                 human_bytes(memory as f64),
+                session.targets.len(),
+                total,
                 done,
                 perc,
                 speed,

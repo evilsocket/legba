@@ -18,19 +18,11 @@ fn register() {
 }
 
 #[derive(Clone)]
-pub(crate) struct FTP {
-    host: String,
-    port: u16,
-    address: String,
-}
+pub(crate) struct FTP {}
 
 impl FTP {
     pub fn new() -> Self {
-        FTP {
-            host: String::new(),
-            port: 21,
-            address: String::new(),
-        }
+        FTP {}
     }
 }
 
@@ -40,23 +32,27 @@ impl Plugin for FTP {
         "FTP password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 21)?;
-        self.address = format!("{}:{}", &self.host, self.port);
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let mut stream = tokio::time::timeout(timeout, FtpStream::connect(&self.address))
+        let address = utils::parse_target_address(&creds.target, 21)?;
+
+        let mut stream = tokio::time::timeout(timeout, FtpStream::connect(&address))
             .await
             .map_err(|e| e.to_string())?
             .map_err(|e| e.to_string())?;
 
         if stream.login(&creds.username, &creds.password).await.is_ok() {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::new(
+                "ftp",
+                &address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }

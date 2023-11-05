@@ -1,17 +1,28 @@
 use crate::session::Error;
 
-pub(crate) fn parse_target(
-    target_arg: Option<&String>,
-    default_port: u16,
-) -> Result<(String, u16), Error> {
-    let target = if let Some(target) = target_arg {
-        target
+pub(crate) fn parse_target(target: &str, default_port: u16) -> Result<(String, u16), Error> {
+    if target.contains(' ') || target.contains(',') {
+        return Err(format!(
+            "'{}' is not a valid target, maybe you meant to use --multiple instead of --target?",
+            target
+        ));
+    }
+
+    // remove <proto>:// if present
+    let target = if target.contains("://") {
+        target.split_once("://").unwrap().1
     } else {
-        return Err("no --target argument specified".to_string());
+        target
+    };
+
+    // remove /<whatever> if present
+    let target = if target.contains('/') {
+        target.split_once('/').unwrap().0
+    } else {
+        target
     };
 
     let num_colons = target.matches(':').count();
-
     let (address, port) = if num_colons <= 1 {
         // domain or ipv4
         if let Some((ip, prt)) = target.rsplit_once(':') {
@@ -39,44 +50,40 @@ pub(crate) fn parse_target(
     Ok((address, port))
 }
 
+#[inline]
+pub(crate) fn parse_target_address(target: &str, default_port: u16) -> Result<String, Error> {
+    let (host, port) = parse_target(target, default_port)?;
+    Ok(format!("{}:{}", host, port))
+}
+
 #[cfg(test)]
 mod tests {
     use super::parse_target;
 
     #[test]
-    fn returns_error_if_no_target() {
-        let res = parse_target(None, 0);
-        assert!(res.is_err());
-    }
-
-    #[test]
     fn returns_default_port_if_not_provided_ipv4() {
-        let target = Some("127.0.0.1".to_owned());
-        let (address, port) = parse_target(target.as_ref(), 4444).unwrap();
+        let (address, port) = parse_target("127.0.0.1", 4444).unwrap();
         assert_eq!(address, "127.0.0.1");
         assert_eq!(port, 4444);
     }
 
     #[test]
     fn parses_port_if_provided_ipv4() {
-        let target = Some("127.0.0.1:8080".to_owned());
-        let (address, port) = parse_target(target.as_ref(), 4444).unwrap();
+        let (address, port) = parse_target("127.0.0.1:8080", 4444).unwrap();
         assert_eq!(address, "127.0.0.1");
         assert_eq!(port, 8080);
     }
 
     #[test]
     fn returns_default_port_if_not_provided_ipv6() {
-        let target = Some("::1".to_owned());
-        let (address, port) = parse_target(target.as_ref(), 4444).unwrap();
+        let (address, port) = parse_target("::1", 4444).unwrap();
         assert_eq!(address, "::1");
         assert_eq!(port, 4444);
     }
 
     #[test]
     fn parses_port_if_provided_ipv6() {
-        let target = Some("[::1]:8080".to_owned());
-        let (address, port) = parse_target(target.as_ref(), 4444).unwrap();
+        let (address, port) = parse_target("[::1]:8080", 4444).unwrap();
         assert_eq!(address, "::1");
         assert_eq!(port, 8080);
     }

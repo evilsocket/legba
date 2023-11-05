@@ -4,12 +4,12 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use serde::{Deserialize, Serialize};
 
-use crate::creds::Combinator;
+use crate::creds::{Combinator, Expression};
 use crate::Options;
 
 pub(crate) mod loot;
 
-use crate::plugins::Plugin;
+use crate::utils::{parse_multiple_targets, parse_target};
 pub(crate) use crate::Credentials;
 pub(crate) use loot::Loot;
 
@@ -49,7 +49,6 @@ async fn periodic_saver(session: Arc<Session>, persistent: bool) {
 
 #[derive(Debug)]
 struct Runtime {
-    started_at: time::Instant,
     stop: AtomicBool,
     creds_tx: async_channel::Sender<Credentials>,
     creds_rx: async_channel::Receiver<Credentials>,
@@ -60,7 +59,6 @@ impl Default for Runtime {
     fn default() -> Self {
         let (creds_tx, creds_rx) = async_channel::unbounded();
         Self {
-            started_at: time::Instant::now(),
             stop: AtomicBool::new(false),
             speed: AtomicUsize::new(0),
             creds_tx,
@@ -73,7 +71,6 @@ impl Runtime {
     fn new(concurrency: usize) -> Self {
         let (creds_tx, creds_rx) = async_channel::bounded(concurrency);
         Self {
-            started_at: time::Instant::now(),
             stop: AtomicBool::new(false),
             speed: AtomicUsize::new(0),
             creds_tx,
@@ -85,7 +82,7 @@ impl Runtime {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct Session {
     pub options: Options,
-
+    pub targets: Vec<String>,
     pub total: AtomicUsize,
     pub done: AtomicUsize,
     pub errors: AtomicUsize,
@@ -96,6 +93,50 @@ pub(crate) struct Session {
 }
 
 impl Session {
+    fn from_options(options: Options) -> Result<Arc<Self>, Error> {
+        let targets = if let Some(target) = options.target.as_ref() {
+            parse_multiple_targets(target)?
+        } else {
+            return Err("no --target/-T argument provided".to_owned());
+        };
+
+        if targets.is_empty() {
+            return Err("empty list of target(s) provided".to_owned());
+        }
+
+        // perform pre-emptive target validation
+        for target in &targets {
+            parse_target(target, 0)?;
+        }
+
+        let num_targets = targets.len();
+        log::info!(
+            "target{}: {}",
+            if num_targets > 1 {
+                format!("s ({})", num_targets)
+            } else {
+                "".to_owned()
+            },
+            options.target.as_ref().unwrap()
+        );
+
+        let runtime = Runtime::new(options.concurrency);
+        let total = AtomicUsize::new(0);
+        let done = AtomicUsize::new(0);
+        let errors = AtomicUsize::new(0);
+        let results = Mutex::new(vec![]);
+
+        Ok(Arc::new(Self {
+            options,
+            targets,
+            total,
+            done,
+            errors,
+            results,
+            runtime,
+        }))
+    }
+
     fn from_disk(path: &str) -> Result<Arc<Self>, Error> {
         log::debug!("restoring session from {}", path);
 
@@ -105,17 +146,6 @@ impl Session {
         session.runtime = Runtime::new(session.options.concurrency);
 
         Ok(Arc::new(session))
-    }
-
-    fn from_options(options: Options) -> Arc<Self> {
-        Arc::new(Self {
-            runtime: Runtime::new(options.concurrency),
-            total: AtomicUsize::new(0),
-            done: AtomicUsize::new(0),
-            errors: AtomicUsize::new(0),
-            results: Mutex::new(vec![]),
-            options,
-        })
     }
 
     pub fn new(options: Options) -> Result<Arc<Self>, Error> {
@@ -129,11 +159,11 @@ impl Session {
                 Self::from_disk(path)?
             } else {
                 // create new with persistency
-                Self::from_options(options)
+                Self::from_options(options)?
             }
         } else {
             // create new without persistency
-            Self::from_options(options)
+            Self::from_options(options)?
         };
 
         // set ctrl-c handler
@@ -197,14 +227,18 @@ impl Session {
         self.runtime.speed.load(Ordering::Relaxed)
     }
 
-    pub fn combinations(&self, plugin: &'static dyn Plugin) -> Result<Combinator, Error> {
-        let single = plugin.single_credential();
-
-        let combinator = if let Some(expr) = plugin.override_payload() {
-            Combinator::from_plugin_override(expr, self.get_done(), self.options.clone())?
-        } else {
-            Combinator::from_options(self.options.clone(), self.get_done(), single)?
-        };
+    pub fn combinations(
+        &self,
+        override_payload: Option<Expression>,
+        single: bool,
+    ) -> Result<Combinator, Error> {
+        let combinator = Combinator::create(
+            &self.targets,
+            self.options.clone(),
+            self.get_done(),
+            single,
+            override_payload,
+        )?;
 
         self.set_total(combinator.search_space_size());
 
@@ -241,11 +275,7 @@ impl Session {
                 results.push(loot.clone());
 
                 // report credentials to screen
-                log::info!(
-                    "[{:?}] result found: {}",
-                    self.runtime.started_at.elapsed(),
-                    &loot
-                );
+                log::info!("{}", &loot);
 
                 // check if we have to output to file
                 if let Some(path) = &self.options.output {
@@ -255,7 +285,7 @@ impl Session {
                 }
 
                 // if we only need one match, stop
-                if !loot.partial && self.options.single_match {
+                if !loot.is_partial() && self.options.single_match {
                     self.set_stop();
                 }
 

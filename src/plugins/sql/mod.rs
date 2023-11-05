@@ -39,18 +39,13 @@ pub(crate) enum Flavour {
 #[derive(Clone)]
 pub(crate) struct SQL {
     flavour: Flavour,
-    host: String,
     port: u16,
 }
 
 impl SQL {
     pub fn new(flavour: Flavour) -> Self {
         let port = *DEFAULT_PORTS.get(&flavour).unwrap();
-        SQL {
-            flavour,
-            port,
-            host: String::new(),
-        }
+        SQL { flavour, port }
     }
 
     async fn do_attempt<DB: sqlx::Database>(
@@ -59,21 +54,26 @@ impl SQL {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
+        let address = utils::parse_target_address(&creds.target, self.port)?;
         let pool = tokio::time::timeout(
             timeout,
             PoolOptions::<DB>::new().connect(&format!(
-                "{}://{}:{}@{}:{}/",
-                scheme, &creds.username, &creds.password, &self.host, self.port
+                "{}://{}:{}@{}/",
+                scheme, &creds.username, &creds.password, &address
             )),
         )
         .await
         .map_err(|e| e.to_string())?;
 
         if pool.is_ok() {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::new(
+                scheme,
+                &address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }
@@ -86,8 +86,7 @@ impl Plugin for SQL {
         DESCRIPTIONS.get(&self.flavour).unwrap()
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), self.port)?;
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 

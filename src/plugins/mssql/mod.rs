@@ -64,19 +64,11 @@ fn register() {
 }
 
 #[derive(Clone)]
-pub(crate) struct MSSQL {
-    host: String,
-    port: u16,
-    address: String,
-}
+pub(crate) struct MSSQL {}
 
 impl MSSQL {
     pub fn new() -> Self {
-        MSSQL {
-            port: 1433,
-            host: String::new(),
-            address: String::new(),
-        }
+        MSSQL {}
     }
 }
 
@@ -86,14 +78,14 @@ impl Plugin for MSSQL {
         "Microsoft SQL Server password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 1433)?;
-        self.address = format!("{}:{}", &self.host, self.port);
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let mut stream = crate::utils::net::async_tcp_stream(&self.address, timeout, false).await?;
+        let address = utils::parse_target_address(&creds.target, 1433)?;
+
+        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
 
         let username = if creds.username.len() > MS_MAX_LEN {
             creds.username[..MS_MAX_LEN].to_owned()
@@ -150,10 +142,14 @@ impl Plugin for MSSQL {
             .map_err(|e| e.to_string())?;
 
         if resp.len() > 10 && resp[8] == 0xe3 {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::new(
+                "mssql",
+                &address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }

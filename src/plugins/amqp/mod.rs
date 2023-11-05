@@ -22,16 +22,12 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct AMQP {
-    address: String,
     ssl: bool,
 }
 
 impl AMQP {
     pub fn new() -> Self {
-        AMQP {
-            address: String::new(),
-            ssl: false,
-        }
+        AMQP { ssl: false }
     }
 }
 
@@ -42,15 +38,13 @@ impl Plugin for AMQP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        let (host, port) = utils::parse_target(opts.target.as_ref(), 5672)?;
-        self.address = format!("{}:{}", host, port);
         self.ssl = opts.amqp.amqp_ssl;
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let mut stream =
-            crate::utils::net::async_tcp_stream(&self.address, timeout, self.ssl).await?;
+        let address = utils::parse_target_address(&creds.target, 5672)?;
+        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, self.ssl).await?;
 
         // send proto header
         stream
@@ -108,10 +102,14 @@ impl Plugin for AMQP {
         stream.read(&mut buffer).await.map_err(|e| e.to_string())?;
 
         if buffer[0] == 0x01 {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::new(
+                "amqp",
+                &address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }

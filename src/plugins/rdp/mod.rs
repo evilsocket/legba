@@ -22,18 +22,12 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct RDP {
-    host: String,
-    port: u16,
-    address: SocketAddr,
     options: options::Options,
 }
 
 impl RDP {
     pub fn new() -> Self {
         RDP {
-            host: String::new(),
-            address: "127.0.0.1:3389".parse::<SocketAddr>().unwrap(),
-            port: 3389,
             options: options::Options::default(),
         }
     }
@@ -46,17 +40,17 @@ impl Plugin for RDP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 3389)?;
-        self.address = format!("{}:{}", &self.host, self.port)
-            .parse::<SocketAddr>()
-            .map_err(|e| e.to_string())?;
         self.options = opts.rdp.clone();
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let stream =
-            TcpStream::connect_timeout(&self.address, timeout).map_err(|e| e.to_string())?;
+        let (host, port) = utils::parse_target(&creds.target, 3389)?;
+        let address = format!("{}:{}", &host, port)
+            .parse::<SocketAddr>()
+            .map_err(|e| e.to_string())?;
+
+        let stream = TcpStream::connect_timeout(&address, timeout).map_err(|e| e.to_string())?;
 
         let mut rdp_connector = Connector::new()
             .screen(800, 600)
@@ -78,10 +72,14 @@ impl Plugin for RDP {
         }
 
         if rdp_connector.connect(stream).is_ok() {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])))
+            Ok(Some(Loot::new(
+                "rdp",
+                &address.to_string(),
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
         } else {
             Ok(None)
         }

@@ -3,6 +3,9 @@ use crate::{creds, session::Error};
 use super::permutator::Permutator;
 
 pub(crate) struct Permutations {
+    charset: String,
+    min_length: usize,
+    max_length: usize,
     permutator: Permutator,
     elements: usize,
 }
@@ -19,6 +22,9 @@ impl Permutations {
         let elements = permutator.search_space_size();
 
         Ok(Self {
+            charset,
+            min_length,
+            max_length,
             permutator,
             elements,
         })
@@ -28,6 +34,12 @@ impl Permutations {
 impl creds::Iterator for Permutations {
     fn search_space_size(&self) -> usize {
         self.elements
+    }
+}
+
+impl creds::IteratorClone for Permutations {
+    fn create_boxed_copy(&self) -> Box<dyn creds::Iterator> {
+        Box::new(Self::new(self.charset.clone(), self.min_length, self.max_length).unwrap())
     }
 }
 

@@ -589,8 +589,22 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-targets",
+]
+
+[[package]]
+name = "cidr-utils"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2315f7119b7146d6a883de6acd63ddf96071b5f79d9d98d2adaa84d749f6abf1"
+dependencies = [
+ "debug-helper",
+ "num-bigint 0.4.4",
+ "num-traits",
+ "once_cell",
+ "regex",
 ]
 
 [[package]]
@@ -925,6 +939,12 @@ name = "data-encoding"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2e66c9d817f1720209181c316d28635c050fa304f9c79e47a520882661b7308"
+
+[[package]]
+name = "debug-helper"
+version = "0.3.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f578e8e2c440e7297e008bb5486a3a8a194775224bbc23729b0dbdfaeebf162e"
 
 [[package]]
 name = "der"
@@ -1946,7 +1966,7 @@ dependencies = [
 
 [[package]]
 name = "legba"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "ansi_term",
@@ -1960,6 +1980,7 @@ dependencies = [
  "async_ftp",
  "base64 0.21.5",
  "chrono",
+ "cidr-utils",
  "clap",
  "ctor",
  "ctrlc",
@@ -1968,6 +1989,7 @@ dependencies = [
  "hex",
  "human_bytes",
  "indexmap 2.0.2",
+ "itertools",
  "kerberos_asn1",
  "kerberos_constants",
  "kerberos_crypto",

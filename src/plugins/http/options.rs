@@ -12,6 +12,9 @@ pub(crate) struct Options {
     #[clap(long)]
     /// Check for the presence of this string in the response in order to recognize a succesful attempt.
     pub http_success_string: Option<String>,
+    #[clap(long)]
+    /// Check for the presence of this string in the response in order to recognize a failed attempt.
+    pub http_failure_string: Option<String>,
     #[clap(long, default_value_t = false)]
     /// Follow HTTP redirects.
     pub http_follow_redirects: bool,

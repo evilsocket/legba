@@ -20,16 +20,12 @@ fn register() {
 
 #[derive(Clone)]
 pub(crate) struct DNS {
-    target: String,
     resolver: Option<TokioAsyncResolver>,
 }
 
 impl DNS {
     pub fn new() -> Self {
-        DNS {
-            target: String::new(),
-            resolver: None,
-        }
+        DNS { resolver: None }
     }
 }
 
@@ -44,12 +40,6 @@ impl Plugin for DNS {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        if let Some(target) = opts.target.as_ref() {
-            self.target = target.clone();
-        } else {
-            return Err("no --target base domain specified".to_string());
-        }
-
         self.resolver = Some(if let Some(resolvers) = opts.dns.dns_resolvers.as_ref() {
             let ips: Vec<IpAddr> = resolvers
                 .split(',')
@@ -84,21 +74,22 @@ impl Plugin for DNS {
     }
 
     async fn attempt(&self, creds: &Credentials, _: Duration) -> Result<Option<Loot>, Error> {
-        let subdomain = format!("{}.{}", creds.single(), &self.target);
+        let subdomain = format!("{}.{}", creds.single(), &creds.target);
         if let Ok(response) = self.resolver.as_ref().unwrap().lookup_ip(&subdomain).await {
             let addresses: Vec<IpAddr> = response.iter().filter(|ip| !ip.is_loopback()).collect();
             if !addresses.is_empty() {
-                return Ok(Some(Loot::from([
-                    ("subdomain".to_owned(), subdomain),
-                    (
+                return Ok(Some(Loot::new(
+                    "dns",
+                    &subdomain,
+                    [(
                         "addresses".to_owned(),
                         addresses
                             .iter()
                             .map(|a| a.to_string())
                             .collect::<Vec<String>>()
                             .join(", "),
-                    ),
-                ])));
+                    )],
+                )));
             }
         }
 

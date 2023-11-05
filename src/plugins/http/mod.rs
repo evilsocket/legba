@@ -56,8 +56,6 @@ pub(crate) struct HTTP {
     strategy: Strategy,
     client: Client,
 
-    target: String,
-
     csrf: Option<csrf::Config>,
 
     domain: String,
@@ -66,6 +64,7 @@ pub(crate) struct HTTP {
     random_ua: bool,
     success_codes: Vec<u16>,
     success_string: Option<String>,
+    failure_string: Option<String>,
 
     enum_ext: String,
     enum_ext_placeholder: String,
@@ -86,12 +85,12 @@ impl HTTP {
         HTTP {
             strategy,
             client: Client::default(),
-            target: String::new(),
             csrf: None,
             domain: String::new(),
             workstation: String::new(),
             success_codes: vec![200],
             success_string: None,
+            failure_string: None,
             enum_ext: String::new(),
             enum_ext_placeholder: String::new(),
             method: Method::GET,
@@ -102,6 +101,49 @@ impl HTTP {
             proxy_user: None,
             proxy_pass: None,
         }
+    }
+
+    fn get_target_url(&self, target: &str) -> Result<String, Error> {
+        // add default schema if not present
+        let target = if !target.contains("://") {
+            format!("http://{}", target)
+        } else {
+            target.to_owned()
+        };
+
+        // parse as url
+        let target_url = Url::parse(&target).map_err(|e| e.to_string())?;
+
+        return if self.strategy == Strategy::Enumeration {
+            let port_part = if let Some(port) = target_url.port() {
+                format!(":{}", port)
+            } else {
+                "".to_owned()
+            };
+
+            let path = target_url
+                .path()
+                .replace("%7BUSERNAME%7D", "{USERNAME}")
+                .replace("%7BPASSWORD%7D", "{PASSWORD}")
+                .replace("%7BPAYLOAD%7D", "{PAYLOAD}"); // undo query encoding of interpolation params
+
+            let query = if let Some(query) = target_url.query() {
+                format!("?{}", query)
+            } else {
+                "".to_owned()
+            };
+
+            Ok(format!(
+                "{}://{}{}{}{}",
+                target_url.scheme(),
+                target_url.host().unwrap(),
+                port_part,
+                path,
+                query
+            ))
+        } else {
+            Ok(target_url.to_string())
+        };
     }
 
     fn setup_request_body(
@@ -187,17 +229,27 @@ impl HTTP {
         let body = response.text().await.unwrap_or(String::new());
         let content_length = body.len();
 
-        if let Some(success_string) = self.success_string.as_ref() {
-            if !body.contains(success_string) && !headers.contains(success_string) {
-                return None;
-            }
-        }
+        let success_match = if let Some(success_string) = self.success_string.as_ref() {
+            body.contains(success_string) || headers.contains(success_string)
+        } else {
+            true
+        };
 
-        Some(Success {
-            status,
-            content_type,
-            content_length,
-        })
+        let failure_match = if let Some(failure_string) = self.failure_string.as_ref() {
+            body.contains(failure_string) || headers.contains(failure_string)
+        } else {
+            false
+        };
+
+        if success_match && !failure_match {
+            Some(Success {
+                status,
+                content_type,
+                content_length,
+            })
+        } else {
+            None
+        }
     }
 
     fn setup_headers(&self) -> HeaderMap {
@@ -219,6 +271,7 @@ impl HTTP {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
+        let target = self.get_target_url(&creds.target)?;
         let mut headers = self.setup_headers();
 
         // check if we are in a ntlm auth challenge context
@@ -229,7 +282,7 @@ impl HTTP {
                 } else {
                     2
                 },
-                &self.target,
+                &target,
                 self.client.clone(),
                 creds,
                 &self.domain,
@@ -262,7 +315,7 @@ impl HTTP {
         // build base request object
         let mut request = self
             .client
-            .request(self.method.clone(), &self.target)
+            .request(self.method.clone(), &target)
             .headers(headers)
             .timeout(timeout);
 
@@ -279,11 +332,15 @@ impl HTTP {
                     "".to_owned()
                 };
                 Ok(if self.is_success(res).await.is_some() {
-                    Some(Loot::from([
-                        ("username".to_owned(), creds.username.to_owned()),
-                        ("password".to_owned(), creds.password.to_owned()),
-                        ("cookie".to_owned(), cookie),
-                    ]))
+                    Some(Loot::new(
+                        "http",
+                        &target,
+                        [
+                            ("username".to_owned(), creds.username.to_owned()),
+                            ("password".to_owned(), creds.password.to_owned()),
+                            ("cookie".to_owned(), cookie),
+                        ],
+                    ))
                 } else {
                     None
                 })
@@ -296,16 +353,16 @@ impl HTTP {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
+        let target = self.get_target_url(&creds.target)?;
         let headers = self.setup_headers();
-
-        let url = if self.target.contains("{PAYLOAD}") {
+        let url = if target.contains("{PAYLOAD}") {
             // by interpolation
-            self.target.replace("{PAYLOAD}", &creds.username)
+            target.replace("{PAYLOAD}", &creds.username)
         } else {
             // by appending
             format!(
                 "{}{}",
-                &self.target,
+                &target,
                 creds
                     .username
                     .replace(&self.enum_ext_placeholder, &self.enum_ext)
@@ -324,12 +381,16 @@ impl HTTP {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
                 if let Some(success) = self.is_success(res).await {
-                    Ok(Some(Loot::from([
-                        ("page".to_owned(), url),
-                        ("status".to_owned(), success.status.to_string()),
-                        ("size".to_owned(), success.content_length.to_string()),
-                        ("type".to_owned(), success.content_type),
-                    ])))
+                    Ok(Some(Loot::new(
+                        "http.enum",
+                        &target,
+                        [
+                            ("page".to_owned(), url),
+                            ("status".to_owned(), success.status.to_string()),
+                            ("size".to_owned(), success.content_length.to_string()),
+                            ("type".to_owned(), success.content_type),
+                        ],
+                    )))
                 } else {
                     Ok(None)
                 }
@@ -356,50 +417,6 @@ impl Plugin for HTTP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        if let Some(target) = opts.target.as_ref() {
-            // add default schema if not present
-            let target = if !target.contains("://") {
-                format!("http://{}", target)
-            } else {
-                target.to_owned()
-            };
-
-            // parse as url
-            let target_url = Url::parse(&target).map_err(|e| e.to_string())?;
-            self.target = if self.strategy == Strategy::Enumeration {
-                let port_part = if let Some(port) = target_url.port() {
-                    format!(":{}", port)
-                } else {
-                    "".to_owned()
-                };
-
-                let path = target_url
-                    .path()
-                    .replace("%7BUSERNAME%7D", "{USERNAME}")
-                    .replace("%7BPASSWORD%7D", "{PASSWORD}")
-                    .replace("%7BPAYLOAD%7D", "{PAYLOAD}"); // undo query encoding of interpolation params
-
-                let query = if let Some(query) = target_url.query() {
-                    format!("?{}", query)
-                } else {
-                    "".to_owned()
-                };
-
-                format!(
-                    "{}://{}{}{}{}",
-                    target_url.scheme(),
-                    target_url.host().unwrap(),
-                    port_part,
-                    path,
-                    query
-                )
-            } else {
-                target_url.to_string()
-            };
-        } else {
-            return Err("no --target url specified".to_string());
-        }
-
         self.random_ua = opts.http.http_random_ua;
 
         self.csrf = if let Some(csrf_page) = opts.http.http_csrf_page.as_ref() {
@@ -451,6 +468,7 @@ impl Plugin for HTTP {
         };
 
         self.success_string = opts.http.http_success_string.clone();
+        self.failure_string = opts.http.http_failure_string.clone();
         self.success_codes = opts
             .http
             .http_success_codes
@@ -489,8 +507,9 @@ impl Plugin for HTTP {
                     self.proxy_pass.as_ref().unwrap(),
                 );
             }
+
             reqwest::Client::builder()
-                .proxy(proxy)
+                .proxy(proxy) // sets auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
                 .danger_accept_invalid_certs(true)
                 .redirect(redirect_policy)
                 .build()
@@ -498,6 +517,7 @@ impl Plugin for HTTP {
         } else {
             // plain client
             reqwest::Client::builder()
+                .no_proxy() // used to set auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
                 .danger_accept_invalid_certs(true)
                 .redirect(redirect_policy)
                 .build()
@@ -513,5 +533,66 @@ impl Plugin for HTTP {
         } else {
             self.http_request_attempt(creds, timeout).await
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // simplified version of HTTP::is_success
+    fn is_success_logic(
+        success_string: Option<&str>,
+        failure_string: Option<&str>,
+        body: &str,
+    ) -> bool {
+        let success_match = if let Some(success_string) = success_string.as_ref() {
+            body.contains(success_string)
+        } else {
+            true
+        };
+
+        let failure_match = if let Some(failure_string) = failure_string.as_ref() {
+            body.contains(failure_string)
+        } else {
+            false
+        };
+
+        if success_match && !failure_match {
+            true
+        } else {
+            false
+        }
+    }
+
+    #[test]
+    fn test_success_failure_strings_logic() {
+        assert!(is_success_logic(None, None, "anything"));
+
+        assert!(!is_success_logic(Some("login ok"), None, "nope"));
+
+        assert!(is_success_logic(Some("login ok"), None, "sir login ok sir"));
+
+        assert!(is_success_logic(
+            None,
+            Some("wrong credentials"),
+            "all good"
+        ));
+
+        assert!(!is_success_logic(
+            None,
+            Some("wrong credentials"),
+            "you sent the wrong credentials, freaking moron!"
+        ));
+
+        assert!(!is_success_logic(
+            Some("credentials"),
+            Some("wrong credentials"),
+            "you sent the wrong credentials, freaking moron!"
+        ));
+
+        assert!(is_success_logic(
+            Some("credentials"),
+            Some("wrong credentials"),
+            "i like your credentials"
+        ));
     }
 }

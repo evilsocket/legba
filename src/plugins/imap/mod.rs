@@ -16,15 +16,11 @@ fn register() {
 }
 
 #[derive(Clone)]
-pub(crate) struct IMAP {
-    address: String,
-}
+pub(crate) struct IMAP {}
 
 impl IMAP {
     pub fn new() -> Self {
-        IMAP {
-            address: String::new(),
-        }
+        IMAP {}
     }
 }
 
@@ -34,20 +30,23 @@ impl Plugin for IMAP {
         "IMAP password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        let (host, port) = utils::parse_target(opts.target.as_ref(), 993)?;
-        self.address = format!("{}:{}", host, port);
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        let stream = crate::utils::net::async_tcp_stream(&self.address, timeout, true).await?;
+        let address = utils::parse_target_address(&creds.target, 993)?;
+        let stream = crate::utils::net::async_tcp_stream(&address, timeout, true).await?;
         let client = async_imap::Client::new(stream);
         if client.login(&creds.username, &creds.password).await.is_ok() {
-            return Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-            ])));
+            return Ok(Some(Loot::new(
+                "imap",
+                &address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )));
         }
 
         Ok(None)

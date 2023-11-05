@@ -16,19 +16,11 @@ fn register() {
 }
 
 #[derive(Clone)]
-pub(crate) struct MongoDB {
-    host: String,
-    port: u16,
-    address: String,
-}
+pub(crate) struct MongoDB {}
 
 impl MongoDB {
     pub fn new() -> Self {
-        MongoDB {
-            host: String::new(),
-            address: String::new(),
-            port: 27017,
-        }
+        MongoDB {}
     }
 }
 
@@ -38,14 +30,13 @@ impl Plugin for MongoDB {
         "MongoDB password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        (self.host, self.port) = utils::parse_target(opts.target.as_ref(), 27017)?;
-        self.address = format!("{}:{}", &self.host, self.port);
-
+    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let (host, port) = utils::parse_target(&creds.target, 27017)?;
+
         let mut opts = mongodb::options::ClientOptions::default();
         let mut cred = Credential::default();
 
@@ -53,8 +44,8 @@ impl Plugin for MongoDB {
         cred.password = Some(creds.password.to_owned());
 
         opts.hosts = vec![mongodb::options::ServerAddress::Tcp {
-            host: self.host.to_owned(),
-            port: Some(self.port),
+            host: host.to_owned(),
+            port: Some(port),
         }];
         opts.connect_timeout = Some(timeout);
         opts.credential = Some(cred);
@@ -63,11 +54,15 @@ impl Plugin for MongoDB {
         let dbs = cli.list_database_names(None, None).await;
 
         if let Ok(dbs) = dbs {
-            Ok(Some(Loot::from([
-                ("username".to_owned(), creds.username.to_owned()),
-                ("password".to_owned(), creds.password.to_owned()),
-                ("databases".to_owned(), dbs.join(", ")),
-            ])))
+            Ok(Some(Loot::new(
+                "mongodb",
+                &host,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                    ("databases".to_owned(), dbs.join(", ")),
+                ],
+            )))
         } else {
             Ok(None)
         }

@@ -1,7 +1,8 @@
 [package]
 name = "legba"
 description = "A fast multi protocol credential bruteforcer/sprayer/enumerator."
-version = "0.3.0"
+keywords = ["authentication", "bruteforce", "wordlist"]
+version = "0.4.0"
 authors = ["Simone Margaritelli <evilsocket@gmail.com>"]
 license = "GPL-3.0"
 edition = "2021"
@@ -15,6 +16,7 @@ ahash = "0.8.3"
 ansi_term = "0.12.1"
 async-channel = "1.9.0"
 async-trait = "0.1.73"
+chrono = { version = "0.4.31", features = ["serde"] }
 clap = { version = "4.4.4", features = ["derive"] }
 ctor = "0.2.4"
 ctrlc = "3.4.1"
@@ -26,13 +28,16 @@ rlimit = "0.10.1"
 serde = { version = "1.0.188", features = ["serde_derive"] }
 serde_json = "1.0.107"
 tokio = { version = "1.32.0", features = ["full"] }
+itertools = "0.11.0"
 rand = "0.8.5"
 env_logger = "0.10.0"
 memory-stats = "1.1.0"
 human_bytes = "0.4.3"
-
+hex = "0.4.3"
+glob = "0.3.1"
+cidr-utils = "0.5.11"
 url = { version = "2.4.1", optional = true }
-regex = { version = "1.9.5", optional = true }
+regex = { version = "1.9.5" }
 reqwest = { version = "0.11.20", features = [
     "multipart",
     "socks",
@@ -52,7 +57,7 @@ async-smtp = { version = "0.9.0", optional = true }
 async-pop = { version = "1.0.2", optional = true, default-features = false, features = [
     "runtime-tokio",
 ] }
-async-native-tls = { version = "0.5.0", optional = true, default-features = false, features = [
+async-native-tls = { version = "0.5.0", default-features = false, features = [
     "runtime-tokio",
 ] }
 async-imap = { version = "0.9.1", default-features = false, features = [
@@ -63,7 +68,6 @@ ldap3 = { version = "0.11.3", optional = true }
 kerberos_crypto = { version = "0.3.6", optional = true }
 kerberos_asn1 = { version = "0.2.1", optional = true }
 kerberos_constants = { version = "0.0.9", optional = true }
-chrono = { version = "0.4.31", optional = true }
 vnc-rs = { version = "0.5.1", optional = true }
 mongodb = { version = "2.7.0", optional = true }
 sibyl = { version = "0.6.16", optional = true, features = [
@@ -71,8 +75,6 @@ sibyl = { version = "0.6.16", optional = true, features = [
     "nonblocking",
 ] }
 rdp-rs = { version = "0.1.0", optional = true }
-hex = "0.4.3"
-glob = "0.3.1"
 scylla = { version = "0.10.1", optional = true }
 paho-mqtt = { version = "0.12.3", optional = true }
 
@@ -105,7 +107,7 @@ default = [
     "scylla",
     "tcp_ports",
 ]
-http = ["dep:url", "dep:regex", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
+http = ["dep:url", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver"]
 ssh = ["dep:async-ssh2-tokio"]
 sql = ["dep:sqlx"]
@@ -113,15 +115,14 @@ mssql = []
 mqtt = ["paho-mqtt"]
 ftp = ["dep:async_ftp"]
 smtp = ["dep:async-smtp"]
-pop3 = ["dep:async-native-tls", "dep:async-pop"]
-imap = ["dep:async-native-tls", "dep:async-imap"]
+pop3 = ["dep:async-pop"]
+imap = ["dep:async-imap"]
 telnet = ["dep:mini-telnet"]
 ldap = ["dep:ldap3"]
 kerberos = [
     "dep:kerberos_crypto",
     "dep:kerberos_asn1",
     "dep:kerberos_constants",
-    "dep:chrono",
 ]
 vnc = ["dep:vnc-rs"]
 mongodb = ["dep:mongodb"]
