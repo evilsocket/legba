@@ -17,12 +17,9 @@ pub(crate) struct Options {
     /// Protocol plugin to use, run with --list-plugins for a list of all available plugins.
     pub plugin: Option<String>,
 
-    /// Single target host, url or IP address.
+    /// Single target host, url or IP address, IP range, CIDR, @filename or comma separated combination of them.
     #[clap(short = 'T', long)]
     pub target: Option<String>,
-    /// Multiple target hosts, urls, IP addresses, IP range, CIDR or @filename.
-    #[clap(short = 'M', long)]
-    pub multiple: Option<String>,
 
     /// Constant, filename, glob expression as @/some/path/*.txt, permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
     #[clap(long, visible_alias = "payloads")]

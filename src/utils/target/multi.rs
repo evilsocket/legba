@@ -14,23 +14,17 @@ lazy_static! {
         Regex::new(r"^(\d+)\.(\d+)\.(\d+)\.(\d+)-(\d+):?(\d+)?$").unwrap();
 }
 
-pub(crate) fn parse_multiple_targets(expression: &str) -> Result<Vec<String>, Error> {
+fn parse_multiple_targets_atom(expression: &str) -> Result<Vec<String>, Error> {
     if let Some(path) = expression.strip_prefix('@') {
         // load from file
         let file = File::open(path).map_err(|e| e.to_string())?;
         let reader = BufReader::new(file);
-        return Ok(reader
+
+        Ok(reader
             .lines()
             .map(|l| l.unwrap_or_default())
             .filter(|s| !s.is_empty())
-            .collect());
-    } else if expression.contains(',') {
-        // comma separated targets
-        return Ok(expression
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect());
+            .collect())
     } else if let Some(caps) = IPV4_RANGE_PARSER.captures(expression) {
         // ipv4 range like 192.168.1.1-10 or 192.168.1.1-10:port
         let a: u8 = caps.get(1).unwrap().as_str().parse().unwrap();
@@ -57,7 +51,7 @@ pub(crate) fn parse_multiple_targets(expression: &str) -> Result<Vec<String>, Er
             range.push(format!("{}.{}.{}.{}{}", a, b, c, d, port_part));
         }
 
-        return Ok(range);
+        Ok(range)
     } else {
         // check for the port part
         let (cidr_part, port_part) = if expression.contains(":[") && expression.ends_with(']') {
@@ -78,17 +72,29 @@ pub(crate) fn parse_multiple_targets(expression: &str) -> Result<Vec<String>, Er
 
         // attempt as cidr
         if let Ok(cidr) = IpCidr::from_str(cidr_part) {
-            return Ok(cidr
+            Ok(cidr
                 .iter()
                 .map(|ip| format!("{}{}", ip, port_part))
-                .collect());
+                .collect())
+        } else {
+            // just return as it is
+            Ok(vec![expression.to_string()])
         }
     }
+}
 
-    Err(format!(
-        "could not parse '{}' as a comma separated list of targets or as CIDR",
-        expression
-    ))
+pub(crate) fn parse_multiple_targets(expression: &str) -> Result<Vec<String>, Error> {
+    let mut all = vec![];
+
+    for atom in expression
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
+        all.extend(parse_multiple_targets_atom(atom)?);
+    }
+
+    Ok(all)
 }
 
 #[cfg(test)]
@@ -97,6 +103,21 @@ mod tests {
     use std::io::Write;
 
     use super::parse_multiple_targets;
+
+    #[test]
+    fn can_parse_single() {
+        let expected = vec!["127.0.0.1:22".to_owned()];
+        let res = parse_multiple_targets("127.0.0.1:22").unwrap();
+        assert_eq!(res, expected);
+
+        let expected = vec!["http://www.something.it:8000".to_owned()];
+        let res = parse_multiple_targets("http://www.something.it:8000").unwrap();
+        assert_eq!(res, expected);
+
+        let expected = vec!["host:1234".to_owned()];
+        let res = parse_multiple_targets(",,host:1234,,,").unwrap();
+        assert_eq!(res, expected);
+    }
 
     #[test]
     fn can_parse_from_file() {
@@ -206,6 +227,39 @@ mod tests {
             "2001:4f8:3:ba:2e0:81ff:fe22:d1f3:[1234]".to_owned(),
         ]);
         let res = parse_multiple_targets("2001:4f8:3:ba:2e0:81ff:fe22:d1f1/126:[1234]");
+        assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn can_parse_combined() {
+        let num_items = 5;
+        let tmpdir = tempfile::tempdir().unwrap();
+        let tmppath = tmpdir.path().join("targets.txt");
+        let mut tmptargets = File::create(&tmppath).unwrap();
+        let expected = vec![
+            "192.168.1.1",
+            "127.0.0.1:0",
+            "127.0.0.1:1",
+            "127.0.0.1:2",
+            "127.0.0.1:3",
+            "127.0.0.1:4",
+            "8.8.8.8",
+            "8.8.8.9",
+            "8.8.8.10",
+            "8.8.8.11",
+        ];
+
+        for i in 0..num_items {
+            write!(tmptargets, "127.0.0.1:{}\n", i).unwrap();
+        }
+        tmptargets.flush().unwrap();
+        drop(tmptargets);
+
+        let res = parse_multiple_targets(&format!(
+            "192.168.1.1, @{}, 8.8.8.8/30",
+            tmppath.to_str().unwrap()
+        ))
+        .unwrap();
         assert_eq!(res, expected);
     }
 }

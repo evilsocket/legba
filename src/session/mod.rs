@@ -94,12 +94,10 @@ pub(crate) struct Session {
 
 impl Session {
     fn from_options(options: Options) -> Result<Arc<Self>, Error> {
-        let targets = if let Some(single_target) = options.target.as_ref() {
-            vec![single_target.to_owned()]
-        } else if let Some(multi_targets) = options.multiple.as_ref() {
-            parse_multiple_targets(multi_targets)?
+        let targets = if let Some(target) = options.target.as_ref() {
+            parse_multiple_targets(target)?
         } else {
-            return Err("no --target or --multiple argument provided".to_owned());
+            return Err("no --target/-T argument provided".to_owned());
         };
 
         if targets.is_empty() {
@@ -110,6 +108,17 @@ impl Session {
         for target in &targets {
             parse_target(target, 0)?;
         }
+
+        let num_targets = targets.len();
+        log::info!(
+            "target{}: {}",
+            if num_targets > 1 {
+                format!("s ({})", num_targets)
+            } else {
+                "".to_owned()
+            },
+            options.target.as_ref().unwrap()
+        );
 
         let runtime = Runtime::new(options.concurrency);
         let total = AtomicUsize::new(0);

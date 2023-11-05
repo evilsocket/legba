@@ -58,16 +58,6 @@ pub(crate) fn setup(options: &Options) -> Result<&'static mut dyn Plugin, Error>
         None => return Err(format!("{} is not a valid plugin name, run with --list-plugins to see the list of available plugins", plugin_name)),
     };
 
-    let target = if let Some(value) = options.target.as_ref() {
-        value.to_string()
-    } else if let Some(multi) = options.multiple.as_ref() {
-        format!("(multiple) {}", multi)
-    } else {
-        return Err("no --target or --multiple argument selected".to_owned());
-    };
-
-    log::info!("targeting {}", target);
-
     plugin.setup(options)?;
 
     Ok(plugin)
