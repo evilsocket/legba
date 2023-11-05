@@ -168,7 +168,6 @@ impl Combinator {
 }
 
 impl Iterator for Combinator {
-    // (target, credentials)
     type Item = Credentials;
 
     fn next(&mut self) -> Option<Self::Item> {
