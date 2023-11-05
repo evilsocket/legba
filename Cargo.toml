@@ -35,7 +35,7 @@ keywords = [
     "vnc",
     "wordlist",
 ]
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Simone Margaritelli <evilsocket@gmail.com>"]
 license = "GPL-3.0"
 edition = "2021"
