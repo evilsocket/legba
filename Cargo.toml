@@ -1,13 +1,7 @@
 [package]
 name = "legba"
 description = "A fast multi protocol credential bruteforcer/sprayer/enumerator."
-keywords = [
-    "authentication",
-    "bruteforce",
-    "subdomain enumeration",
-    "port scanner",
-    "wordlist",
-]
+keywords = ["authentication", "bruteforce", "wordlist"]
 version = "0.4.0"
 authors = ["Simone Margaritelli <evilsocket@gmail.com>"]
 license = "GPL-3.0"
