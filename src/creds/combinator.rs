@@ -19,9 +19,16 @@ pub(crate) enum IterationStrategy {
     Password,
 }
 
+enum Mode {
+    Multi,
+    Combo,
+    Single,
+}
+
 pub(crate) struct Combinator {
     options: Options,
 
+    mode: Mode,
     user_expr: creds::Expression,
     pass_expr: creds::Expression,
     product: Box<dyn Iterator<Item = (String, String, String)>>,
@@ -77,6 +84,7 @@ impl Combinator {
         options: Options,
         override_expr: Option<Expression>,
     ) -> Result<Self, Error> {
+        let mode = Mode::Single;
         let dispatched = 0;
         let wait = if options.wait > 0 {
             Some(time::Duration::from_millis(options.wait as u64))
@@ -99,6 +107,7 @@ impl Combinator {
         Ok(Self {
             options,
             wait,
+            mode,
             user_expr: payload_expr,
             pass_expr: creds::Expression::default(),
             product,
@@ -115,24 +124,51 @@ impl Combinator {
             None
         };
 
-        // get both
-        let user_expr = expression::parse_expression(options.username.as_ref());
-        let user_it = iterator::new(user_expr.clone())?;
-        let pass_expr = expression::parse_expression(options.password.as_ref());
-        let pass_it = iterator::new(pass_expr.clone())?;
-        let search_space_size =
-            targets.len() * user_it.search_space_size() * pass_it.search_space_size();
-        let product = Self::combine_iterators(&options, targets.to_owned(), user_it, Some(pass_it));
+        if let Some(combo_filename) = options.combinations.as_ref() {
+            // get username:password combinations from the specified file
+            let mode = Mode::Combo;
+            let combo_expr = expression::Expression::Wordlist {
+                filename: combo_filename.to_owned(),
+            };
+            let combo_it = iterator::new(combo_expr.clone())?;
+            let pass_expr = combo_expr.clone();
 
-        Ok(Self {
-            options,
-            wait,
-            user_expr,
-            pass_expr,
-            product,
-            search_space_size,
-            dispatched,
-        })
+            let search_space_size = targets.len() * combo_it.search_space_size();
+            let product = Self::combine_iterators(&options, targets.to_owned(), combo_it, None);
+
+            Ok(Self {
+                options,
+                mode,
+                wait,
+                user_expr: combo_expr,
+                pass_expr,
+                product,
+                search_space_size,
+                dispatched,
+            })
+        } else {
+            // perform the cartesian product of all usernames and passwords from distinct sources
+            let mode = Mode::Multi;
+            let user_expr = expression::parse_expression(options.username.as_ref());
+            let user_it = iterator::new(user_expr.clone())?;
+            let pass_expr = expression::parse_expression(options.password.as_ref());
+            let pass_it = iterator::new(pass_expr.clone())?;
+            let search_space_size =
+                targets.len() * user_it.search_space_size() * pass_it.search_space_size();
+            let product =
+                Self::combine_iterators(&options, targets.to_owned(), user_it, Some(pass_it));
+
+            Ok(Self {
+                options,
+                mode,
+                wait,
+                user_expr,
+                pass_expr,
+                product,
+                search_space_size,
+                dispatched,
+            })
+        }
     }
 
     pub fn create(
@@ -183,9 +219,23 @@ impl Iterator for Combinator {
                 std::thread::sleep(wait);
             }
 
-            let (username, password) = match self.options.iterate_by {
-                IterationStrategy::User => (outer, inner),
-                IterationStrategy::Password => (inner, outer),
+            let (username, password) = match self.mode {
+                Mode::Multi | Mode::Single => match self.options.iterate_by {
+                    IterationStrategy::User => (outer, inner),
+                    IterationStrategy::Password => (inner, outer),
+                },
+                Mode::Combo => {
+                    if let Some((user, pass)) = outer.split_once(&self.options.separator) {
+                        (user.to_owned(), pass.to_owned())
+                    } else {
+                        panic!(
+                            "line '{}' of {} can't be splitted with '{}'",
+                            outer,
+                            self.options.combinations.as_ref().unwrap(),
+                            &self.options.separator,
+                        );
+                    }
+                }
             };
 
             self.dispatched += 1;
@@ -549,6 +599,43 @@ mod tests {
 
         expected.sort_by(|a, b| a.partial_cmp(b).unwrap());
         got.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        assert_eq!(got.len(), tot);
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn can_handle_combo_mode() {
+        let num_items = 5;
+        let mut expected = vec![];
+        let tmpdir = tempfile::tempdir().unwrap();
+        let tmppath = tmpdir.path().join("combinations.txt");
+        let mut tmpdata = File::create(&tmppath).unwrap();
+
+        for i in 0..num_items {
+            write!(tmpdata, "user{}:pass{}\n", i, i).unwrap();
+            expected.push(Credentials {
+                target: "foo".to_owned(),
+                username: format!("user{}", i),
+                password: format!("pass{}", i),
+            });
+        }
+
+        tmpdata.flush().unwrap();
+        drop(tmpdata);
+
+        let mut opts = crate::Options::default();
+        opts.combinations = Some(tmppath.to_str().unwrap().to_owned());
+        opts.separator = String::from(":");
+
+        let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, false, None).unwrap();
+        let tot = comb.search_space_size();
+        assert_eq!(expected.len(), tot);
+
+        let mut got = vec![];
+        for cred in comb {
+            got.push(cred);
+        }
 
         assert_eq!(got.len(), tot);
         assert_eq!(expected, got);
