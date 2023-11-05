@@ -79,18 +79,15 @@ impl Plugin for DNS {
             let addresses: Vec<IpAddr> = response.iter().filter(|ip| !ip.is_loopback()).collect();
             if !addresses.is_empty() {
                 return Ok(Some(Loot::from(
-                    "",
-                    [
-                        ("subdomain".to_owned(), subdomain),
-                        (
-                            "addresses".to_owned(),
-                            addresses
-                                .iter()
-                                .map(|a| a.to_string())
-                                .collect::<Vec<String>>()
-                                .join(", "),
-                        ),
-                    ],
+                    &subdomain,
+                    [(
+                        "addresses".to_owned(),
+                        addresses
+                            .iter()
+                            .map(|a| a.to_string())
+                            .collect::<Vec<String>>()
+                            .join(", "),
+                    )],
                 )));
             }
         }
