@@ -7,6 +7,7 @@ pub(crate) use plugin::Plugin;
 // TODO: AFP
 // TODO: SNMP
 // TODO: SMB
+// TODO: network discovery
 
 #[cfg(feature = "amqp")]
 pub(crate) mod amqp;
