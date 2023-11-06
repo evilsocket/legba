@@ -30,6 +30,18 @@ impl Mqtt {
             use_v5: false,
         }
     }
+
+    fn is_failed_attempt(&self, err: &str) -> bool {
+        if self.use_v5 {
+            // MQTT v5.x
+            // Check: https://docs.emqx.com/en/cloud/latest/connect_to_deployments/mqtt_client_error_codes.html#mqtt-v5-0
+            err.contains("[135] CONNACK return code") || err.contains("[134] CONNACK return code")
+        } else {
+            // MQTT v3.x
+            // Check: https://docs.emqx.com/en/cloud/latest/connect_to_deployments/mqtt_client_error_codes.html#connack-packet
+            err.contains("[5] CONNACK return code") || err.contains("[4] CONNACK return code")
+        }
+    }
 }
 
 #[async_trait]
@@ -65,9 +77,14 @@ impl Plugin for Mqtt {
         .password(creds.password.to_owned())
         .finalize();
 
-        let res = cli.connect(conn_opts).await;
-
-        if res.is_ok() {
+        if let Err(err) = cli.connect(conn_opts).await {
+            let err = err.to_string();
+            if self.is_failed_attempt(&err) {
+                Ok(None)
+            } else {
+                Err(err)
+            }
+        } else {
             Ok(Some(Loot::new(
                 "mqtt",
                 &address,
@@ -76,25 +93,6 @@ impl Plugin for Mqtt {
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
             )))
-        } else {
-            let err = res.err().unwrap().to_string();
-
-            // MQTT v5.x
-            // Check: https://docs.emqx.com/en/cloud/latest/connect_to_deployments/mqtt_client_error_codes.html#mqtt-v5-0
-            if self.use_v5
-                && (err.contains("[135] CONNACK return code")
-                    || err.contains("[134] CONNACK return code"))
-            {
-                return Ok(None);
-            }
-
-            // MQTT v3.x
-            // Check: https://docs.emqx.com/en/cloud/latest/connect_to_deployments/mqtt_client_error_codes.html#connack-packet
-            if err.contains("[5] CONNACK return code") || err.contains("[4] CONNACK return code") {
-                return Ok(None);
-            }
-
-            Err(err)
         }
     }
 }
