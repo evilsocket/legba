@@ -1,19 +1,18 @@
 # build stage
 FROM rust:bookworm as build
 
+RUN apt-get update && apt-get install -y libssl-dev ca-certificates cmake git
+
 # create a new empty shell project
 RUN USER=root cargo new --bin legba
 WORKDIR /legba
 
-# copy contents and cache dependencies
+# copy contents
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
-RUN cargo build --release
-RUN rm src/*.rs
 COPY ./src ./src
 
 # build
-RUN rm ./target/release/deps/legba*
 RUN cargo build --release
 
 FROM debian:bookworm-slim
