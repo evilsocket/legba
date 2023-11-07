@@ -3,7 +3,6 @@ use std::time;
 
 use clap::Parser;
 use creds::Credentials;
-use tokio::task;
 
 #[cfg(not(windows))]
 use rlimit::{setrlimit, Resource};
@@ -72,11 +71,6 @@ async fn main() -> Result<(), session::Error> {
         session.set_stop();
         e
     })?;
-
-    if !session.options.quiet {
-        // start statistics reporting
-        task::spawn(report::statistics(session.clone()));
-    }
 
     let start = time::Instant::now();
 

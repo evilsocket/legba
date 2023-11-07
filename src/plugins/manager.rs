@@ -10,8 +10,8 @@ use std::sync::Arc;
 use tokio::task;
 
 use crate::session::{Error, Session};
-use crate::Options;
 use crate::Plugin;
+use crate::{report, Options};
 
 type Inventory = BTreeMap<&'static str, Box<dyn Plugin>>;
 
@@ -69,14 +69,20 @@ pub(crate) async fn run(
 ) -> Result<(), Error> {
     let single = plugin.single_credential();
     let override_payload = plugin.override_payload();
+    let combinations = session.combinations(override_payload, single)?;
 
     // spawn worker threads
     for _ in 0..session.options.concurrency {
         task::spawn(worker(plugin, session.clone()));
     }
 
+    if !session.options.quiet {
+        // start statistics reporting
+        task::spawn(report::statistics(session.clone()));
+    }
+
     // loop credentials for this session
-    for creds in session.combinations(override_payload, single)? {
+    for creds in combinations {
         // exit on ctrl-c if we have to, otherwise send the new credentials to the workers
         if session.is_stop() {
             log::debug!("exiting loop");
