@@ -153,7 +153,7 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
             // file name or constant
             _ => {
                 let filepath = Path::new(&expr);
-                if filepath.exists() {
+                if filepath.exists() && filepath.is_file() {
                     // this is a file name
                     return Expression::Wordlist {
                         filename: expr.to_owned(),
