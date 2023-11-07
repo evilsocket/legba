@@ -81,7 +81,7 @@ pub(crate) async fn run(
         if session.is_stop() {
             log::debug!("exiting loop");
             return Ok(());
-        } else if let Err(e) = session.dispatch_new_credentials(creds).await {
+        } else if let Err(e) = session.send_credentials(creds).await {
             log::error!("{}", e.to_string());
         }
     }
@@ -96,7 +96,7 @@ async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
     let retry_time: time::Duration = time::Duration::from_millis(session.options.retry_time);
     let mut unreachables: HashSet<String> = HashSet::default();
 
-    while let Ok(creds) = session.recv_new_credentials().await {
+    while let Ok(creds) = session.recv_credentials().await {
         if session.is_stop() {
             log::debug!("exiting worker");
             break;

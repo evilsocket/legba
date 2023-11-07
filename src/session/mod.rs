@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +8,9 @@ use crate::creds::{Combinator, Expression};
 use crate::Options;
 
 pub(crate) mod loot;
+mod runtime;
+
+use runtime::*;
 
 use crate::utils::{parse_multiple_targets, parse_target};
 pub(crate) use crate::Credentials;
@@ -43,38 +46,6 @@ async fn periodic_saver(session: Arc<Session>, persistent: bool) {
         // update and save to the last state before exiting
         if let Err(e) = session.save() {
             log::error!("could not save session: {:?}", e);
-        }
-    }
-}
-
-#[derive(Debug)]
-struct Runtime {
-    stop: AtomicBool,
-    creds_tx: async_channel::Sender<Credentials>,
-    creds_rx: async_channel::Receiver<Credentials>,
-    speed: AtomicUsize,
-}
-
-impl Default for Runtime {
-    fn default() -> Self {
-        let (creds_tx, creds_rx) = async_channel::unbounded();
-        Self {
-            stop: AtomicBool::new(false),
-            speed: AtomicUsize::new(0),
-            creds_tx,
-            creds_rx,
-        }
-    }
-}
-
-impl Runtime {
-    fn new(concurrency: usize) -> Self {
-        let (creds_tx, creds_rx) = async_channel::bounded(concurrency);
-        Self {
-            stop: AtomicBool::new(false),
-            speed: AtomicUsize::new(0),
-            creds_tx,
-            creds_rx,
         }
     }
 }
@@ -180,7 +151,27 @@ impl Session {
     }
 
     pub fn is_stop(&self) -> bool {
-        self.runtime.stop.load(std::sync::atomic::Ordering::Relaxed)
+        self.runtime.is_stop()
+    }
+
+    pub fn set_stop(&self) {
+        self.runtime.set_stop()
+    }
+
+    pub fn set_speed(&self, rps: usize) {
+        self.runtime.set_speed(rps);
+    }
+
+    pub fn get_speed(&self) -> usize {
+        self.runtime.get_speed()
+    }
+
+    pub async fn send_credentials(&self, creds: Credentials) -> Result<(), Error> {
+        self.runtime.send_credentials(creds).await
+    }
+
+    pub async fn recv_credentials(&self) -> Result<Credentials, Error> {
+        self.runtime.recv_credentials().await
     }
 
     pub fn is_done(&self) -> bool {
@@ -189,10 +180,6 @@ impl Session {
 
     pub fn is_finished(&self) -> bool {
         self.is_done() || self.is_stop()
-    }
-
-    pub fn set_stop(&self) {
-        self.runtime.stop.store(true, Ordering::SeqCst);
     }
 
     pub fn inc_errors(&self) {
@@ -219,14 +206,6 @@ impl Session {
         self.total.load(Ordering::Relaxed)
     }
 
-    pub fn set_speed(&self, rps: usize) {
-        self.runtime.speed.store(rps, Ordering::Relaxed);
-    }
-
-    pub fn get_speed(&self) -> usize {
-        self.runtime.speed.load(Ordering::Relaxed)
-    }
-
     pub fn combinations(
         &self,
         override_payload: Option<Expression>,
@@ -250,22 +229,6 @@ impl Session {
         }
 
         Ok(combinator)
-    }
-
-    pub async fn dispatch_new_credentials(&self, creds: Credentials) -> Result<(), Error> {
-        self.runtime
-            .creds_tx
-            .send(creds)
-            .await
-            .map_err(|e| e.to_string())
-    }
-
-    pub async fn recv_new_credentials(&self) -> Result<Credentials, Error> {
-        self.runtime
-            .creds_rx
-            .recv()
-            .await
-            .map_err(|e| e.to_string())
     }
 
     pub async fn add_loot(&self, loot: Loot) -> Result<(), Error> {
