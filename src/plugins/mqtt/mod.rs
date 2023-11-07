@@ -30,18 +30,6 @@ impl Mqtt {
             use_v5: false,
         }
     }
-
-    fn is_failed_attempt(&self, err: &str) -> bool {
-        if self.use_v5 {
-            // MQTT v5.x
-            // Check: https://docs.emqx.com/en/cloud/latest/connect_to_deployments/mqtt_client_error_codes.html#mqtt-v5-0
-            err.contains("[135] CONNACK return code") || err.contains("[134] CONNACK return code")
-        } else {
-            // MQTT v3.x
-            // Check: https://docs.emqx.com/en/cloud/latest/connect_to_deployments/mqtt_client_error_codes.html#connack-packet
-            err.contains("[5] CONNACK return code") || err.contains("[4] CONNACK return code")
-        }
-    }
 }
 
 #[async_trait]
@@ -73,16 +61,25 @@ impl Plugin for Mqtt {
             mqtt::ConnectOptionsBuilder::new() // v3.x
         }
         .connect_timeout(timeout)
-        .user_name(creds.username.to_owned())
-        .password(creds.password.to_owned())
+        .user_name(&creds.username)
+        .password(&creds.password)
         .finalize();
 
         if let Err(err) = cli.connect(conn_opts).await {
-            let err = err.to_string();
-            if self.is_failed_attempt(&err) {
-                Ok(None)
-            } else {
-                Err(err)
+            match err {
+                paho_mqtt::Error::Paho(n) | paho_mqtt::Error::PahoDescr(n, _) => {
+                    // Timeouts and failed connections are reported with n=-1, in which case we return the error
+                    // as we want to retry --retry times.
+                    if n == -1 {
+                        Err(err.to_string())
+                    } else {
+                        // Failed logings and other protocol errors are reported with other integer codes, in which
+                        // case we return Ok(None) to move to the next set of credentials.
+                        Ok(None)
+                    }
+                }
+                // other protocol errors
+                _ => Ok(None),
             }
         } else {
             Ok(Some(Loot::new(
