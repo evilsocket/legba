@@ -452,20 +452,22 @@ impl Plugin for HTTP {
             );
         }
 
-        // check if Content-Type is set already, if not set default (tnx to @zip609)
-        if !self.headers.contains_key("Content-Type") {
-            self.headers.insert(
-                CONTENT_TYPE,
-                HeaderValue::from_static("application/x-www-form-urlencoded"),
-            );
-        }
+        if method_requires_payload(&self.method) {
+            // check if Content-Type is set already, if not set default (tnx to @zip609)
+            if !self.headers.contains_key("Content-Type") {
+                self.headers.insert(
+                    CONTENT_TYPE,
+                    HeaderValue::from_static("application/x-www-form-urlencoded"),
+                );
+            }
 
-        // check that a payload was provided if needed
-        if method_requires_payload(&self.method) && opts.http.http_payload.is_none() {
-            return Err(format!(
-                "method {} requires an --http-payload value",
-                self.method
-            ));
+            // check that a payload was provided if needed
+            if opts.http.http_payload.is_none() {
+                return Err(format!(
+                    "method {} requires an --http-payload value",
+                    self.method
+                ));
+            }
         }
 
         self.payload = if let Some(payload) = &opts.http.http_payload {
@@ -551,8 +553,108 @@ impl Plugin for HTTP {
     }
 }
 
+// TODO: add more tests
 #[cfg(test)]
 mod tests {
+    use reqwest::header::{HeaderValue, CONTENT_TYPE};
+
+    use crate::{options::Options, plugins::Plugin};
+
+    use super::{Strategy, HTTP};
+
+    #[test]
+    fn test_get_target_url_adds_default_schema_and_path() {
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/",
+            http.get_target_url("localhost:3000").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_adds_default_schema() {
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/somepath",
+            http.get_target_url("localhost:3000/somepath").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_adds_default_path() {
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "https://localhost:3000/",
+            http.get_target_url("https://localhost:3000").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_preserves_query() {
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/?foo=bar",
+            http.get_target_url("localhost:3000/?foo=bar").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_preserves_query_with_placeholder() {
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/?username={USERNAME}",
+            http.get_target_url("localhost:3000/?username={USERNAME}")
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_plugin_setup_fails_if_no_payload_provided_for_post() {
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+
+        opts.http.http_method = "POST".to_owned();
+
+        assert_eq!(
+            Err("method POST requires an --http-payload value".to_owned()),
+            http.setup(&opts)
+        );
+    }
+
+    #[test]
+    fn test_plugin_adds_default_content_type_if_post() {
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+
+        opts.http.http_method = "POST".to_owned();
+        opts.http.http_payload = Some("just a test".to_owned());
+
+        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(
+            Some(&HeaderValue::from_static(
+                "application/x-www-form-urlencoded"
+            )),
+            http.headers.get(CONTENT_TYPE)
+        );
+    }
+
+    #[test]
+    fn test_plugin_preserves_user_content_type() {
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+
+        opts.http.http_method = "POST".to_owned();
+        opts.http.http_payload = Some("{\"foo\": 123}".to_owned());
+        opts.http.http_headers = vec!["Content-Type=application/json".to_owned()];
+
+        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(
+            Some(&HeaderValue::from_static("application/json")),
+            http.headers.get(CONTENT_TYPE)
+        );
+    }
+
+    // TODO: replace with actual is_success
     // simplified version of HTTP::is_success
     fn is_success_logic(
         success_string: Option<&str>,
