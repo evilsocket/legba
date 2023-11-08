@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use ctor::ctor;
 use rand::seq::SliceRandom;
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue},
+    header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, COOKIE, USER_AGENT},
     multipart, redirect, Client, Method, RequestBuilder, Response,
 };
 use url::Url;
@@ -150,12 +150,12 @@ impl HTTP {
         &self,
         creds: &Credentials,
         csrf: Option<csrf::Token>,
-        mut request: RequestBuilder,
+        mut builder: RequestBuilder,
     ) -> RequestBuilder {
         let mut do_body = true;
         if self.strategy == Strategy::BasicAuth {
             // set basic authentication data
-            request = request.basic_auth(&creds.username, Some(&creds.password));
+            builder = builder.basic_auth(&creds.username, Some(&creds.password));
         } else if self.strategy == Strategy::Form {
             // set form data
             let fields = payload::parse_fields(self.payload.as_ref(), creds).unwrap();
@@ -170,7 +170,7 @@ impl HTTP {
                 form = form.text(token.name.clone(), token.value.clone());
             }
 
-            request = request.multipart(form);
+            builder = builder.multipart(form);
 
             // we already added the --http-body value as fields
             do_body = false;
@@ -179,35 +179,41 @@ impl HTTP {
         // do we have any fields left to add?
         if do_body && self.payload.is_some() {
             if method_requires_payload(&self.method) {
-                // add as body
-                let mut body = payload::parse_body(self.payload.as_ref(), creds).unwrap();
+                // check if we have to urlencode fields
+                if self.headers.get(CONTENT_TYPE).unwrap() == "application/x-www-form-urlencoded" {
+                    let mut form_fields =
+                        payload::parse_fields(self.payload.as_ref(), creds).unwrap();
 
-                // handle csrf
-                if let Some(token) = csrf.as_ref() {
-                    body.push_str(&format!("&{}={}", token.name, token.value));
-                }
+                    // handle csrf
+                    if let Some(token) = csrf.as_ref() {
+                        form_fields.push((token.name.to_owned(), token.value.to_owned()));
+                    }
 
-                // log::info!("http.body={}", &body);
-                request = request.body(body);
-                // check if Content-Type is set already, if not set default (tnx to @zip609)
-                if !self.headers.contains_key("Content-Type") {
-                    request = request.header("Content-Type", "application/x-www-form-urlencoded");
+                    builder = builder.form(&form_fields);
+                } else {
+                    // add as raw body
+                    let mut body = payload::parse_body(self.payload.as_ref(), creds).unwrap();
+                    // handle csrf
+                    if let Some(token) = csrf.as_ref() {
+                        body.push_str(&format!("&{}={}", token.name, token.value));
+                    }
+                    builder = builder.body(body);
                 }
             } else {
                 // add as query string
-                let mut query = payload::parse_fields(self.payload.as_ref(), creds).unwrap();
+                let mut query_fields = payload::parse_fields(self.payload.as_ref(), creds).unwrap();
 
                 // handle csrf
                 if let Some(token) = csrf.as_ref() {
-                    query.push((token.name.clone(), token.value.clone()));
+                    query_fields.push((token.name.clone(), token.value.clone()));
                 }
 
                 // log::info!("http.query={:?}", &query);
-                request = request.query(&query);
+                builder = builder.query(&query_fields);
             }
         }
 
-        request
+        builder
     }
 
     async fn is_success(&self, response: Response) -> Option<Success> {
@@ -216,7 +222,7 @@ impl HTTP {
             return None;
         }
 
-        let content_type = if let Some(ctype) = response.headers().get("content-type") {
+        let content_type = if let Some(ctype) = response.headers().get(CONTENT_TYPE) {
             ctype
                 .to_str()
                 .unwrap()
@@ -259,7 +265,7 @@ impl HTTP {
 
         if self.random_ua {
             headers.append(
-                "User-Agent",
+                USER_AGENT,
                 HeaderValue::from_str(ua::USER_AGENTS.choose(&mut rand::thread_rng()).unwrap())
                     .unwrap(),
             );
@@ -305,7 +311,7 @@ impl HTTP {
             if let Some(token) = token.as_ref() {
                 // set session cookie for CSRF
                 if !token.cookie.is_empty() {
-                    headers.append("Cookie", HeaderValue::from_str(&token.cookie).unwrap());
+                    headers.append(COOKIE, HeaderValue::from_str(&token.cookie).unwrap());
                 }
             }
 
@@ -323,12 +329,11 @@ impl HTTP {
 
         // setup body
         request = self.setup_request_body(creds, csrf_token, request);
-
         // execute
         match request.send().await {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
-                let cookie = if let Some(cookie) = res.headers().get("cookie") {
+                let cookie = if let Some(cookie) = res.headers().get(COOKIE) {
                     cookie.to_str().unwrap().to_owned()
                 } else {
                     "".to_owned()
@@ -444,6 +449,14 @@ impl Plugin for HTTP {
             self.headers.insert(
                 HeaderName::from_bytes(parts[0].as_bytes()).map_err(|e| e.to_string())?,
                 HeaderValue::from_str(parts[1]).map_err(|e| e.to_string())?,
+            );
+        }
+
+        // check if Content-Type is set already, if not set default (tnx to @zip609)
+        if !self.headers.contains_key("Content-Type") {
+            self.headers.insert(
+                CONTENT_TYPE,
+                HeaderValue::from_static("application/x-www-form-urlencoded"),
             );
         }
 
