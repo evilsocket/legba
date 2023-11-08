@@ -42,9 +42,10 @@ print("git push")
 print("git tag -a v%s -m 'releasing v%s'" % (next_ver, next_ver))
 print("git push origin v%s" % next_ver)
 
-# print()
+print()
 # publish on crates.io
-# print("cargo publish")
+print("cargo publish")
+
 # print()
 # build and push docker image
 # print("docker buildx create --name legbabuilder --use --bootstrap")
