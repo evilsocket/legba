@@ -3,15 +3,17 @@ import subprocess
 import re
 
 # print changelog
-current_tag = subprocess.run(['git', 'describe', '--tags', '--abbrev=0'], capture_output=True, text=True).stdout.strip()
+current_tag = subprocess.run(
+    ['git', 'describe', '--tags', '--abbrev=0'], capture_output=True, text=True).stdout.strip()
 if current_tag == "":
-    #os.system("git log HEAD --oneline")
+    # os.system("git log HEAD --oneline")
     interval = 'HEAD'
 else:
     print("current tag: %s" % current_tag)
     interval = '%s..HEAD' % current_tag
 
-print("CHANGELOG:\n\n%s\n" % subprocess.run(['git', 'log', interval, '--oneline'], capture_output=True, text=True).stdout.strip())
+print("CHANGELOG:\n\n%s\n" % subprocess.run(
+    ['git', 'log', interval, '--oneline'], capture_output=True, text=True).stdout.strip())
 
 version_match_re = r'^version\s*=\s*"([^"]+)"$'
 
@@ -28,7 +30,8 @@ current_ver = m[0]
 next_ver = input("current version is %s, enter next: " % current_ver)
 
 # generate new manifest
-result = re.sub(version_match_re, 'version = "%s"' % next_ver, manifest, 0, re.MULTILINE)
+result = re.sub(version_match_re, 'version = "%s"' %
+                next_ver, manifest, 0, re.MULTILINE)
 with open('Cargo.toml', 'w+t') as fp:
     fp.write(result)
 
@@ -39,15 +42,11 @@ print("git push")
 print("git tag -a v%s -m 'releasing v%s'" % (next_ver, next_ver))
 print("git push origin v%s" % next_ver)
 
-print()
-
+# print()
 # publish on crates.io
-print("cargo publish")
-
-print()
-
+# print("cargo publish")
+# print()
 # build and push docker image
-print("docker buildx create --name legbabuilder --use --bootstrap")
-
-print("docker buildx build --tag evilsocket/legba:latest --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push .")
-print("docker buildx build --tag evilsocket/legba:%s --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push ." % next_ver)
+# print("docker buildx create --name legbabuilder --use --bootstrap")
+# print("docker buildx build --tag evilsocket/legba:latest --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push .")
+# print("docker buildx build --tag evilsocket/legba:%s --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push ." % next_ver)
