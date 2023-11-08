@@ -188,9 +188,11 @@ impl HTTP {
                 }
 
                 // log::info!("http.body={}", &body);
-                request = request
-                    .body(body)
-                    .header("Content-Type", "application/x-www-form-urlencoded");
+                request = request.body(body);
+                // check if Content-Type is set already, if not set default (tnx to @zip609)
+                if !self.headers.contains_key("Content-Type") {
+                    request = request.header("Content-Type", "application/x-www-form-urlencoded");
+                }
             } else {
                 // add as query string
                 let mut query = payload::parse_fields(self.payload.as_ref(), creds).unwrap();
