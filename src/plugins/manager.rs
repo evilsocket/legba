@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, RwLock};
 use std::time;
 
 use ahash::HashSet;
@@ -70,10 +70,11 @@ pub(crate) async fn run(
     let single = plugin.single_credential();
     let override_payload = plugin.override_payload();
     let combinations = session.combinations(override_payload, single)?;
+    let unreachables: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::default()));
 
     // spawn worker threads
     for _ in 0..session.options.concurrency {
-        task::spawn(worker(plugin, session.clone()));
+        task::spawn(worker(plugin, unreachables.clone(), session.clone()));
     }
 
     if !session.options.quiet {
@@ -95,12 +96,15 @@ pub(crate) async fn run(
     Ok(())
 }
 
-async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
+async fn worker(
+    plugin: &dyn Plugin,
+    unreachables: Arc<RwLock<HashSet<String>>>,
+    session: Arc<Session>,
+) {
     log::debug!("worker started");
 
     let timeout = time::Duration::from_millis(session.options.timeout);
     let retry_time: time::Duration = time::Duration::from_millis(session.options.retry_time);
-    let mut unreachables: HashSet<String> = HashSet::default();
 
     while let Ok(creds) = session.recv_credentials().await {
         if session.is_stop() {
@@ -125,7 +129,7 @@ async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
             attempt += 1;
 
             // skip attempt if we had enough failures from this specific target
-            if !unreachables.contains(&creds.target) {
+            if !unreachables.read().unwrap().contains(&creds.target) {
                 match plugin.attempt(&creds, timeout).await {
                     Err(err) => {
                         errors += 1;
@@ -142,7 +146,7 @@ async fn worker(plugin: &dyn Plugin, session: Arc<Session>) {
                         } else {
                             // add this target to the list of unreachable in order to avoi
                             // pointless attempts
-                            unreachables.insert(creds.target.clone());
+                            unreachables.write().unwrap().insert(creds.target.clone());
 
                             log::error!(
                                 "[{}] attempt {}/{}: {}",
