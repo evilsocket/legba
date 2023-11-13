@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use ctor::ctor;
 use rand::seq::SliceRandom;
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, COOKIE, USER_AGENT},
+    header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, COOKIE, HOST, USER_AGENT},
     multipart, redirect, Client, Method, RequestBuilder, Response,
 };
 use url::Url;
@@ -29,6 +29,7 @@ fn register() {
     crate::plugins::manager::register("http.ntlm1", Box::new(HTTP::new(Strategy::NLTMv1)));
     crate::plugins::manager::register("http.ntlm2", Box::new(HTTP::new(Strategy::NLTMv2)));
     crate::plugins::manager::register("http.enum", Box::new(HTTP::new(Strategy::Enumeration)));
+    crate::plugins::manager::register("http.vhost", Box::new(HTTP::new(Strategy::VHostEnum)));
 }
 
 fn method_requires_payload(method: &Method) -> bool {
@@ -43,6 +44,7 @@ pub(crate) enum Strategy {
     NLTMv1,
     NLTMv2,
     Enumeration,
+    VHostEnum,
 }
 
 struct Success {
@@ -404,6 +406,47 @@ impl HTTP {
             }
         }
     }
+
+    async fn http_vhost_enum_attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Loot>, Error> {
+        let url = self.get_target_url(&creds.target)?;
+        let mut headers = self.setup_headers();
+
+        // set host
+        headers.remove(HOST);
+        headers.insert(HOST, HeaderValue::from_str(&creds.username).unwrap());
+
+        // build base request object
+        let request = self
+            .client
+            .request(self.method.clone(), &url)
+            .headers(headers)
+            .timeout(timeout);
+
+        // execute
+        match request.send().await {
+            Err(e) => Err(e.to_string()),
+            Ok(res) => {
+                if let Some(success) = self.is_success(res).await {
+                    Ok(Some(Loot::new(
+                        "http.vhost",
+                        &creds.target,
+                        [
+                            ("vhost".to_owned(), creds.username.to_owned()),
+                            ("status".to_owned(), success.status.to_string()),
+                            ("size".to_owned(), success.content_length.to_string()),
+                            ("type".to_owned(), success.content_type),
+                        ],
+                    )))
+                } else {
+                    Ok(None)
+                }
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -416,11 +459,12 @@ impl Plugin for HTTP {
             Strategy::NLTMv1 => "NTLMv1 authentication over HTTP.",
             Strategy::NLTMv2 => "NTLMv2 authentication over HTTP.",
             Strategy::Enumeration => "HTTP pages enumeration.",
+            Strategy::VHostEnum => "HTTP virtual host enumeration.",
         }
     }
 
     fn single_credential(&self) -> bool {
-        self.strategy == Strategy::Enumeration
+        matches!(self.strategy, Strategy::Enumeration | Strategy::VHostEnum)
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
@@ -545,10 +589,10 @@ impl Plugin for HTTP {
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
-        if self.strategy == Strategy::Enumeration {
-            self.http_enum_attempt(creds, timeout).await
-        } else {
-            self.http_request_attempt(creds, timeout).await
+        match self.strategy {
+            Strategy::Enumeration => self.http_enum_attempt(creds, timeout).await,
+            Strategy::VHostEnum => self.http_vhost_enum_attempt(creds, timeout).await,
+            _ => self.http_request_attempt(creds, timeout).await,
         }
     }
 }
