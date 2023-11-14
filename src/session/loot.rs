@@ -1,6 +1,6 @@
-use std::fmt;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use std::{fmt, path::Path};
 
 use ansi_term::Colour;
 use chrono::{DateTime, Local};
@@ -14,6 +14,7 @@ use crate::session::Error;
 pub(crate) enum OutputFormat {
     #[default]
     Text,
+    CSV,
     JSONL,
 }
 
@@ -59,29 +60,57 @@ impl Loot {
         self.found_at.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
+    fn to_json(&self) -> Result<String, Error> {
+        serde_json::to_string(self).map_err(|e| e.to_string())
+    }
+
+    fn to_text(&self) -> Result<String, Error> {
+        let data = self
+            .data
+            .keys()
+            .map(|k| format!("{}={}", k, self.data.get(k).unwrap()))
+            .collect::<Vec<String>>()
+            .join("\t");
+
+        Ok(if self.target.is_empty() {
+            format!("[{}] ({}) {}", self.found_at_string(), &self.plugin, data)
+        } else {
+            format!(
+                "[{}] ({}) <{}> {}",
+                self.found_at_string(),
+                &self.plugin,
+                &self.target,
+                data
+            )
+        })
+    }
+
+    fn to_csv(&self, path: &str) -> Result<String, Error> {
+        let mut wtr = csv::Writer::from_writer(vec![]);
+
+        if !Path::new(path).exists() {
+            wtr.write_record(&["found_at", "plugin", "target", "data"])
+                .map_err(|e| e.to_string())?;
+        }
+
+        let data = self
+            .data
+            .keys()
+            .map(|k| format!("{}={}", k, self.data.get(k).unwrap()))
+            .collect::<Vec<String>>()
+            .join(";");
+
+        wtr.write_record(&[&self.found_at_string(), &self.plugin, &self.target, &data])
+            .map_err(|e| e.to_string())?;
+
+        String::from_utf8(wtr.into_inner().unwrap()).map_err(|e| e.to_string())
+    }
+
     pub fn append_to_file(&self, path: &str, format: &OutputFormat) -> Result<(), Error> {
         let data = match format {
-            OutputFormat::JSONL => serde_json::to_string(self).map_err(|e| e.to_string())?,
-            OutputFormat::Text => {
-                let data = self
-                    .data
-                    .keys()
-                    .map(|k| format!("{}={}", k, self.data.get(k).unwrap()))
-                    .collect::<Vec<String>>()
-                    .join("\t");
-
-                if self.target.is_empty() {
-                    format!("[{}] ({}) {}", self.found_at_string(), &self.plugin, data)
-                } else {
-                    format!(
-                        "[{}] ({}) <{}> {}",
-                        self.found_at_string(),
-                        &self.plugin,
-                        &self.target,
-                        data
-                    )
-                }
-            }
+            OutputFormat::JSONL => self.to_json()?,
+            OutputFormat::Text => self.to_text()?,
+            OutputFormat::CSV => self.to_csv(path)?,
         };
 
         let mut file = OpenOptions::new()
@@ -91,7 +120,7 @@ impl Loot {
             .open(path)
             .map_err(|e| e.to_string())?;
 
-        writeln!(file, "{}", data).map_err(|e| e.to_string())
+        writeln!(file, "{}", data.trim()).map_err(|e| e.to_string())
     }
 }
 
