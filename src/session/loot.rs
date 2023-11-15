@@ -89,7 +89,7 @@ impl Loot {
         let mut wtr = csv::Writer::from_writer(vec![]);
 
         if !Path::new(path).exists() {
-            wtr.write_record(&["found_at", "plugin", "target", "data"])
+            wtr.write_record(["found_at", "plugin", "target", "data"])
                 .map_err(|e| e.to_string())?;
         }
 
@@ -100,7 +100,7 @@ impl Loot {
             .collect::<Vec<String>>()
             .join(";");
 
-        wtr.write_record(&[&self.found_at_string(), &self.plugin, &self.target, &data])
+        wtr.write_record([&self.found_at_string(), &self.plugin, &self.target, &data])
             .map_err(|e| e.to_string())?;
 
         String::from_utf8(wtr.into_inner().unwrap()).map_err(|e| e.to_string())
