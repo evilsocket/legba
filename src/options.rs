@@ -48,10 +48,10 @@ pub(crate) struct Options {
     #[clap(long, value_enum, default_value_t = session::loot::OutputFormat::Text)]
     pub output_format: session::loot::OutputFormat,
     /// Connection timeout in milliseconds.
-    #[clap(long, default_value_t = 1000)]
+    #[clap(long, default_value_t = 10000)]
     pub timeout: u64,
     /// Number of attempts if a request fails.
-    #[clap(long, default_value_t = 10)]
+    #[clap(long, default_value_t = 5)]
     pub retries: usize,
     /// Delay in milliseconds to wait before a retry.
     #[clap(long, default_value_t = 1000)]
