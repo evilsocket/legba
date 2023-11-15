@@ -260,9 +260,9 @@ dependencies = [
 
 [[package]]
 name = "async-ssh2-tokio"
-version = "0.7.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3eb0367d51247c7eff825eec9fa3c1a4710b4042dd5c6f2ef2fdd105af9addee"
+checksum = "446d96124d6860a891d99d9ecc35360e4c90df16423dd31357256f9b0d49ded5"
 dependencies = [
  "async-trait",
  "russh",

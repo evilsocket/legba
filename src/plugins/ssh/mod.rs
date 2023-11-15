@@ -63,7 +63,7 @@ impl Plugin for SSH {
         let res = tokio::time::timeout(
             timeout,
             Client::connect(
-                &address,
+                address.clone(),
                 &creds.username,
                 method,
                 ServerCheckMethod::NoCheck,
