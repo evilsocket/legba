@@ -21,9 +21,10 @@ use std::time;
 
 pub(crate) type Error = String;
 
-async fn periodic_saver(session: Arc<Session>, persistent: bool) {
+async fn periodic_saver(session: Arc<Session>) {
     let one_sec = time::Duration::from_millis(1000);
     let mut last_done: usize = 0;
+    let persistent = session.options.session.is_some();
 
     while !session.is_stop() {
         std::thread::sleep(one_sec);
@@ -80,17 +81,6 @@ impl Session {
             parse_target(target, 0)?;
         }
 
-        let num_targets = targets.len();
-        log::info!(
-            "target{}: {}",
-            if num_targets > 1 {
-                format!("s ({})", num_targets)
-            } else {
-                "".to_owned()
-            },
-            options.target.as_ref().unwrap()
-        );
-
         let runtime = Runtime::new(options.concurrency);
         let total = AtomicUsize::new(0);
         let done = AtomicUsize::new(0);
@@ -108,34 +98,41 @@ impl Session {
         }))
     }
 
-    fn from_disk(path: &str) -> Result<Arc<Self>, Error> {
-        log::debug!("restoring session from {}", path);
+    fn from_disk(path: &str, options: Options) -> Result<Arc<Self>, Error> {
+        if Path::new(path).exists() {
+            log::info!("restoring session from {}", path);
 
-        let file = fs::File::open(path).map_err(|e| e.to_string())?;
-        let mut session: Session = serde_json::from_reader(file).map_err(|e| e.to_string())?;
+            let file = fs::File::open(path).map_err(|e| e.to_string())?;
+            let mut session: Session = serde_json::from_reader(file).map_err(|e| e.to_string())?;
 
-        session.runtime = Runtime::new(session.options.concurrency);
+            session.runtime = Runtime::new(session.options.concurrency);
 
-        Ok(Arc::new(session))
+            Ok(Arc::new(session))
+        } else {
+            Self::from_options(options)
+        }
     }
 
     pub fn new(options: Options) -> Result<Arc<Self>, Error> {
-        let mut persistent = false;
         // if a session file has been specified
-        let session = if let Some(path) = &options.session {
-            persistent = true;
-            // if it already exists
-            if Path::new(path).exists() {
-                // restore from disk
-                Self::from_disk(path)?
-            } else {
-                // create new with persistency
-                Self::from_options(options)?
-            }
+        let session = if let Some(path) = options.session.as_ref() {
+            // load from disk if file exists, or from options and save to disk
+            Self::from_disk(path, options.clone())?
         } else {
             // create new without persistency
             Self::from_options(options)?
         };
+
+        let num_targets = session.targets.len();
+        log::info!(
+            "target{}: {}",
+            if num_targets > 1 {
+                format!("s ({})", num_targets)
+            } else {
+                "".to_owned()
+            },
+            session.options.target.as_ref().unwrap()
+        );
 
         // set ctrl-c handler
         let le_session = session.clone();
@@ -145,7 +142,7 @@ impl Session {
         })
         .expect("error setting ctrl-c handler");
 
-        tokio::task::spawn(periodic_saver(session.clone(), persistent));
+        tokio::task::spawn(periodic_saver(session.clone()));
 
         Ok(session)
     }
