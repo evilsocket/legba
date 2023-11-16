@@ -1,1 +1,4 @@
 /test-servers/** linguist-vendored
+/docker-compose.yml linguist-vendored
+/Dockerfile linguist-vendored
+/release.py linguist-vendored
