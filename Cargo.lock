@@ -1987,7 +1987,7 @@ dependencies = [
 
 [[package]]
 name = "legba"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "ahash",
  "ansi_term",
