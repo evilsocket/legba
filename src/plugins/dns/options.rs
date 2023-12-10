@@ -2,6 +2,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
+#[group(skip)]
 pub(crate) struct Options {
     #[clap(long)]
     /// Comma separatd list of DNS resolvers to use instead of the system one.

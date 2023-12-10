@@ -2,6 +2,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
+#[group(skip)]
 pub(crate) struct Options {
     #[clap(long, default_value = "200")]
     /// Comma separated status codes to consider as successful authentication attempts for HTTP based plugins.

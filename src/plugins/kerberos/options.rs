@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::Protocol;
 
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
+#[group(skip)]
 pub(crate) struct Options {
     #[clap(long)]
     /// Kerberos realm.

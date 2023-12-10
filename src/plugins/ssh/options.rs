@@ -9,6 +9,7 @@ pub(crate) enum Mode {
 }
 
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
+#[group(skip)]
 pub(crate) struct Options {
     #[clap(long, value_enum, default_value_t = Mode::Password)]
     /// Authentication strategy.
