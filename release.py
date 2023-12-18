@@ -45,9 +45,3 @@ print("git push origin v%s" % next_ver)
 print()
 # publish on crates.io
 print("cargo publish")
-
-# print()
-# build and push docker image
-# print("docker buildx create --name legbabuilder --use --bootstrap")
-# print("docker buildx build --tag evilsocket/legba:latest --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push .")
-# print("docker buildx build --tag evilsocket/legba:%s --platform linux/arm64/v8,linux/amd64 --builder legbabuilder --push ." % next_ver)
