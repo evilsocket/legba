@@ -27,7 +27,7 @@ fn setup() -> Result<Options, session::Error> {
 
     if env::var_os("RUST_LOG").is_none() {
         // set `RUST_LOG=debug` to see debug logs
-        env::set_var("RUST_LOG", "info,blocking=off,pavao=off");
+        env::set_var("RUST_LOG", "info,blocking=off,pavao=off,fast_socks5=off");
     }
 
     env_logger::builder()

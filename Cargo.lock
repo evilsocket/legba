@@ -1290,6 +1290,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 
 [[package]]
+name = "fast-socks5"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d449e348301d5fb9b0e5781510d8235ffe3bbac3286bd305462736a9e7043039"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "log",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2013,6 +2027,7 @@ dependencies = [
  "ctor",
  "ctrlc",
  "env_logger",
+ "fast-socks5",
  "glob",
  "hex",
  "human_bytes",

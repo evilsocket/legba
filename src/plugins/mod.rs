@@ -45,6 +45,8 @@ pub(crate) mod samba;
 pub(crate) mod scylla;
 #[cfg(feature = "smtp")]
 pub(crate) mod smtp;
+#[cfg(feature = "socks5")]
+pub(crate) mod socks5;
 #[cfg(feature = "sql")]
 mod sql;
 #[cfg(feature = "ssh")]

@@ -79,6 +79,7 @@ scylla = { version = "0.10.1", optional = true }
 paho-mqtt = { version = "0.12.3", optional = true }
 csv = "1.3.0"
 pavao = { version = "0.2.3", optional = true }
+fast-socks5 = { version = "0.9.2", optional = true }
 
 [dev-dependencies]
 tempfile = "3.8.0"
@@ -109,6 +110,7 @@ default = [
     "scylla",
     "tcp_ports",
     "samba",
+    "socks5",
 ]
 http = ["dep:url", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver"]
@@ -137,6 +139,7 @@ redis = []
 scylla = ["dep:scylla"]
 tcp_ports = []
 samba = ["dep:pavao"]
+socks5 = ["dep:fast-socks5"]
 
 [profile.release]
 lto = true        # Enable link-time optimization
