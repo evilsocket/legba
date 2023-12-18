@@ -27,10 +27,10 @@ pub(crate) mod kerberos;
 pub(crate) mod ldap;
 #[cfg(feature = "mongodb")]
 pub(crate) mod mongodb;
-#[cfg(feature = "mssql")]
-mod mssql;
 #[cfg(feature = "mqtt")]
 pub(crate) mod mqtt;
+#[cfg(feature = "mssql")]
+mod mssql;
 #[cfg(feature = "oracle")]
 pub(crate) mod oracle; // optional as it requires libclntsh that's a pain to install and configure
 #[cfg(feature = "pop3")]
@@ -39,6 +39,8 @@ pub(crate) mod pop3;
 pub(crate) mod rdp;
 #[cfg(feature = "redis")]
 pub(crate) mod redis;
+#[cfg(feature = "samba")]
+pub(crate) mod samba;
 #[cfg(feature = "scylla")]
 pub(crate) mod scylla;
 #[cfg(feature = "smtp")]

@@ -96,6 +96,9 @@ pub(crate) struct Options {
     #[cfg(feature = "telnet")]
     #[clap(flatten, next_help_heading = "TELNET")]
     pub telnet: crate::plugins::telnet::options::Options,
+    #[cfg(feature = "samba")]
+    #[clap(flatten, next_help_heading = "SAMBA")]
+    pub smb: crate::plugins::samba::options::Options,
     #[cfg(feature = "ssh")]
     #[clap(flatten, next_help_heading = "SSH")]
     pub ssh: crate::plugins::ssh::options::Options,

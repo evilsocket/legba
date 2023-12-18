@@ -1,0 +1,152 @@
+use std::collections::HashMap;
+use std::time::Duration;
+
+use async_trait::async_trait;
+use ctor::ctor;
+use pavao::{SmbClient, SmbCredentials, SmbDirentType, SmbOptions};
+use tokio::sync::Mutex;
+
+use crate::creds::Credentials;
+use crate::session::{Error, Loot};
+use crate::Plugin;
+use crate::{utils, Options};
+
+use lazy_static::lazy_static;
+
+pub(crate) mod options;
+
+lazy_static! {
+    static ref SHARE_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+    static ref PAVAO_LOCK: Mutex<bool> = tokio::sync::Mutex::new(true);
+}
+
+#[ctor]
+fn register() {
+    crate::plugins::manager::register("smb", Box::new(SMB::new()));
+}
+
+#[derive(Clone)]
+pub(crate) struct SMB {
+    share: Option<String>,
+    workgroup: String,
+}
+
+impl SMB {
+    pub fn new() -> Self {
+        SMB {
+            share: None,
+            workgroup: String::default(),
+        }
+    }
+
+    fn get_samba_client(
+        &self,
+        server: &str,
+        workgroup: &str,
+        share: &str,
+        username: &str,
+        password: &str,
+    ) -> Result<SmbClient, Error> {
+        SmbClient::new(
+            SmbCredentials::default()
+                .server(server)
+                .share(share)
+                .username(username)
+                .password(password)
+                .workgroup(workgroup),
+            SmbOptions::default()
+                .no_auto_anonymous_login(false)
+                .one_share_per_server(true),
+        )
+        .map_err(|e| format!("error creating client for {}: {}", share, e.to_string()))
+    }
+
+    async fn get_share_for(&self, target: &str) -> Result<String, Error> {
+        if let Some(share) = self.share.as_ref() {
+            // return from arguments
+            return Ok(share.clone());
+        }
+
+        let mut guard = SHARE_CACHE.lock().await;
+        if let Some(share) = guard.get(target) {
+            // return from cache
+            return Ok(share.clone());
+        }
+
+        // get from listing
+        log::info!("searching private share for {} ...", target);
+
+        let server = format!("smb://{}", target);
+        let root_cli = self.get_samba_client(&server, &self.workgroup, "", "", "")?;
+        for entry in root_cli.list_dir("").unwrap() {
+            match entry.get_type() {
+                SmbDirentType::FileShare | SmbDirentType::Dir => {
+                    let share = format!("/{}", entry.name());
+                    // if share is private we expect an error
+                    let sub_cli =
+                        self.get_samba_client(&server, &self.workgroup, &share, "", "")?;
+                    let listing = sub_cli.list_dir("");
+                    if listing.is_err() {
+                        log::info!("{}{} found", &server, &share);
+                        // found a private share, update the cache and return.
+                        guard.insert(target.to_owned(), share.clone());
+                        return Ok(share);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        return Err(format!(
+            "could not find private share for {}, provide one with --smb-share",
+            target
+        ));
+    }
+}
+
+#[async_trait]
+impl Plugin for SMB {
+    fn description(&self) -> &'static str {
+        "Samba password authentication."
+    }
+
+    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+        self.share = opts.smb.smb_share.clone();
+        self.workgroup = opts.smb.smb_workgroup.clone();
+        Ok(())
+    }
+
+    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+        let address = utils::parse_target_address(&creds.target, 445)?;
+        let server = format!("smb://{}", &address);
+        let share = tokio::time::timeout(timeout, self.get_share_for(&address))
+            .await
+            .map_err(|e: tokio::time::error::Elapsed| e.to_string())?
+            .map_err(|e| e.to_string())?;
+
+        // HACK: pavao doesn't seem to be thread safe, so we need to acquire this lock here.
+        // Sadly this decreases performances, but it appears that there are no alternatives
+        // for rust :/
+        let _guard = PAVAO_LOCK.lock().await;
+        let client = self.get_samba_client(
+            &server,
+            &self.workgroup,
+            &share,
+            &creds.username,
+            &creds.password,
+        )?;
+
+        return if client.list_dir("/").is_ok() {
+            Ok(Some(Loot::new(
+                "smb",
+                &address,
+                [
+                    ("username".to_owned(), creds.username.to_owned()),
+                    ("password".to_owned(), creds.password.to_owned()),
+                ],
+            )))
+        } else {
+            Ok(None)
+        };
+    }
+}

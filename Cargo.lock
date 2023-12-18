@@ -569,6 +569,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "cfg_aliases"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
+
+[[package]]
 name = "chacha20"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2024,6 +2030,7 @@ dependencies = [
  "ntlmclient",
  "num_cpus",
  "paho-mqtt",
+ "pavao",
  "rand 0.8.5",
  "rdp-rs",
  "regex",
@@ -2685,6 +2692,20 @@ name = "paste"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
+
+[[package]]
+name = "pavao"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bcafb8d680c0b6750c095fbd3c9263fc0b3c315e6055cd1867db038641c1757"
+dependencies = [
+ "cfg_aliases",
+ "lazy_static",
+ "libc",
+ "log",
+ "pkg-config",
+ "thiserror",
+]
 
 [[package]]
 name = "pbkdf2"
