@@ -58,7 +58,7 @@ impl SMB {
                 .no_auto_anonymous_login(false)
                 .one_share_per_server(true),
         )
-        .map_err(|e| format!("error creating client for {}: {}", share, e.to_string()))
+        .map_err(|e| format!("error creating client for {}: {}", share, e))
     }
 
     async fn get_share_for(&self, target: &str) -> Result<String, Error> {
@@ -97,10 +97,10 @@ impl SMB {
             }
         }
 
-        return Err(format!(
+        Err(format!(
             "could not find private share for {}, provide one with --smb-share",
             target
-        ));
+        ))
     }
 }
 

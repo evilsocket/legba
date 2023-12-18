@@ -10,17 +10,25 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
+pub(crate) mod options;
+
 #[ctor]
 fn register() {
     crate::plugins::manager::register("socks5", Box::new(Socks5::new()));
 }
 
 #[derive(Clone)]
-pub(crate) struct Socks5 {}
+pub(crate) struct Socks5 {
+    remote_address: String,
+    remote_port: u16,
+}
 
 impl Socks5 {
     pub fn new() -> Self {
-        Socks5 {}
+        Socks5 {
+            remote_address: "ifcfg.co".to_owned(),
+            remote_port: 80,
+        }
     }
 }
 
@@ -30,7 +38,10 @@ impl Plugin for Socks5 {
         "SOCKS5 password authentication."
     }
 
-    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
+    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+        self.remote_address = opts.socks5.socks5_address.clone();
+        self.remote_port = opts.socks5.socks5_port;
+
         Ok(())
     }
 
@@ -40,8 +51,8 @@ impl Plugin for Socks5 {
             timeout,
             fast_socks5::client::Socks5Stream::connect_with_password(
                 address.clone(),
-                "ifcfg.co".to_owned(),
-                80,
+                self.remote_address.clone(),
+                self.remote_port,
                 creds.username.clone(),
                 creds.password.clone(),
                 fast_socks5::client::Config::default(),
