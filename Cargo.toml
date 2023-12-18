@@ -2,7 +2,7 @@
 name = "legba"
 description = "A fast multi protocol credential bruteforcer/sprayer/enumerator."
 keywords = ["authentication", "bruteforce", "wordlist"]
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Simone Margaritelli <evilsocket@gmail.com>"]
 license = "GPL-3.0"
 edition = "2021"
