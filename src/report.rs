@@ -6,7 +6,7 @@ use memory_stats::memory_stats;
 
 use crate::Session;
 
-pub(crate) async fn statistics(session: Arc<Session>) {
+pub(crate) fn statistics(session: Arc<Session>) {
     let one_sec = time::Duration::from_millis(1000);
     while !session.is_stop() {
         std::thread::sleep(one_sec);

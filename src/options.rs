@@ -84,6 +84,8 @@ pub(crate) struct Options {
     #[clap(short = 'Q', long, default_value_t = false)]
     pub quiet: bool,
 
+    #[clap(flatten, next_help_heading = "COMMAND (CMD)")]
+    pub cmd: crate::plugins::cmd::options::Options,
     #[cfg(feature = "amqp")]
     #[clap(flatten, next_help_heading = "AMQP")]
     pub amqp: crate::plugins::amqp::options::Options,
@@ -97,7 +99,7 @@ pub(crate) struct Options {
     #[clap(flatten, next_help_heading = "TELNET")]
     pub telnet: crate::plugins::telnet::options::Options,
     #[cfg(feature = "samba")]
-    #[clap(flatten, next_help_heading = "SAMBA")]
+    #[clap(flatten, next_help_heading = "SAMBA (SMB)")]
     pub smb: crate::plugins::samba::options::Options,
     #[cfg(feature = "ssh")]
     #[clap(flatten, next_help_heading = "SSH")]
