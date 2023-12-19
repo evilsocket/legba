@@ -79,7 +79,10 @@ pub(crate) async fn run(
 
     if !session.options.quiet {
         // start statistics reporting
-        task::spawn(report::statistics(session.clone()));
+        let stat_sess = session.clone();
+        std::thread::spawn(move || {
+            report::statistics(stat_sess);
+        });
     }
 
     // loop credentials for this session
