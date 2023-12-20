@@ -64,7 +64,11 @@ impl Plugin for Command {
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.opts = opts.cmd.clone();
-        Ok(())
+        if self.opts.cmd_binary.is_empty() {
+            Err("please provide --cmd-binary and optionally --cmd-args".to_owned())
+        } else {
+            Ok(())
+        }
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
