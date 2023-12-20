@@ -5,10 +5,6 @@ use serde::{Deserialize, Serialize};
 #[group(skip)]
 pub(crate) struct Options {
     #[clap(long, default_value = "")]
-    /// Command binary path.
-    pub cmd_binary: String,
-
-    #[clap(long, default_value = "")]
     /// Command arguments. {USERNAME}, {PASSWORD}, {TARGET} and {PORT} can be used as placeholders.
     pub cmd_args: String,
 

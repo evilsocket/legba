@@ -20,17 +20,20 @@ fn register() {
 #[derive(Clone)]
 pub(crate) struct Command {
     opts: options::Options,
+    binary: String,
 }
 
 impl Command {
     pub fn new() -> Self {
         Command {
             opts: options::Options::default(),
+            binary: String::default(),
         }
     }
 
     async fn run(&self, creds: &Credentials) -> Result<std::process::Output, Error> {
         let (target, port) = utils::parse_target(&creds.target, 0)?;
+
         let args = shell_words::split(
             &self
                 .opts
@@ -42,13 +45,13 @@ impl Command {
         )
         .unwrap();
 
-        log::debug!("{} {}", &self.opts.cmd_binary, args.join(" "));
+        log::debug!("{} {}", &self.binary, args.join(" "));
 
-        let child = std::process::Command::new(&self.opts.cmd_binary)
+        let child = std::process::Command::new(&self.binary)
             .args(&args)
             .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| e.to_string())?;
 
@@ -63,12 +66,9 @@ impl Plugin for Command {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+        self.binary = opts.target.clone().unwrap();
         self.opts = opts.cmd.clone();
-        if self.opts.cmd_binary.is_empty() {
-            Err("please provide --cmd-binary and optionally --cmd-args".to_owned())
-        } else {
-            Ok(())
-        }
+        Ok(())
     }
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
