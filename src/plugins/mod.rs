@@ -12,8 +12,6 @@ pub(crate) mod cmd;
 
 #[cfg(feature = "amqp")]
 pub(crate) mod amqp;
-#[cfg(feature = "cassandra")]
-pub(crate) mod cassandra;
 #[cfg(feature = "dns")]
 pub(crate) mod dns;
 #[cfg(feature = "ftp")]
