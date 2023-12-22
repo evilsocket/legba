@@ -10,6 +10,9 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = false)]
     /// Do not attempt banner grabbing.
     pub tcp_ports_no_banners: bool,
+    #[clap(long, default_value_t = 10000)]
+    /// Timeout in seconds for banner grabbing.
+    pub tcp_ports_banner_timeout: u64,
     #[clap(long, default_value = "80, 8080, 8081, 8888")]
     /// Comma separated list of ports for HTTP grabbing.
     pub tcp_ports_http: String,

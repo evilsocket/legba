@@ -88,7 +88,7 @@ impl Plugin for TcpPortScanner {
                     &target,
                     creds.username.parse::<u16>().unwrap(),
                     stream,
-                    timeout,
+                    std::time::Duration::from_secs(self.opts.tcp_ports_banner_timeout),
                 )
                 .await;
 
