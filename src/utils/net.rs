@@ -10,6 +10,23 @@ pub(crate) trait StreamLike:
 impl StreamLike for tokio::net::TcpStream {}
 
 impl StreamLike for async_native_tls::TlsStream<tokio::net::TcpStream> {}
+impl StreamLike for async_native_tls::TlsStream<Box<dyn StreamLike>> {}
+
+pub(crate) async fn upgrade_tcp_stream_to_ssl(
+    tcp_stream: Box<dyn StreamLike>,
+    timeout: Duration,
+) -> Result<Box<dyn StreamLike>, Error> {
+    let tls = async_native_tls::TlsConnector::new()
+        .danger_accept_invalid_certs(true)
+        .danger_accept_invalid_hostnames(true);
+
+    let tls_stream = tokio::time::timeout(timeout, tls.connect("", tcp_stream))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+
+    Ok(Box::new(tls_stream))
+}
 
 pub(crate) async fn async_tcp_stream(
     address: &str,
@@ -22,16 +39,7 @@ pub(crate) async fn async_tcp_stream(
         .map_err(|e| e.to_string())?;
 
     if ssl {
-        let tls = async_native_tls::TlsConnector::new()
-            .danger_accept_invalid_certs(true)
-            .danger_accept_invalid_hostnames(true);
-
-        let tls_stream = tokio::time::timeout(timeout, tls.connect("", tcp_stream))
-            .await
-            .map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
-
-        Ok(Box::new(tls_stream))
+        upgrade_tcp_stream_to_ssl(Box::new(tcp_stream), timeout).await
     } else {
         Ok(Box::new(tcp_stream))
     }

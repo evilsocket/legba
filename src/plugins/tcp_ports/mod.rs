@@ -10,6 +10,7 @@ use crate::{creds, utils};
 
 use crate::creds::{Credentials, Expression};
 
+mod grabbers;
 pub(crate) mod options;
 
 #[ctor]
@@ -20,12 +21,14 @@ fn register() {
 #[derive(Clone)]
 pub(crate) struct TcpPortScanner {
     ports: Expression,
+    opts: options::Options,
 }
 
 impl TcpPortScanner {
     pub fn new() -> Self {
         TcpPortScanner {
             ports: Expression::default(),
+            opts: options::Options::default(),
         }
     }
 }
@@ -60,6 +63,8 @@ impl Plugin for TcpPortScanner {
             ));
         }
 
+        self.opts = opts.tcp_ports.clone();
+
         Ok(())
     }
 
@@ -68,19 +73,31 @@ impl Plugin for TcpPortScanner {
         let address = format!("{}:{}", &target, &creds.username); // username is the port
         let start: std::time::Instant = std::time::Instant::now();
 
-        return if crate::utils::net::async_tcp_stream(&address, timeout, false)
-            .await
-            .is_ok()
+        return if let Ok(stream) =
+            crate::utils::net::async_tcp_stream(&address, timeout, false).await
         {
-            Ok(Some(Loot::new(
-                "tcp.ports",
-                &target,
-                [
-                    ("proto".to_owned(), "tcp".to_owned()),
-                    ("port".to_owned(), creds.username.to_owned()),
-                    ("time".to_owned(), format!("{:?}", start.elapsed())),
-                ],
-            )))
+            let mut data = vec![
+                ("proto".to_owned(), "tcp".to_owned()),
+                ("port".to_owned(), creds.username.to_owned()),
+                ("time".to_owned(), format!("{:?}", start.elapsed())),
+            ];
+
+            if !self.opts.tcp_ports_no_banners {
+                let banner = grabbers::grab_banner(
+                    &self.opts,
+                    &target,
+                    creds.username.parse::<u16>().unwrap(),
+                    stream,
+                    timeout,
+                )
+                .await;
+
+                for (key, val) in banner {
+                    data.push((format!("banner.{}", key), val));
+                }
+            }
+
+            Ok(Some(Loot::new("tcp.ports", &target, data)))
         } else {
             Ok(None)
         };
