@@ -7,7 +7,7 @@ use regex::Regex;
 use super::Banner;
 
 // TODO: read from args
-static HTTP_HEADERS_OF_INTEREST: &'static [&'static str] = &["server", "x-powered-by", "location"];
+static HTTP_HEADERS_OF_INTEREST: &[&str] = &["server", "x-powered-by", "location"];
 
 lazy_static! {
     static ref HTML_TITLE_PARSER: Regex =
@@ -17,7 +17,7 @@ lazy_static! {
 pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
     for http_port in opts
         .tcp_ports_http
-        .split(",")
+        .split(',')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
     {
@@ -28,7 +28,7 @@ pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
 
     for https_port in opts
         .tcp_ports_https
-        .split(",")
+        .split(',')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
     {
@@ -116,5 +116,5 @@ pub(crate) async fn http_grabber(
         );
     }
 
-    return banner;
+    banner
 }

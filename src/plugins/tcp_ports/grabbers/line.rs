@@ -43,5 +43,5 @@ pub(crate) async fn line_grabber(
         }
     }
 
-    return banner;
+    banner
 }
