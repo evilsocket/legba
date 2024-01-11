@@ -1,7 +1,8 @@
 use std::env;
+use std::io;
 use std::time;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use creds::Credentials;
 
 #[cfg(not(windows))]
@@ -19,12 +20,6 @@ pub(crate) use crate::plugins::Plugin;
 pub(crate) use crate::session::Session;
 
 fn setup() -> Result<Options, session::Error> {
-    print!(
-        "{} v{}\n\n",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION")
-    );
-
     if env::var_os("RUST_LOG").is_none() {
         // set `RUST_LOG=debug` to see debug logs
         env::set_var("RUST_LOG", "info,blocking=off,pavao=off,fast_socks5=off");
@@ -37,6 +32,11 @@ fn setup() -> Result<Options, session::Error> {
         .init();
 
     let options: Options = Options::parse();
+
+    if let Some(shell) = options.generate_completions {
+        clap_complete::generate(shell, &mut Options::command(), "legba", &mut io::stdout());
+        std::process::exit(0);
+    }
 
     // list plugins and exit
     if options.list_plugins {

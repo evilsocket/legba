@@ -84,6 +84,11 @@ pub(crate) struct Options {
     #[clap(short = 'Q', long, default_value_t = false)]
     pub quiet: bool,
 
+    /// Generate shell completions
+    #[clap(long)]
+    #[serde(skip)]
+    pub generate_completions: Option<clap_complete::Shell>,
+
     #[clap(flatten, next_help_heading = "COMMAND (CMD)")]
     pub cmd: crate::plugins::cmd::options::Options,
     #[cfg(feature = "amqp")]
