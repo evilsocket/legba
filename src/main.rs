@@ -33,6 +33,7 @@ fn setup() -> Result<Options, session::Error> {
 
     let options: Options = Options::parse();
 
+    // generate shell completions and exit
     if let Some(shell) = options.generate_completions {
         clap_complete::generate(shell, &mut Options::command(), "legba", &mut io::stdout());
         std::process::exit(0);
@@ -43,6 +44,12 @@ fn setup() -> Result<Options, session::Error> {
         plugins::manager::list();
         std::process::exit(0);
     }
+
+    print!(
+        "{} v{}\n\n",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
 
     // set file descriptors limits
     #[cfg(not(windows))]
