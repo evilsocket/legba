@@ -16,6 +16,9 @@ pub(crate) struct Options {
     pub list_plugins: bool,
     /// Protocol plugin to use, run with --list-plugins for a list of all available plugins.
     pub plugin: Option<String>,
+    #[clap(short = 'R', long)]
+    /// Load a recipe from this YAML file.
+    pub recipe: Option<String>,
 
     /// Single target host, url or IP address, IP range, CIDR, @filename or comma separated combination of them.
     #[clap(short = 'T', long)]

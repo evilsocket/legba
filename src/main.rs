@@ -11,12 +11,14 @@ use rlimit::{setrlimit, Resource};
 mod creds;
 mod options;
 mod plugins;
+mod recipe;
 mod report;
 mod session;
 mod utils;
 
 pub(crate) use crate::options::Options;
 pub(crate) use crate::plugins::Plugin;
+use crate::recipe::Recipe;
 pub(crate) use crate::session::Session;
 
 fn setup() -> Result<Options, session::Error> {
@@ -31,7 +33,7 @@ fn setup() -> Result<Options, session::Error> {
         .format_timestamp(None)
         .init();
 
-    let options: Options = Options::parse();
+    let mut options: Options = Options::parse();
 
     // generate shell completions and exit
     if let Some(shell) = options.generate_completions {
@@ -50,6 +52,17 @@ fn setup() -> Result<Options, session::Error> {
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
     );
+
+    // load recipe
+    if let Some(recipe_path) = options.recipe.as_ref() {
+        let recipe = Recipe::from_path(recipe_path)?;
+
+        log::info!("recipe: {} ({})", recipe_path, recipe.description);
+
+        let argv = recipe.to_argv(options.plugin.as_ref().unwrap_or(&"".to_string()))?;
+
+        options.try_update_from(argv).map_err(|e| e.to_string())?;
+    }
 
     // set file descriptors limits
     #[cfg(not(windows))]
