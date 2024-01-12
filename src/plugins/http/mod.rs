@@ -63,7 +63,7 @@ pub(crate) struct HTTP {
     domain: String,
     workstation: String,
 
-    random_ua: bool,
+    user_agent: Option<String>,
     success_codes: Vec<u16>,
     success_string: Option<String>,
     failure_string: Option<String>,
@@ -97,7 +97,7 @@ impl HTTP {
             enum_ext_placeholder: String::new(),
             method: Method::GET,
             headers: HeaderMap::default(),
-            random_ua: false,
+            user_agent: None,
             payload: None,
             proxy: None,
             proxy_user: None,
@@ -265,14 +265,15 @@ impl HTTP {
     fn setup_headers(&self) -> HeaderMap {
         let mut headers = self.headers.clone();
 
-        if self.random_ua {
-            headers.append(
-                USER_AGENT,
-                HeaderValue::from_str(ua::USER_AGENTS.choose(&mut rand::thread_rng()).unwrap())
-                    .unwrap(),
-            );
-        }
+        let user_agent = if let Some(ua) = self.user_agent.as_ref() {
+            // use selected user-agent
+            ua.as_str()
+        } else {
+            // pick user-agent randomly
+            ua::USER_AGENTS.choose(&mut rand::thread_rng()).unwrap()
+        };
 
+        headers.append(USER_AGENT, HeaderValue::from_str(user_agent).unwrap());
         headers
     }
 
@@ -468,7 +469,7 @@ impl Plugin for HTTP {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.random_ua = opts.http.http_random_ua;
+        self.user_agent = opts.http.http_ua.clone();
 
         self.csrf = if let Some(csrf_page) = opts.http.http_csrf_page.as_ref() {
             Some(csrf::Config::new(csrf_page, &opts.http.http_csrf_regexp)?)

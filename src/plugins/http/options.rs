@@ -8,8 +8,8 @@ pub(crate) struct Options {
     /// Comma separated status codes to consider as successful authentication attempts for HTTP based plugins.
     pub http_success_codes: String,
     #[clap(long)]
-    /// Randomize requests User-Agent.
-    pub http_random_ua: bool,
+    /// Set a User-Agent. If none is specified, it'll be picked randomly for each request.
+    pub http_ua: Option<String>,
     #[clap(long)]
     /// Check for the presence of this string in the response in order to recognize a succesful attempt.
     pub http_success_string: Option<String>,
