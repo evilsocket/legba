@@ -1,0 +1,1 @@
+Performs common web files and folders enumeration.

@@ -2,3 +2,5 @@
 /docker-compose.yml linguist-vendored
 /Dockerfile linguist-vendored
 /release.py linguist-vendored
+/cookbook/** linguist-vendored
+

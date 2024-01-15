@@ -1,0 +1,7 @@
+description: Microsoft Exchange bruteforce via EWS NTLMv2 endpoint.
+author: evilsocket
+plugin: http.ntlm2
+args:
+    target: "{$schema or https}://{$host}:{$port or 443}/ews"
+    http-success-codes: 200, 500
+    http-ntlm-domain: "{$domain}"

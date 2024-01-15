@@ -1,0 +1,1 @@
+Performs common local file inclusion (LFI) vulnerabilities fuzzing.

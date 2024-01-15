@@ -1,0 +1,7 @@
+description: Performs common DNS subdomain enumeration.
+author: evilsocket
+plugin: dns
+args:
+    payloads: "{$recipe.path}/200k-dns.txt"
+    # uncomment to use external resolvers
+    # dns-resolvers: "8.8.8.8, 8.8.4.4"
