@@ -4,6 +4,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
 #[group(skip)]
 pub(crate) struct Options {
+    #[clap(long)]
+    /// Command arguments.
+    pub cmd_binary: String,
+
     #[clap(long, default_value = "")]
     /// Command arguments. {USERNAME}, {PASSWORD}, {TARGET} and {PORT} can be used as placeholders.
     pub cmd_args: String,

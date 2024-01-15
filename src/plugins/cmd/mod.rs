@@ -20,14 +20,12 @@ fn register() {
 #[derive(Clone)]
 pub(crate) struct Command {
     opts: options::Options,
-    binary: String,
 }
 
 impl Command {
     pub fn new() -> Self {
         Command {
             opts: options::Options::default(),
-            binary: String::default(),
         }
     }
 
@@ -45,9 +43,9 @@ impl Command {
         )
         .unwrap();
 
-        log::debug!("{} {}", &self.binary, args.join(" "));
+        log::debug!("{} {}", &self.opts.cmd_binary, args.join(" "));
 
-        let child = std::process::Command::new(&self.binary)
+        let child = std::process::Command::new(&self.opts.cmd_binary)
             .args(&args)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
@@ -66,7 +64,6 @@ impl Plugin for Command {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.binary = opts.target.clone().unwrap();
         self.opts = opts.cmd.clone();
         Ok(())
     }
