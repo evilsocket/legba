@@ -1,1 +1,0 @@
-Wordpress related recipes.
