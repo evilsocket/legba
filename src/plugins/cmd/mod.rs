@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use ctor::ctor;
 
 use crate::session::{Error, Loot};
+use crate::Options;
 use crate::Plugin;
-use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
@@ -30,16 +30,13 @@ impl Command {
     }
 
     async fn run(&self, creds: &Credentials) -> Result<std::process::Output, Error> {
-        let (target, port) = utils::parse_target(&creds.target, 0)?;
-
         let args = shell_words::split(
             &self
                 .opts
                 .cmd_args
                 .replace("{USERNAME}", &creds.username)
                 .replace("{PASSWORD}", &creds.password)
-                .replace("{TARGET}", &target)
-                .replace("{PORT}", &format!("{}", port)),
+                .replace("{TARGET}", &creds.target),
         )
         .unwrap();
 
@@ -81,7 +78,7 @@ impl Plugin for Command {
             let stdout = String::from_utf8_lossy(&out.stdout);
             let stderr = String::from_utf8_lossy(&out.stderr);
             if !stderr.is_empty() {
-                log::error!("{}", stderr);
+                log::debug!("{}", stderr);
             }
 
             log::debug!("{}", &stdout);

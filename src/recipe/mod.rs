@@ -135,7 +135,9 @@ impl Recipe {
 
         for (arg_name, arg_value) in &self.args {
             argv.push(format!("--{}", arg_name));
-            argv.push(self.parse_arg(arg_value, &mut ctx)?);
+            if arg_value != "null" {
+                argv.push(self.parse_arg(arg_value, &mut ctx)?);
+            }
         }
 
         // print context
