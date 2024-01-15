@@ -59,8 +59,9 @@ fn setup() -> Result<Options, session::Error> {
 
         log::info!("recipe: {} ({})", recipe_path, recipe.description);
 
+        // get new argv from recipe
         let argv = recipe.to_argv(options.plugin.as_ref().unwrap_or(&"".to_string()))?;
-
+        // repopulate the options from this argv
         options.try_update_from(argv).map_err(|e| e.to_string())?;
     }
 
