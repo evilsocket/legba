@@ -19,6 +19,7 @@ mod csrf;
 mod ntlm;
 pub(crate) mod options;
 mod payload;
+mod placeholders;
 mod ua;
 
 #[ctor]
@@ -123,12 +124,7 @@ impl HTTP {
                 "".to_owned()
             };
 
-            let path = target_url
-                .path()
-                .replace("%7BUSERNAME%7D", "{USERNAME}")
-                .replace("%7BPASSWORD%7D", "{PASSWORD}")
-                .replace("%7BPAYLOAD%7D", "{PAYLOAD}"); // undo query encoding of interpolation params
-
+            let path = placeholders::interpolate(target_url.path(), creds);
             let query = if let Some(query) = target_url.query() {
                 format!("?{}", query)
             } else {
@@ -147,9 +143,7 @@ impl HTTP {
             target_url.to_string()
         };
 
-        Ok(target_url
-            .replace("{USERNAME}", &creds.username)
-            .replace("{PASSWORD}", &creds.password))
+        Ok(placeholders::interpolate(&target_url, creds))
     }
 
     fn setup_request_body(
@@ -374,7 +368,7 @@ impl HTTP {
         let headers = self.setup_headers();
         let url = if target.contains("{PAYLOAD}") {
             // by interpolation
-            target.replace("{PAYLOAD}", &creds.username)
+            placeholders::interpolate(&target, creds)
         } else {
             // by appending
             format!(
@@ -610,56 +604,122 @@ impl Plugin for HTTP {
 mod tests {
     use reqwest::header::{HeaderValue, CONTENT_TYPE};
 
-    use crate::{options::Options, plugins::Plugin};
+    use crate::{creds::Credentials, options::Options, plugins::Plugin};
 
     use super::{Strategy, HTTP};
-    /*
-       #[test]
-       fn test_get_target_url_adds_default_schema_and_path() {
-           let http = HTTP::new(Strategy::Request);
-           assert_eq!(
-               "http://localhost:3000/",
-               http.get_target_url("localhost:3000").unwrap()
-           );
-       }
 
-       #[test]
-       fn test_get_target_url_adds_default_schema() {
-           let http = HTTP::new(Strategy::Request);
-           assert_eq!(
-               "http://localhost:3000/somepath",
-               http.get_target_url("localhost:3000/somepath").unwrap()
-           );
-       }
+    #[test]
+    fn test_get_target_url_adds_default_schema_and_path() {
+        let creds = Credentials {
+            target: "localhost:3000".to_owned(),
+            username: String::new(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
 
-       #[test]
-       fn test_get_target_url_adds_default_path() {
-           let http = HTTP::new(Strategy::Request);
-           assert_eq!(
-               "https://localhost:3000/",
-               http.get_target_url("https://localhost:3000").unwrap()
-           );
-       }
+    #[test]
+    fn test_get_target_url_adds_default_schema() {
+        let creds = Credentials {
+            target: "localhost:3000/somepath".to_owned(),
+            username: String::new(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/somepath",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
 
-       #[test]
-       fn test_get_target_url_preserves_query() {
-           let http = HTTP::new(Strategy::Request);
-           assert_eq!(
-               "http://localhost:3000/?foo=bar",
-               http.get_target_url("localhost:3000/?foo=bar").unwrap()
-           );
-       }
+    #[test]
+    fn test_get_target_url_adds_default_path() {
+        let creds = Credentials {
+            target: "https://localhost:3000".to_owned(),
+            username: String::new(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "https://localhost:3000/",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
 
-       #[test]
-       fn test_get_target_url_preserves_query_with_placeholder() {
-           let http = HTTP::new(Strategy::Request);
-           assert_eq!(
-               "http://localhost:3000/?username={USERNAME}",
-               http.get_target_url("localhost:3000/?username={USERNAME}")
-                   .unwrap()
-           );
-       }
-    */
+    #[test]
+    fn test_get_target_url_preserves_query() {
+        let creds = Credentials {
+            target: "localhost:3000/?foo=bar".to_owned(),
+            username: String::new(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/?foo=bar",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_interpolates_query_with_username_placeholder() {
+        let creds = Credentials {
+            target: "localhost:3000/?username={USERNAME}".to_owned(),
+            username: "bob".to_owned(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/?username=bob",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_interpolates_query_with_password_placeholder() {
+        let creds = Credentials {
+            target: "localhost:3000/?p={PASSWORD}".to_owned(),
+            username: String::new(),
+            password: "f00b4r".to_owned(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/?p=f00b4r",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_interpolates_query_with_payload_placeholder() {
+        let creds = Credentials {
+            target: "localhost:3000/?p={PAYLOAD}".to_owned(),
+            username: "something".to_owned(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/?p=something",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_interpolates_query_urlencoded() {
+        let creds = Credentials {
+            target: "localhost:3000/?p=%7BPAYLOAD%7D".to_owned(),
+            username: "something".to_owned(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "http://localhost:3000/?p=something",
+            http.get_target_url(&creds).unwrap()
+        );
+    }
+
     #[test]
     fn test_plugin_setup_fails_if_no_payload_provided_for_post() {
         let mut http = HTTP::new(Strategy::Request);
