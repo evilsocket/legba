@@ -9,6 +9,7 @@ use crate::session::Error;
 use self::context::Context;
 
 mod context;
+mod interactive;
 
 const ARG_EXPRESSION_ERROR: &str =
     "argument expression must be in the form of {$name} or {$name or default_value}";
@@ -60,57 +61,25 @@ impl Recipe {
         Ok(recipe)
     }
 
-    fn read_arg_from_user(&self, var_name: &str, default: Option<&str>) -> Result<String, Error> {
-        use std::io::{stdout, Write};
-
-        let prompt = if let Some(def) = default {
-            format!("{} ({}): ", var_name, def)
-        } else {
-            format!("{}: ", var_name)
-        };
-
-        loop {
-            print!("recipe.{}", &prompt);
-            let _ = stdout().flush();
-
-            let mut input = String::new();
-            std::io::stdin()
-                .read_line(&mut input)
-                .map_err(|e| e.to_string())?;
-
-            let input = input.trim();
-            if !input.is_empty() {
-                return Ok(input.to_owned());
-            } else if let Some(def) = default {
-                return Ok(def.to_owned());
-            }
-            // keep going
-        }
-    }
-
     fn parse_arg(&self, expr: &str, ctx: &mut Context) -> Result<String, Error> {
         let mut parsed = expr.to_owned();
 
         for cap in ARG_VALUE_PARSER.captures_iter(expr) {
             let expr: &str = cap.get(0).ok_or(ARG_EXPRESSION_ERROR)?.as_str();
             let var_name = cap.get(1).ok_or(ARG_EXPRESSION_ERROR)?.as_str();
-            let var_default = if let Some(m) = cap.get(3) {
-                Some(m.as_str())
-            } else {
-                None
-            };
+            let var_default = cap.get(3).map(|m| m.as_str());
 
             let var_value = if let Some(val) = ctx.get(var_name) {
                 // get variable from context
                 val.to_owned()
             } else if self.interactive {
                 // get from user if interactive
-                self.read_arg_from_user(var_name, var_default)?
+                interactive::read_arg_from_user(var_name, var_default)?
             } else if let Some(def) = var_default {
                 // get variable from default if provided
                 def.to_owned()
             } else {
-                return Err(format!("no '{}' specified for recipe", var_name));
+                return Err(format!("no '{}' variable specified for recipe", var_name));
             };
 
             // cache value in context
