@@ -51,6 +51,7 @@ impl SQL {
     async fn do_attempt<DB: sqlx::Database>(
         &self,
         scheme: &str,
+        db: &str,
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Loot>, Error> {
@@ -58,8 +59,8 @@ impl SQL {
         let pool = tokio::time::timeout(
             timeout,
             PoolOptions::<DB>::new().connect(&format!(
-                "{}://{}:{}@{}/",
-                scheme, &creds.username, &creds.password, &address
+                "{}://{}:{}@{}/{}",
+                scheme, &creds.username, &creds.password, &address, db
             )),
         )
         .await
@@ -92,9 +93,12 @@ impl Plugin for SQL {
 
     async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
         match self.flavour {
-            Flavour::My => self.do_attempt::<MySql>("mysql", creds, timeout).await,
+            Flavour::My => {
+                self.do_attempt::<MySql>("mysql", "mysql", creds, timeout)
+                    .await
+            }
             Flavour::PG => {
-                self.do_attempt::<Postgres>("postgres", creds, timeout)
+                self.do_attempt::<Postgres>("postgres", "postgres", creds, timeout)
                     .await
             }
         }
