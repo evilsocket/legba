@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y libsmbclient-dev libssl-dev ca-certific
 
 WORKDIR /app
 ADD . /app
-RUN cargo build --release
+RUN cargo build --release --features http_relative_paths
 
 FROM debian:bullseye
 RUN apt-get update && apt-get install -y libsmbclient libssl-dev ca-certificates
