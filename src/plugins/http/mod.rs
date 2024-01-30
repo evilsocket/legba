@@ -366,7 +366,7 @@ impl HTTP {
     ) -> Result<Option<Loot>, Error> {
         let target = self.get_target_url(creds)?;
         let headers = self.setup_headers();
-        let url = if target.contains("{PAYLOAD}") {
+        let url_raw = if target.contains("{PAYLOAD}") {
             // by interpolation
             placeholders::interpolate(&target, creds)
         } else {
@@ -380,10 +380,15 @@ impl HTTP {
             )
         };
 
+        let url = Url::options()
+            .leave_relative(true)
+            .parse(&url_raw)
+            .map_err(|e| format!("could not parse url '{}': {:?}", url_raw, e))?;
+
         // build base request object
         let request = self
             .client
-            .request(self.method.clone(), &url)
+            .request(self.method.clone(), url)
             .headers(headers)
             .timeout(timeout);
 
@@ -396,7 +401,7 @@ impl HTTP {
                         "http.enum",
                         &target,
                         [
-                            ("page".to_owned(), url),
+                            ("page".to_owned(), url_raw),
                             ("status".to_owned(), success.status.to_string()),
                             ("size".to_owned(), success.content_length.to_string()),
                             ("type".to_owned(), success.content_type),

@@ -37,9 +37,9 @@ human_bytes = "0.4.3"
 hex = "0.4.3"
 glob = "0.3.1"
 cidr-utils = "0.5.11"
-url = { version = "2.4.1", optional = true }
 regex = { version = "1.9.5" }
-reqwest = { version = "0.11.20", features = [
+url = { version = "2.5.0", optional = true }
+reqwest = { version = "=0.11.20", features = [
     "multipart",
     "socks",
     "cookies",
@@ -143,6 +143,12 @@ scylla = ["dep:scylla"]
 tcp_ports = ["dep:reqwest"]
 samba = ["dep:pavao"]
 socks5 = ["dep:fast-socks5"]
+
+[patch.crates-io]
+url = { path = "./crates/rust-url/url" }
+form_urlencoded = { path = "./crates/rust-url/form_urlencoded" }
+idna = { path = "./crates/rust-url/idna" }
+percent-encoding = { path = "./crates/rust-url/percent_encoding" }
 
 [profile.release]
 lto = true        # Enable link-time optimization

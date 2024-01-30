@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="url::Url">
+    <Intrinsic Name="ptr" Expression="serialization.vec.buf.ptr.pointer.pointer" />
+    <DisplayString>{serialization}</DisplayString>
+    <Expand>
+      <Synthetic Name="[scheme]">
+        <DisplayString>{(char*)(ptr()),[scheme_end]s8}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[username]" Condition="username_end > (scheme_end + 3)">
+        <!-- Add 3 to the scheme end to account for the scheme separator which is '://' -->
+        <DisplayString>{(char*)(ptr()+(scheme_end + 3)),[((username_end)-(scheme_end + 3))]s8}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[host]" Condition="host.tag != 0">
+        <DisplayString>{(char*)(ptr()+host_start),[host_end-host_start]s8}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[port]" Condition="port.tag == 1">
+        <DisplayString>{port.variant1.value.__0,d}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[path]">
+        <DisplayString Condition="query_start.tag == 0 &amp;&amp; fragment_start.tag == 0">{(char*)(ptr()+path_start),[(serialization.vec.len-path_start)]s8}</DisplayString>
+        <DisplayString Condition="query_start.tag == 1">{(char*)(ptr()+path_start),[(query_start.variant1.value.__0-path_start)]s8}</DisplayString>
+        <DisplayString Condition="fragment_start.tag == 1">{(char*)(ptr()+path_start),[(fragment_start.variant1.value.__0-path_start)]s8}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[query]" Condition="query_start.tag == 1">
+        <DisplayString Condition="fragment_start.tag == 0">{(char*)(ptr()+query_start.variant1.value.__0+1),[((serialization.vec.len)-(query_start.variant1.value.__0+1))]s8}</DisplayString>
+        <DisplayString Condition="fragment_start.tag == 1">{(char*)(ptr()+query_start.variant1.value.__0+1),[((fragment_start.variant1.value.__0)-(query_start.variant1.value.__0+1))]s8}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[fragment]" Condition="fragment_start.tag == 1">
+        <DisplayString>{(char*)(ptr()+fragment_start.variant1.value.__0+1),[(serialization.vec.len-fragment_start.variant1.value.__0-1)]s8}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+</AutoVisualizer>

@@ -1,0 +1,24 @@
+name: Coverage
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tarpaulin
+      - run: cargo tarpaulin --out Xml
+      - uses: codecov/codecov-action@v3
+        # A codecov token is not needed for public repos if the repo is linked
+        # on codecov.io. See https://docs.codecov.com/docs/frequently-asked-questions#where-is-the-repository-upload-token-found
+      - uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: cobertura.xml

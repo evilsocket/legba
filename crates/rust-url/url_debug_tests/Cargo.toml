@@ -1,0 +1,21 @@
+[package]
+
+name = "url_debug_tests"
+version = "0.0.0"
+description = "Tests for debugger visualizers defined for the url crate such as url.natvis"
+publish = false
+rust-version = "1.60"
+
+[dev-dependencies]
+url = { path = "../url" }
+debugger_test = "0.1"
+debugger_test_parser = "0.1"
+
+[features]
+debugger_visualizer = []
+
+[[test]]
+name = "debugger_visualizer"
+path = "tests/debugger_visualizer.rs"
+required-features = ["debugger_visualizer"]
+test = false
