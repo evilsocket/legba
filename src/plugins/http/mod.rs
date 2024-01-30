@@ -511,14 +511,6 @@ impl Plugin for HTTP {
                     HeaderValue::from_static("application/x-www-form-urlencoded"),
                 );
             }
-
-            // check that a payload was provided if needed
-            if opts.http.http_payload.is_none() {
-                return Err(format!(
-                    "method {} requires an --http-payload value",
-                    self.method
-                ));
-            }
         }
 
         self.payload = if let Some(payload) = &opts.http.http_payload {
