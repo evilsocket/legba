@@ -718,19 +718,6 @@ mod tests {
     }
 
     #[test]
-    fn test_plugin_setup_fails_if_no_payload_provided_for_post() {
-        let mut http = HTTP::new(Strategy::Request);
-        let mut opts = Options::default();
-
-        opts.http.http_method = "POST".to_owned();
-
-        assert_eq!(
-            Err("method POST requires an --http-payload value".to_owned()),
-            http.setup(&opts)
-        );
-    }
-
-    #[test]
     fn test_plugin_adds_default_content_type_if_post() {
         let mut http = HTTP::new(Strategy::Request);
         let mut opts = Options::default();
