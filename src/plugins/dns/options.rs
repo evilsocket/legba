@@ -16,4 +16,7 @@ pub(crate) struct Options {
     #[clap(long)]
     /// Perform ip to hostname lookup.
     pub dns_ip_lookup: bool,
+    #[clap(long, default_value_t = 10)]
+    /// If more than this amount of sequential dns resolutions point to the same ip, add that ip to an ignore list.
+    pub dns_max_positives: usize,
 }
