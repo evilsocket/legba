@@ -13,4 +13,7 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = 1)]
     /// Number of retries after lookup failure before giving up.
     pub dns_attempts: usize,
+    #[clap(long)]
+    /// Perform ip to hostname lookup.
+    pub dns_ip_lookup: bool,
 }
