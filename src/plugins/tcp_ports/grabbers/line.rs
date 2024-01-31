@@ -1,4 +1,4 @@
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::Banner;
 use crate::utils::net::StreamLike;
@@ -29,12 +29,15 @@ async fn read_line_from(mut stream: Box<dyn StreamLike>) -> String {
 pub(crate) async fn line_grabber(
     address: &str,
     port: u16,
-    stream: Box<dyn StreamLike>,
+    mut stream: Box<dyn StreamLike>,
     timeout: Duration,
 ) -> Banner {
     log::debug!("grabbing line banner from {}:{} ...", address, port);
 
     let mut banner = Banner::default();
+
+    // send something
+    let _ = stream.write_all("hello\r\n\r\n".as_bytes()).await;
 
     let timeout = std::time::Duration::from_millis((timeout.as_millis() / 2) as u64);
     if let Ok(line) = tokio::time::timeout(timeout, read_line_from(stream)).await {
