@@ -78,22 +78,25 @@ impl SMB {
 
         let server = format!("smb://{}", target);
         let root_cli = self.get_samba_client(&server, &self.workgroup, "", "", "")?;
-        for entry in root_cli.list_dir("").unwrap() {
-            match entry.get_type() {
-                SmbDirentType::FileShare | SmbDirentType::Dir => {
-                    let share = format!("/{}", entry.name());
-                    // if share is private we expect an error
-                    let sub_cli =
-                        self.get_samba_client(&server, &self.workgroup, &share, "", "")?;
-                    let listing = sub_cli.list_dir("");
-                    if listing.is_err() {
-                        log::info!("{}{} found", &server, &share);
-                        // found a private share, update the cache and return.
-                        guard.insert(target.to_owned(), share.clone());
-                        return Ok(share);
+
+        if let Ok(entries) = root_cli.list_dir("") {
+            for entry in entries {
+                match entry.get_type() {
+                    SmbDirentType::FileShare | SmbDirentType::Dir => {
+                        let share = format!("/{}", entry.name());
+                        // if share is private we expect an error
+                        let sub_cli =
+                            self.get_samba_client(&server, &self.workgroup, &share, "", "")?;
+                        let listing = sub_cli.list_dir("");
+                        if listing.is_err() {
+                            log::info!("{}{} found", &server, &share);
+                            // found a private share, update the cache and return.
+                            guard.insert(target.to_owned(), share.clone());
+                            return Ok(share);
+                        }
                     }
+                    _ => {}
                 }
-                _ => {}
             }
         }
 
