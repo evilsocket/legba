@@ -107,15 +107,14 @@ pub(crate) async fn http_grabber(
         // collect info from html
         let body = resp.text().await;
         if let Ok(body) = body {
-            if content_type == "text/html" {
+            if content_type.contains("text/html") {
                 if let Some(caps) = HTML_TITLE_PARSER.captures(&body) {
                     banner.insert(
                         "html.title".to_owned(),
                         caps.get(1).unwrap().as_str().to_owned(),
                     );
                 }
-            } else if content_type.starts_with("application/") || content_type.starts_with("text/")
-            {
+            } else if content_type.contains("application/") || content_type.contains("text/") {
                 banner.insert("body".to_owned(), body.to_owned());
             }
         } else {
