@@ -19,7 +19,7 @@ pub(crate) async fn grab_banner(
 ) -> Banner {
     let (is_http, with_ssl) = http::is_http_port(opts, port);
     if is_http {
-        return http::http_grabber(address, port, stream, with_ssl, timeout).await;
+        return http::http_grabber(opts, address, port, stream, with_ssl, timeout).await;
     }
 
     // default to an attempt at line grabbing

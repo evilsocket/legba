@@ -19,7 +19,7 @@ pub(crate) struct Options {
     #[clap(long, default_value = "443, 8443")]
     /// Comma separated list of ports for HTTPS grabbing.
     pub tcp_ports_https: String,
-    #[clap(long, default_value = "server, x-powered-by, location")]
+    #[clap(long, default_value = "server, x-powered-by, location, content-type")]
     /// Comma separated list lowercase header names for HTTP/HTTPS grabbing.
     pub tcp_ports_http_headers: String,
 }

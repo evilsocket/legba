@@ -6,9 +6,6 @@ use regex::Regex;
 
 use super::Banner;
 
-// TODO: read from args
-static HTTP_HEADERS_OF_INTEREST: &[&str] = &["server", "x-powered-by", "location", "content-type"];
-
 lazy_static! {
     static ref HTML_TITLE_PARSER: Regex =
         Regex::new(r"(?i)<\s*title\s*>([^<]+)<\s*/\s*title\s*>").unwrap();
@@ -41,6 +38,7 @@ pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
 }
 
 pub(crate) async fn http_grabber(
+    opts: &options::Options,
     address: &str,
     port: u16,
     stream: Box<dyn StreamLike>,
@@ -85,6 +83,12 @@ pub(crate) async fn http_grabber(
     if let Ok(resp) = resp {
         // TODO: find a way to collect certificate information if ssl
 
+        let headers_of_interest: Vec<&str> = opts
+            .tcp_ports_http_headers
+            .split(",")
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .collect();
         let mut content_type = String::from("text/html");
 
         // collect headers
@@ -95,7 +99,7 @@ pub(crate) async fn http_grabber(
             if name == "content-type" {
                 content_type = value.to_owned();
             }
-            if HTTP_HEADERS_OF_INTEREST.contains(&name.as_str()) {
+            if headers_of_interest.contains(&name.as_str()) {
                 banner.insert(name, value.to_owned());
             }
         }
@@ -110,7 +114,8 @@ pub(crate) async fn http_grabber(
                         caps.get(1).unwrap().as_str().to_owned(),
                     );
                 }
-            } else if content_type == "application/json" {
+            } else if content_type.starts_with("application/") || content_type.starts_with("text/")
+            {
                 banner.insert("body".to_owned(), body.to_owned());
             }
         } else {
