@@ -7,7 +7,7 @@ use regex::Regex;
 use super::Banner;
 
 // TODO: read from args
-static HTTP_HEADERS_OF_INTEREST: &[&str] = &["server", "x-powered-by", "location"];
+static HTTP_HEADERS_OF_INTEREST: &[&str] = &["server", "x-powered-by", "location", "content-type"];
 
 lazy_static! {
     static ref HTML_TITLE_PARSER: Regex =
@@ -85,19 +85,33 @@ pub(crate) async fn http_grabber(
     if let Ok(resp) = resp {
         // TODO: find a way to collect certificate information if ssl
 
+        let mut content_type = String::from("text/html");
+
         // collect headers
         for (name, value) in resp.headers() {
             let name = name.to_string();
+            let value = value.to_str().unwrap();
+
+            if name == "content-type" {
+                content_type = value.to_owned();
+            }
             if HTTP_HEADERS_OF_INTEREST.contains(&name.as_str()) {
-                banner.insert(name, value.to_str().unwrap().to_owned());
+                banner.insert(name, value.to_owned());
             }
         }
 
         // collect info from html
         let body = resp.text().await;
         if let Ok(body) = body {
-            if let Some(caps) = HTML_TITLE_PARSER.captures(&body) {
-                banner.insert("title".to_owned(), caps.get(1).unwrap().as_str().to_owned());
+            if content_type == "text/html" {
+                if let Some(caps) = HTML_TITLE_PARSER.captures(&body) {
+                    banner.insert(
+                        "html.title".to_owned(),
+                        caps.get(1).unwrap().as_str().to_owned(),
+                    );
+                }
+            } else if content_type == "application/json" {
+                banner.insert("body".to_owned(), body.to_owned());
             }
         } else {
             log::error!(
