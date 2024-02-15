@@ -46,6 +46,16 @@ pub(crate) async fn http_grabber(
     timeout: Duration,
 ) -> Banner {
     let mut banner = Banner::default();
+
+    banner.insert(
+        "protocol".to_owned(),
+        if ssl {
+            "https".to_owned()
+        } else {
+            "http".to_owned()
+        },
+    );
+
     let url = format!(
         "{}://{}:{}/",
         if ssl { "https" } else { "http" },

@@ -77,7 +77,7 @@ impl Plugin for TcpPortScanner {
             crate::utils::net::async_tcp_stream(&address, timeout, false).await
         {
             let mut data = vec![
-                ("proto".to_owned(), "tcp".to_owned()),
+                ("transport".to_owned(), "tcp".to_owned()),
                 ("port".to_owned(), creds.username.to_owned()),
                 ("time".to_owned(), format!("{:?}", start.elapsed())),
             ];
@@ -93,7 +93,11 @@ impl Plugin for TcpPortScanner {
                 .await;
 
                 for (key, val) in banner {
-                    data.push((format!("banner.{}", key), val));
+                    if key == "proto" || key == "protocol" {
+                        data.push(("protocol".to_owned(), val));
+                    } else {
+                        data.push((format!("banner.{}", key), val));
+                    }
                 }
             }
 
