@@ -104,11 +104,15 @@ pub(crate) async fn http_grabber(
         // collect headers
         for (name, value) in resp.headers() {
             let name = name.to_string();
-            let value = value.to_str().unwrap();
+            let mut value = value.to_str().unwrap();
 
             if name == "content-type" {
+                if value.contains(';') {
+                    value = value.split(';').next().unwrap();
+                }
                 content_type = value.to_owned();
             }
+
             if headers_of_interest.contains(&name.as_str()) {
                 banner.insert(name, value.to_owned());
             }
@@ -121,7 +125,7 @@ pub(crate) async fn http_grabber(
                 if let Some(caps) = HTML_TITLE_PARSER.captures(&body) {
                     banner.insert(
                         "html.title".to_owned(),
-                        caps.get(1).unwrap().as_str().to_owned(),
+                        caps.get(1).unwrap().as_str().trim().to_owned(),
                     );
                 }
             } else if content_type.contains("application/") || content_type.contains("text/") {
