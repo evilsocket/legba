@@ -103,7 +103,7 @@ async fn main() -> Result<(), session::Error> {
 
     let one_sec = time::Duration::from_secs(1);
     while !session.is_finished() {
-        std::thread::sleep(one_sec);
+        tokio::time::sleep(one_sec).await;
     }
 
     log::info!("runtime {:?}", start.elapsed());
