@@ -125,7 +125,7 @@ async fn worker(
                     .gen_range(session.options.jitter_min..=session.options.jitter_max);
                 if ms > 0 {
                     log::debug!("jitter of {} ms", ms);
-                    std::thread::sleep(time::Duration::from_millis(ms));
+                    tokio::time::sleep(time::Duration::from_millis(ms)).await;
                 }
             }
 
@@ -144,7 +144,7 @@ async fn worker(
                                 session.options.retries,
                                 err
                             );
-                            std::thread::sleep(retry_time);
+                            tokio::time::sleep(retry_time).await;
                             continue;
                         } else {
                             // add this target to the list of unreachable in order to avoi

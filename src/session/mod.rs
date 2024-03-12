@@ -27,7 +27,7 @@ async fn periodic_saver(session: Arc<Session>) {
     let persistent = session.options.session.is_some();
 
     while !session.is_stop() {
-        std::thread::sleep(one_sec);
+        tokio::time::sleep(one_sec).await;
 
         // compute number of attempts per second
         let new_done = session.get_done();
