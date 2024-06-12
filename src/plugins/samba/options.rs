@@ -7,7 +7,7 @@ pub(crate) struct Options {
     #[clap(long, default_value = "WORKGROUP", help_heading = "SMB")]
     /// Samba workgroup name.
     pub smb_workgroup: String,
-    #[clap(long, help_heading = "SMB")]
-    /// Expicitly set Samba private share to test.
+    #[clap(long, default_value = "IPC$", help_heading = "SMB")]
+    /// Explicitly set Samba private share to test.
     pub smb_share: Option<String>,
 }
