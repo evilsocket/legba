@@ -5,9 +5,11 @@ use std::time;
 use clap::{CommandFactory, Parser};
 use creds::Credentials;
 
+use env_logger::Target;
 #[cfg(not(windows))]
 use rlimit::{setrlimit, Resource};
 
+mod api;
 mod creds;
 mod options;
 mod plugins;
@@ -31,6 +33,7 @@ fn setup() -> Result<Options, session::Error> {
         .format_module_path(false)
         .format_target(false)
         .format_timestamp(None)
+        .target(Target::Stdout)
         .init();
 
     let mut options: Options = Options::parse();
@@ -80,11 +83,7 @@ fn setup() -> Result<Options, session::Error> {
     Ok(options)
 }
 
-#[tokio::main]
-async fn main() -> Result<(), session::Error> {
-    // initialize and parse command line
-    let opts = setup()?;
-
+async fn start_session(opts: Options) -> Result<(), session::Error> {
     // create the session object with runtime information
     // NOTE: from this moment on we use session.options
     let session = Session::new(opts.clone())?;
@@ -114,4 +113,17 @@ async fn main() -> Result<(), session::Error> {
 
     #[allow(unreachable_code)]
     Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), session::Error> {
+    // initialize and parse command line
+    let opts = setup()?;
+    if opts.api.is_some() {
+        // start api
+        api::start(opts).await
+    } else {
+        // start cli session
+        start_session(opts).await
+    }
 }

@@ -24,6 +24,10 @@ pub(crate) struct Options {
     #[clap(short = 'T', long)]
     pub target: Option<String>,
 
+    /// Enable the REST API and bind it to the specified address:port.
+    #[clap(long)]
+    pub api: Option<String>,
+
     /// Constant, filename, glob expression as @/some/path/*.txt, permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
     #[clap(short = 'U', long, visible_alias = "payloads")]
     pub username: Option<String>,
