@@ -32,6 +32,7 @@ fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
             .service(session::start)
+            .service(session::stop)
             .service(session::show)
             .service(session::list),
     );
@@ -49,7 +50,7 @@ pub(crate) async fn start(opts: Options) -> Result<(), Error> {
             .app_data(web::Data::new(state.clone()))
             .configure(config)
             .default_service(web::route().to(not_found))
-            .wrap(actix_web::middleware::Logger::default())
+        //.wrap(actix_web::middleware::Logger::default())
     })
     .bind(&address)
     .map_err(|e| e.to_string())?

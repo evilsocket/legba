@@ -25,6 +25,20 @@ pub async fn show(path: web::Path<String>, state: web::Data<SharedState>) -> Htt
     }
 }
 
+#[get("/session/{session_id}/stop")]
+pub async fn stop(path: web::Path<String>, state: web::Data<SharedState>) -> HttpResponse {
+    let session_id = path.into_inner();
+    let session_id = match uuid::Uuid::parse_str(&session_id) {
+        Ok(uuid) => uuid,
+        Err(e) => return HttpResponse::BadRequest().body(e.to_string()),
+    };
+
+    match state.read().await.stop_session(&session_id) {
+        Ok(_) => HttpResponse::Ok().body("session stopping"),
+        Err(e) => HttpResponse::NotFound().body(e.to_string()),
+    }
+}
+
 #[post("/session/new")]
 pub async fn start(
     state: web::Data<SharedState>,
