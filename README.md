@@ -18,7 +18,7 @@
 `Legba` is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve
 better performances and stability while consuming less resources than similar tools (see the benchmark below).
 
-For the building instructions, usage and the complete list of options [check the project Wiki](https://github.com/evilsocket/legba/wiki).
+For the building instructions, usage and the complete list of options [check the project Wiki](https://github.com/evilsocket/legba/wiki). For a list of [recipes](https://github.com/evilsocket/legba/wiki/Recipes) you can check the [legba cookbook repository](https://github.com/evilsocket/legba-cookbook).
 
 ## Supported Protocols/Features:
 
