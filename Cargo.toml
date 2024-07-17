@@ -12,6 +12,9 @@ homepage = "https://github.com/evilsocket/legba"
 
 
 [dependencies]
+# force vendored openssl for every dependency
+openssl = { version = "0.10.64", features = ["vendored"], optional = true }
+
 ahash = "0.8.3"
 ansi_term = "0.12.1"
 async-channel = "1.9.0"
@@ -148,6 +151,9 @@ scylla = ["dep:scylla"]
 tcp_ports = ["dep:reqwest"]
 samba = ["dep:pavao"]
 socks5 = ["dep:fast-socks5"]
+
+# used to build for platforms without openssl
+vendored_libs = ["dep:openssl"]
 
 [patch.crates-io]
 url = { path = "./crates/rust-url/url" }
