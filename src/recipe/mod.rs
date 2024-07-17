@@ -14,6 +14,8 @@ mod interactive;
 const ARG_EXPRESSION_ERROR: &str =
     "argument expression must be in the form of {$name} or {$name or default_value}";
 
+const RESERVED_VAR_MAMES: [&str; 3] = ["username", "password", "payload"];
+
 lazy_static! {
     static ref ARG_VALUE_PARSER: Regex =
         Regex::new(r"(?m)\{\s*\$([\w\.]+)(\s+or\s+([^}]+))?\}").unwrap();
@@ -69,7 +71,10 @@ impl Recipe {
             let var_name = cap.get(1).ok_or(ARG_EXPRESSION_ERROR)?.as_str();
             let var_default = cap.get(3).map(|m| m.as_str());
 
-            let var_value = if let Some(val) = ctx.get(var_name) {
+            let var_value = if RESERVED_VAR_MAMES.contains(&var_name) {
+                // if reserved variable, leave it as it is for further processing down the line
+                continue;
+            } else if let Some(val) = ctx.get(var_name) {
                 // get variable from context
                 val.to_owned()
             } else if self.interactive {
