@@ -22,7 +22,7 @@ print(f"session {session_id} started ...")
 
 # list sessions
 print(requests.get(f'{api_server}/api/sessions').json())
-quit()
+
 num = 0
 
 while True:
@@ -32,8 +32,10 @@ while True:
     if resp.ok:
         os.system("clear")
         session = resp.json()
-        print(f"started_at={session['started_at']}")
+        print(f"started_at={session['started_at']}\n")
         print('\n'.join(session['output']))
+        print()
+        print(session['statistics'])
 
         if 'completed' in session and session['completed'] is not None:
             break

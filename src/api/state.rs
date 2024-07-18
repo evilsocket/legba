@@ -7,8 +7,15 @@ use std::{
 
 use actix_web::Result;
 use clap::Parser;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::Serialize;
 use tokio::{io::AsyncBufReadExt, sync::RwLock};
+
+lazy_static! {
+    static ref STATS_PARSER: Regex = Regex::new(r"(?m)^.+tasks=(\d+)\s+mem=(.+)\stargets=(\d+)\sattempts=(\d+)\sdone=(\d+)\s\((.+)%\)(\serrors=(\d+))?\sspeed=(.+) reqs/s").unwrap();
+    static ref LOOT_PARSER: Regex = Regex::new(r"(?m)^.+\[(.+)\]\s\(([^)]+)\)(\s<(.+)>)?\s(.+)").unwrap();
+}
 
 use crate::{session::Error, Options};
 
@@ -53,14 +60,76 @@ impl Completion {
 async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
     reader: R,
     output: Arc<Mutex<Vec<String>>>,
+    stats: Arc<Mutex<Statistics>>,
+    loot: Arc<Mutex<Vec<Loot>>>,
 ) {
     let mut lines = reader.lines();
     while let Ok(line) = lines.next_line().await {
         match line {
-            Some(line) => output.lock().unwrap().push(line.trim().to_owned()),
+            Some(line) => {
+                // remove colors and other escape sequences
+                let line = strip_ansi_escapes::strip_str(&line);
+                // do not collect empty lines
+                if !line.trim().is_empty() {
+                    if let Some(caps) = STATS_PARSER.captures(&line) {
+                        // parse as statistics
+                        {
+                            let mut stats_w = stats.lock().unwrap();
+
+                            stats_w.tasks = caps.get(1).unwrap().as_str().parse().unwrap();
+                            stats_w.memory = caps.get(2).unwrap().as_str().to_owned();
+                            stats_w.targets = caps.get(3).unwrap().as_str().parse().unwrap();
+                            stats_w.attempts = caps.get(4).unwrap().as_str().parse().unwrap();
+                            stats_w.done = caps.get(5).unwrap().as_str().parse().unwrap();
+                            stats_w.done_percent = caps.get(6).unwrap().as_str().parse().unwrap();
+                            stats_w.errors = if let Some(errs) = caps.get(8) {
+                                errs.as_str().parse().unwrap()
+                            } else {
+                                0
+                            };
+                            stats_w.reqs_per_sec = caps.get(9).unwrap().as_str().parse().unwrap();
+                        }
+                    } else if let Some(caps) = LOOT_PARSER.captures(&line) {
+                        // parse as loot
+                        loot.lock().unwrap().push(Loot {
+                            found_at: caps.get(1).unwrap().as_str().to_owned(),
+                            plugin: caps.get(2).unwrap().as_str().to_owned(),
+                            target: if let Some(t) = caps.get(4) {
+                                Some(t.as_str().to_owned())
+                            } else {
+                                None
+                            },
+                            data: caps.get(5).unwrap().as_str().to_owned(),
+                        });
+                    } else {
+                        // add as raw output
+                        output.lock().unwrap().push(line.trim().to_owned());
+                    }
+                }
+            }
             None => break,
         }
     }
+}
+
+#[derive(Default, Serialize)]
+pub(crate) struct Loot {
+    found_at: String,
+    plugin: String,
+    target: Option<String>,
+    data: String,
+}
+
+#[derive(Default, Serialize)]
+pub(crate) struct Statistics {
+    tasks: usize,
+    memory: String,
+    targets: usize,
+    attempts: usize,
+    errors: usize,
+    done: usize,
+    done_percent: f32,
+    reqs_per_sec: usize,
 }
 
 #[derive(Serialize)]
@@ -71,6 +140,8 @@ pub(crate) struct Wrapper {
     argv: Vec<String>,
     started_at: SystemTime,
 
+    statistics: Arc<Mutex<Statistics>>,
+    loot: Arc<Mutex<Vec<Loot>>>,
     output: Arc<Mutex<Vec<String>>>,
     completed: Arc<Mutex<Option<Completion>>>,
 }
@@ -100,14 +171,26 @@ impl Wrapper {
             &argv
         );
 
+        let loot = Arc::new(Mutex::new(vec![]));
+        let statistics = Arc::new(Mutex::new(Statistics::default()));
         // read stdout
         let output = Arc::new(Mutex::new(vec![]));
         let stdout_r = tokio::io::BufReader::new(child.stdout.take().unwrap());
-        tokio::task::spawn(pipe_reader_to_writer(stdout_r, output.clone()));
+        tokio::task::spawn(pipe_reader_to_writer(
+            stdout_r,
+            output.clone(),
+            statistics.clone(),
+            loot.clone(),
+        ));
 
         // read stderr
         let stderr_r = tokio::io::BufReader::new(child.stderr.take().unwrap());
-        tokio::task::spawn(pipe_reader_to_writer(stderr_r, output.clone()));
+        tokio::task::spawn(pipe_reader_to_writer(
+            stderr_r,
+            output.clone(),
+            statistics.clone(),
+            loot.clone(),
+        ));
 
         // wait for child
         let completed = Arc::new(Mutex::new(None));
@@ -139,6 +222,8 @@ impl Wrapper {
             argv,
             completed,
             output,
+            statistics,
+            loot,
         })
     }
 
