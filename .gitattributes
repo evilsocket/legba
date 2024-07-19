@@ -3,4 +3,4 @@
 /Dockerfile linguist-vendored
 /release.py linguist-vendored
 /cookbook/** linguist-vendored
-
+/**/*.py linguist-vendored

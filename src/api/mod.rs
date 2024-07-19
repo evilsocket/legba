@@ -34,7 +34,8 @@ fn config(cfg: &mut web::ServiceConfig) {
             .service(handlers::session_new)
             .service(handlers::session_stop)
             .service(handlers::session_show)
-            .service(handlers::sessions_list),
+            .service(handlers::sessions_list)
+            .service(handlers::plugins_list),
     );
 }
 

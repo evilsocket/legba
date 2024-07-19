@@ -315,10 +315,6 @@ impl State {
         session.stop()
     }
 
-    pub fn active_sessions(&self) -> &HashMap<uuid::Uuid, Wrapper> {
-        &self.sessions
-    }
-
     pub fn get_session(&self, id: &uuid::Uuid) -> Option<&Wrapper> {
         self.sessions.get(id)
     }

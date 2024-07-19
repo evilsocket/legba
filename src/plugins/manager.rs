@@ -18,7 +18,7 @@ use super::plugin::PayloadStrategy;
 type Inventory = BTreeMap<&'static str, Box<dyn Plugin>>;
 
 lazy_static! {
-    static ref INVENTORY: Mutex<Inventory> = Mutex::new(Inventory::new());
+    pub(crate) static ref INVENTORY: Mutex<Inventory> = Mutex::new(Inventory::new());
 }
 
 pub(crate) fn register(name: &'static str, plugin: Box<dyn Plugin>) {

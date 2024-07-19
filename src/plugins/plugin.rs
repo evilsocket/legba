@@ -14,6 +14,19 @@ pub(crate) enum PayloadStrategy {
     UsernamePassword,
 }
 
+impl std::fmt::Display for PayloadStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                PayloadStrategy::Single => "single",
+                PayloadStrategy::UsernamePassword => "username_and_password",
+            }
+        )
+    }
+}
+
 #[async_trait]
 pub(crate) trait Plugin: Sync + Send {
     // return the description for this plugin
