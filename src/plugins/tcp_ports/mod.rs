@@ -10,6 +10,8 @@ use crate::{creds, utils};
 
 use crate::creds::{Credentials, Expression};
 
+use super::plugin::PayloadStrategy;
+
 mod grabbers;
 pub(crate) mod options;
 
@@ -39,8 +41,8 @@ impl Plugin for TcpPortScanner {
         "TCP connect ports scanner."
     }
 
-    fn single_credential(&self) -> bool {
-        true
+    fn payload_strategy(&self) -> PayloadStrategy {
+        PayloadStrategy::Single
     }
 
     fn override_payload(&self) -> Option<Expression> {

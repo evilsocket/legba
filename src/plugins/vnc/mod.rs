@@ -10,6 +10,8 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
+use super::plugin::PayloadStrategy;
+
 #[ctor]
 fn register() {
     crate::plugins::manager::register("vnc", Box::new(VNC::new()));
@@ -30,8 +32,8 @@ impl Plugin for VNC {
         "VNC password authentication."
     }
 
-    fn single_credential(&self) -> bool {
-        true
+    fn payload_strategy(&self) -> PayloadStrategy {
+        PayloadStrategy::Single
     }
 
     fn setup(&mut self, _opts: &Options) -> Result<(), Error> {

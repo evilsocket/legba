@@ -7,12 +7,12 @@ use actix_web::HttpResponse;
 use crate::api::SharedState;
 
 #[get("/sessions")]
-pub async fn list(state: web::Data<SharedState>) -> HttpResponse {
+pub async fn sessions_list(state: web::Data<SharedState>) -> HttpResponse {
     HttpResponse::Ok().json(&*state.read().await)
 }
 
 #[get("/session/{session_id}")]
-pub async fn show(path: web::Path<String>, state: web::Data<SharedState>) -> HttpResponse {
+pub async fn session_show(path: web::Path<String>, state: web::Data<SharedState>) -> HttpResponse {
     let session_id = path.into_inner();
     let session_id = match uuid::Uuid::parse_str(&session_id) {
         Ok(uuid) => uuid,
@@ -26,7 +26,7 @@ pub async fn show(path: web::Path<String>, state: web::Data<SharedState>) -> Htt
 }
 
 #[get("/session/{session_id}/stop")]
-pub async fn stop(path: web::Path<String>, state: web::Data<SharedState>) -> HttpResponse {
+pub async fn session_stop(path: web::Path<String>, state: web::Data<SharedState>) -> HttpResponse {
     let session_id = path.into_inner();
     let session_id = match uuid::Uuid::parse_str(&session_id) {
         Ok(uuid) => uuid,
@@ -40,7 +40,7 @@ pub async fn stop(path: web::Path<String>, state: web::Data<SharedState>) -> Htt
 }
 
 #[post("/session/new")]
-pub async fn start(
+pub async fn session_new(
     state: web::Data<SharedState>,
     req: HttpRequest,
     argv: web::Json<Vec<String>>,

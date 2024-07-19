@@ -6,15 +6,22 @@ use crate::creds::{Credentials, Expression};
 use crate::session::{Error, Loot};
 use crate::Options;
 
+/// What type of payload is consumed by a plugin.
+pub(crate) enum PayloadStrategy {
+    /// Single payload like for dns, tcp.port, etc
+    Single,
+    /// Standard double payload.
+    UsernamePassword,
+}
+
 #[async_trait]
 pub(crate) trait Plugin: Sync + Send {
     // return the description for this plugin
     fn description(&self) -> &'static str;
 
-    // plugins that require a single payload instead of a username+password combination should
-    // override this method and return true
-    fn single_credential(&self) -> bool {
-        false
+    // plugin payload strategy
+    fn payload_strategy(&self) -> PayloadStrategy {
+        PayloadStrategy::UsernamePassword
     }
 
     // single credential plugins can override this method to return their own payload expression

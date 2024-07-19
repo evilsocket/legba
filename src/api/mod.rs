@@ -11,7 +11,7 @@ use tokio::sync::RwLock;
 use crate::session::Error;
 use crate::Options;
 
-mod session;
+mod handlers;
 mod state;
 
 use state::*;
@@ -31,10 +31,10 @@ async fn not_found() -> Result<HttpResponse> {
 fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
-            .service(session::start)
-            .service(session::stop)
-            .service(session::show)
-            .service(session::list),
+            .service(handlers::session_new)
+            .service(handlers::session_stop)
+            .service(handlers::session_show)
+            .service(handlers::sessions_list),
     );
 }
 

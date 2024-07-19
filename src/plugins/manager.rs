@@ -13,6 +13,8 @@ use crate::session::{Error, Session};
 use crate::Plugin;
 use crate::{report, Options};
 
+use super::plugin::PayloadStrategy;
+
 type Inventory = BTreeMap<&'static str, Box<dyn Plugin>>;
 
 lazy_static! {
@@ -67,7 +69,7 @@ pub(crate) async fn run(
     plugin: &'static mut dyn Plugin,
     session: Arc<Session>,
 ) -> Result<(), Error> {
-    let single = plugin.single_credential();
+    let single = matches!(plugin.payload_strategy(), PayloadStrategy::Single);
     let override_payload = plugin.override_payload();
     let combinations = session.combinations(override_payload, single)?;
     let unreachables: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::default()));

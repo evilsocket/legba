@@ -15,6 +15,8 @@ use crate::Options;
 use crate::creds::Credentials;
 use crate::plugins::Plugin;
 
+use super::plugin::PayloadStrategy;
+
 mod csrf;
 mod ntlm;
 pub(crate) mod options;
@@ -515,8 +517,11 @@ impl Plugin for HTTP {
         }
     }
 
-    fn single_credential(&self) -> bool {
-        matches!(self.strategy, Strategy::Enumeration | Strategy::VHostEnum)
+    fn payload_strategy(&self) -> PayloadStrategy {
+        match self.strategy {
+            Strategy::Enumeration | Strategy::VHostEnum => PayloadStrategy::Single,
+            _ => PayloadStrategy::UsernamePassword,
+        }
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {

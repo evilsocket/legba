@@ -14,6 +14,8 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
+use super::plugin::PayloadStrategy;
+
 pub(crate) mod options;
 
 #[ctor]
@@ -44,8 +46,8 @@ impl Plugin for DNS {
         "DNS subdomain enumeration."
     }
 
-    fn single_credential(&self) -> bool {
-        true
+    fn payload_strategy(&self) -> PayloadStrategy {
+        PayloadStrategy::Single
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
