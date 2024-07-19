@@ -80,7 +80,7 @@ mod tests {
         let mut tmpwordlist = File::create(&tmppath).unwrap();
 
         for i in 0..num_items {
-            write!(tmpwordlist, "item{}\n", i).unwrap();
+            writeln!(tmpwordlist, "item{}", i).unwrap();
             expected.push(format!("item{}", i));
         }
         tmpwordlist.flush().unwrap();

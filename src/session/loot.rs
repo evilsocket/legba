@@ -114,7 +114,6 @@ impl Loot {
         };
 
         let mut file = OpenOptions::new()
-            .write(true)
             .create(true)
             .append(true)
             .open(path)

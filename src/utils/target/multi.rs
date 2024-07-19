@@ -128,7 +128,7 @@ mod tests {
         let mut expected = vec![];
 
         for i in 0..num_items {
-            write!(tmptargets, "127.0.0.1:{}\n", i).unwrap();
+            writeln!(tmptargets, "127.0.0.1:{}", i).unwrap();
             expected.push(format!("127.0.0.1:{}", i));
         }
         tmptargets.flush().unwrap();
@@ -250,7 +250,7 @@ mod tests {
         ];
 
         for i in 0..num_items {
-            write!(tmptargets, "127.0.0.1:{}\n", i).unwrap();
+            writeln!(tmptargets, "127.0.0.1:{}", i).unwrap();
         }
         tmptargets.flush().unwrap();
         drop(tmptargets);

@@ -39,7 +39,7 @@ impl Plugin for Socks5 {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.remote_address = opts.socks5.socks5_address.clone();
+        self.remote_address.clone_from(&opts.socks5.socks5_address);
         self.remote_port = opts.socks5.socks5_port;
 
         Ok(())

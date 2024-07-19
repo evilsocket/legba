@@ -230,13 +230,7 @@ impl HTTP {
         log::debug!("status={}", status);
 
         let content_type = if let Some(ctype) = response.headers().get(CONTENT_TYPE) {
-            ctype
-                .to_str()
-                .unwrap()
-                .to_owned()
-                .split(';')
-                .collect::<Vec<&str>>()[0]
-                .to_owned()
+            ctype.to_str().unwrap().split(';').collect::<Vec<&str>>()[0].to_owned()
         } else {
             String::new()
         };
@@ -1117,9 +1111,9 @@ mod tests {
         let mut http = HTTP::new(Strategy::Enumeration);
         let mut opts = Options::default();
 
-        opts.http.http_success_codes = "200".to_owned();
+        "200".clone_into(&mut opts.http.http_success_codes);
         opts.http.http_success_string = Some(HTTP_PAYLOAD_VAR.to_owned());
-        opts.http.http_method = "GET".to_owned();
+        "GET".clone_into(&mut opts.http.http_method);
 
         let creds = Credentials {
             target: String::new(),

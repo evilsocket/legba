@@ -8,9 +8,9 @@ pub(crate) fn interpolate(data: &str, creds: &Credentials) -> String {
     let mut parsed = data.to_owned();
 
     // undo query encoding of interpolation params
-    for placeholder in vec![USERNAME, PASSWORD, PAYLOAD] {
-        let encoded_lwr = placeholder.replace("{", "%7b").replace("}", "%7d");
-        let encoded_upr = placeholder.replace("{", "%7B").replace("}", "%7D");
+    for placeholder in [USERNAME, PASSWORD, PAYLOAD] {
+        let encoded_lwr = placeholder.replace('{', "%7b").replace('}', "%7d");
+        let encoded_upr = placeholder.replace('{', "%7B").replace('}', "%7D");
 
         parsed = parsed
             .replace(&encoded_lwr, placeholder)

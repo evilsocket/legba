@@ -74,7 +74,7 @@ mod tests {
             let tmppath = tmpdir.path().join(&filename);
             let mut tmpfile = File::create(&tmppath).unwrap();
 
-            write!(tmpfile, "test\n").unwrap();
+            writeln!(tmpfile, "test").unwrap();
             tmpfile.flush().unwrap();
             drop(tmpfile);
 

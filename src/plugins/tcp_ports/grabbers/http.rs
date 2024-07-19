@@ -95,7 +95,7 @@ pub(crate) async fn http_grabber(
 
         let headers_of_interest: Vec<&str> = opts
             .tcp_ports_http_headers
-            .split(",")
+            .split(',')
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
             .collect();
@@ -110,7 +110,7 @@ pub(crate) async fn http_grabber(
                 if value.contains(';') {
                     value = value.split(';').next().unwrap();
                 }
-                content_type = value.to_owned();
+                value.clone_into(&mut content_type);
             }
 
             if headers_of_interest.contains(&name.as_str()) {

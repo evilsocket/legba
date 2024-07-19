@@ -43,7 +43,7 @@ impl Plugin for SSH {
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.mode = opts.ssh.ssh_auth_mode.clone();
-        self.passphrase = opts.ssh.ssh_key_passphrase.clone();
+        self.passphrase.clone_from(&opts.ssh.ssh_key_passphrase);
         Ok(())
     }
 

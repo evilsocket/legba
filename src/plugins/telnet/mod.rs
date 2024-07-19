@@ -40,9 +40,9 @@ impl Plugin for Telnet {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.user_prompt = opts.telnet.telnet_user_prompt.clone();
-        self.pass_prompt = opts.telnet.telnet_pass_prompt.clone();
-        self.shell_prompt = opts.telnet.telnet_prompt.clone();
+        self.user_prompt.clone_from(&opts.telnet.telnet_user_prompt);
+        self.pass_prompt.clone_from(&opts.telnet.telnet_pass_prompt);
+        self.shell_prompt.clone_from(&opts.telnet.telnet_prompt);
         Ok(())
     }
 
