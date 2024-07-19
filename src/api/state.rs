@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     process::Stdio,
-    sync::{Arc, Mutex},
+    sync::{atomic::AtomicU64, Arc, Mutex},
     time::SystemTime,
 };
 
@@ -151,6 +151,8 @@ impl Wrapper {
         client: String,
         session_id: uuid::Uuid,
         argv: Vec<String>,
+        taken_workers: usize,
+        avail_workers: Arc<AtomicU64>,
     ) -> Result<Self, Error> {
         let app = get_current_exe()?;
 
@@ -212,6 +214,9 @@ impl Wrapper {
                         Some(Completion::with_error(error.to_string()));
                 }
             }
+
+            // free the workers
+            avail_workers.fetch_add(taken_workers as u64, std::sync::atomic::Ordering::Relaxed);
         });
 
         Ok(Self {
@@ -239,12 +244,17 @@ impl Wrapper {
 #[derive(Serialize)]
 pub(crate) struct State {
     sessions: HashMap<uuid::Uuid, Wrapper>,
+    available_workers: Arc<AtomicU64>,
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(concurrency: usize) -> Self {
         let sessions = HashMap::new();
-        Self { sessions }
+        let available_workers = Arc::new(AtomicU64::new(concurrency as u64));
+        Self {
+            sessions,
+            available_workers,
+        }
     }
 
     pub async fn start_new_session(
@@ -255,13 +265,34 @@ impl State {
         // TODO: change all errors and results to anyhow
 
         // validate argv
-        let _ = Options::try_parse_from(&argv).map_err(|e| e.to_string())?;
+        let opts = Options::try_parse_from(&argv).map_err(|e| e.to_string())?;
+        let avail_workers = self
+            .available_workers
+            .load(std::sync::atomic::Ordering::Relaxed) as usize;
+        if opts.concurrency > avail_workers {
+            return Err(format!(
+                "can't start new session, {avail_workers} available workers"
+            ));
+        }
+
+        self.available_workers.fetch_sub(
+            opts.concurrency as u64,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+
         let session_id = uuid::Uuid::new_v4();
 
         // add to active sessions
         self.sessions.insert(
             session_id.clone(),
-            Wrapper::start(client, session_id, argv).await?,
+            Wrapper::start(
+                client,
+                session_id,
+                argv,
+                opts.concurrency,
+                self.available_workers.clone(),
+            )
+            .await?,
         );
 
         Ok(session_id)

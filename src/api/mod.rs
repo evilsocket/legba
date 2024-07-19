@@ -43,7 +43,7 @@ pub(crate) async fn start(opts: Options) -> Result<(), Error> {
 
     log::info!("starting api on http://{} ...", &address);
 
-    let state = Arc::new(RwLock::new(State::new()));
+    let state = Arc::new(RwLock::new(State::new(opts.concurrency)));
 
     HttpServer::new(move || {
         App::new()
