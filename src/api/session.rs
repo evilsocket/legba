@@ -8,7 +8,7 @@ use crate::api::SharedState;
 
 #[get("/sessions")]
 pub async fn list(state: web::Data<SharedState>) -> HttpResponse {
-    HttpResponse::Ok().json(state.read().await.active_sessions())
+    HttpResponse::Ok().json(&*state.read().await)
 }
 
 #[get("/session/{session_id}")]
