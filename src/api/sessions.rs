@@ -19,7 +19,7 @@ lazy_static! {
 
 use crate::{session::Error, Options};
 
-pub(crate) type SharedState = Arc<RwLock<State>>;
+pub(crate) type SharedState = Arc<RwLock<Sessions>>;
 
 fn get_current_exe() -> Result<String, Error> {
     // TODO: handle errors
@@ -139,8 +139,9 @@ pub(crate) struct Statistics {
 }
 
 #[derive(Serialize)]
-pub(crate) struct Wrapper {
-    session_id: uuid::Uuid,
+pub(crate) struct Session {
+    id: uuid::Uuid,
+    plugin_name: String,
     process_id: u32,
     client: String,
     argv: Vec<String>,
@@ -152,15 +153,16 @@ pub(crate) struct Wrapper {
     completed: Arc<Mutex<Option<Completion>>>,
 }
 
-impl Wrapper {
+impl Session {
     pub async fn start(
         client: String,
-        session_id: uuid::Uuid,
+        id: uuid::Uuid,
         argv: Vec<String>,
         taken_workers: usize,
         avail_workers: Arc<AtomicU64>,
     ) -> Result<Self, Error> {
         let app = get_current_exe()?;
+        let plugin_name = argv[0].to_owned();
 
         // https://stackoverflow.com/questions/49245907/how-to-read-subprocess-output-asynchronously
         let mut child = tokio::process::Command::new(&app)
@@ -174,7 +176,7 @@ impl Wrapper {
         let process_id = child.id().unwrap();
 
         log::info!(
-            "[{session_id}] started '{} {:?}' as process {process_id}",
+            "[{id}] started '{} {:?}' as process {process_id}",
             &app,
             &argv
         );
@@ -206,16 +208,12 @@ impl Wrapper {
         tokio::task::spawn(async move {
             match child.wait().await {
                 Ok(code) => {
-                    log::info!(
-                        "[{session_id}] child process {process_id} completed with code {code}"
-                    );
+                    log::info!("[{id}] child process {process_id} completed with code {code}");
                     *child_completed.lock().unwrap() =
                         Some(Completion::with_status(code.code().unwrap_or(-1)));
                 }
                 Err(error) => {
-                    log::error!(
-                        "[{session_id}] child process {process_id} completed with error {error}"
-                    );
+                    log::error!("[{id}] child process {process_id} completed with error {error}");
                     *child_completed.lock().unwrap() =
                         Some(Completion::with_error(error.to_string()));
                 }
@@ -230,7 +228,8 @@ impl Wrapper {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs(),
-            session_id,
+            id,
+            plugin_name,
             process_id,
             client,
             argv,
@@ -251,12 +250,12 @@ impl Wrapper {
 }
 
 #[derive(Serialize)]
-pub(crate) struct State {
-    sessions: HashMap<uuid::Uuid, Wrapper>,
+pub(crate) struct Sessions {
+    sessions: HashMap<uuid::Uuid, Session>,
     available_workers: Arc<AtomicU64>,
 }
 
-impl State {
+impl Sessions {
     pub fn new(concurrency: usize) -> Self {
         let sessions = HashMap::new();
         let available_workers = Arc::new(AtomicU64::new(concurrency as u64));
@@ -294,7 +293,7 @@ impl State {
         // add to active sessions
         self.sessions.insert(
             session_id.clone(),
-            Wrapper::start(
+            Session::start(
                 client,
                 session_id,
                 argv,
@@ -315,7 +314,7 @@ impl State {
         session.stop()
     }
 
-    pub fn get_session(&self, id: &uuid::Uuid) -> Option<&Wrapper> {
+    pub fn get_session(&self, id: &uuid::Uuid) -> Option<&Session> {
         self.sessions.get(id)
     }
 }

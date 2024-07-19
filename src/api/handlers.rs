@@ -34,6 +34,7 @@ pub async fn plugins_list(_: web::Data<SharedState>) -> HttpResponse {
     let mut list = vec![];
 
     for (name, plug) in plugins::manager::INVENTORY.lock().unwrap().iter() {
+        // nasty hack to check for plugin specific options
         let opt_name = name.replace('.', "_");
         let opt_parts: Vec<&str> = name.splitn(2, '.').collect();
         let opt_root = if opt_parts.len() == 2 {

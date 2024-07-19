@@ -12,9 +12,9 @@ use crate::session::Error;
 use crate::Options;
 
 mod handlers;
-mod state;
+mod sessions;
 
-use state::*;
+use sessions::*;
 
 #[derive(Serialize)]
 struct Response {
@@ -44,7 +44,7 @@ pub(crate) async fn start(opts: Options) -> Result<(), Error> {
 
     log::info!("starting api on http://{} ...", &address);
 
-    let state = Arc::new(RwLock::new(State::new(opts.concurrency)));
+    let state = Arc::new(RwLock::new(Sessions::new(opts.concurrency)));
 
     HttpServer::new(move || {
         App::new()
