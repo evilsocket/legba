@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     process::Stdio,
     sync::{atomic::AtomicU64, Arc, Mutex},
-    time::SystemTime,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use actix_web::Result;
@@ -34,7 +34,7 @@ fn get_current_exe() -> Result<String, Error> {
 
 #[derive(Serialize)]
 pub(crate) struct Completion {
-    completed_at: SystemTime,
+    completed_at: u64,
     exit_code: i32,
     error: Option<Error>,
 }
@@ -42,7 +42,10 @@ pub(crate) struct Completion {
 impl Completion {
     fn with_status(exit_code: i32) -> Self {
         Self {
-            completed_at: SystemTime::now(),
+            completed_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             exit_code,
             error: None,
         }
@@ -50,7 +53,10 @@ impl Completion {
 
     fn with_error(error: Error) -> Self {
         Self {
-            completed_at: SystemTime::now(),
+            completed_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             exit_code: -1,
             error: Some(error),
         }
@@ -138,7 +144,7 @@ pub(crate) struct Wrapper {
     process_id: u32,
     client: String,
     argv: Vec<String>,
-    started_at: SystemTime,
+    started_at: u64,
 
     statistics: Arc<Mutex<Statistics>>,
     loot: Arc<Mutex<Vec<Loot>>>,
@@ -220,7 +226,10 @@ impl Wrapper {
         });
 
         Ok(Self {
-            started_at: SystemTime::now(),
+            started_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             session_id,
             process_id,
             client,
