@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use actix_cors::Cors;
 use actix_web::web;
 use actix_web::App;
 use actix_web::HttpResponse;
@@ -47,7 +48,10 @@ pub(crate) async fn start(opts: Options) -> Result<(), Error> {
     let state = Arc::new(RwLock::new(Sessions::new(opts.concurrency)));
 
     HttpServer::new(move || {
+        let cors = Cors::default().allow_any_origin().send_wildcard();
+
         App::new()
+            .wrap(cors)
             .app_data(web::Data::new(state.clone()))
             .configure(config)
             .default_service(web::route().to(not_found))
