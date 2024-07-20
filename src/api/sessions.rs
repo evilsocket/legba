@@ -17,7 +17,7 @@ lazy_static! {
     static ref LOOT_PARSER: Regex = Regex::new(r"(?m)^.+\[(.+)\]\s\(([^)]+)\)(\s<(.+)>)?\s(.+)").unwrap();
 }
 
-use crate::{session::Error, Options};
+use crate::{session::Error, utils::parse_multiple_targets, Options};
 
 pub(crate) type SharedState = Arc<RwLock<Sessions>>;
 
@@ -142,6 +142,7 @@ pub(crate) struct Statistics {
 pub(crate) struct Session {
     id: uuid::Uuid,
     plugin_name: String,
+    targets: Vec<String>,
     process_id: u32,
     client: String,
     argv: Vec<String>,
@@ -158,6 +159,7 @@ impl Session {
         client: String,
         id: uuid::Uuid,
         argv: Vec<String>,
+        targets: Vec<String>,
         taken_workers: usize,
         avail_workers: Arc<AtomicU64>,
     ) -> Result<Self, Error> {
@@ -230,6 +232,7 @@ impl Session {
                 .as_secs(),
             id,
             plugin_name,
+            targets,
             process_id,
             client,
             argv,
@@ -274,6 +277,12 @@ impl Sessions {
 
         // validate argv
         let opts = Options::try_parse_from(&argv).map_err(|e| e.to_string())?;
+        let targets = if let Some(target) = opts.target.as_ref() {
+            parse_multiple_targets(target)?
+        } else {
+            return Err("no --target/-T argument provided".to_owned());
+        };
+
         let avail_workers = self
             .available_workers
             .load(std::sync::atomic::Ordering::Relaxed) as usize;
@@ -297,6 +306,7 @@ impl Sessions {
                 client,
                 session_id,
                 argv,
+                targets,
                 opts.concurrency,
                 self.available_workers.clone(),
             )
