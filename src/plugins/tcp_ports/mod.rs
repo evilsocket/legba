@@ -97,6 +97,8 @@ impl Plugin for TcpPortScanner {
                 for (key, val) in banner {
                     if key == "proto" || key == "protocol" {
                         data.push(("protocol".to_owned(), val));
+                    } else if key.starts_with("certificate.") {
+                        data.push((key, val));
                     } else {
                         data.push((format!("banner.{}", key), val));
                     }

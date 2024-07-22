@@ -1,8 +1,12 @@
 use std::time::Duration;
 
-use crate::{plugins::tcp_ports::options, utils::net::StreamLike};
+use crate::{
+    plugins::tcp_ports::options,
+    utils::net::{upgrade_tcp_stream_to_tls, StreamLike},
+};
 use lazy_static::lazy_static;
 use regex::Regex;
+use x509_parser::prelude::{FromDer, X509Certificate};
 
 use super::Banner;
 
@@ -63,7 +67,48 @@ pub(crate) async fn http_grabber(
         port
     );
 
-    drop(stream); // close original connection
+    // if ssl, upgrade stream to get certificate information
+    if ssl {
+        if let Ok(tls) = upgrade_tcp_stream_to_tls(stream, timeout).await {
+            if let Ok(Some(cert)) = tls.peer_certificate() {
+                if let Ok(der) = cert.to_der() {
+                    if let Ok((_, cert)) = X509Certificate::from_der(&der) {
+                        banner.insert("certificate.serial".to_owned(), cert.raw_serial_as_string());
+                        banner.insert("certificate.subject".to_owned(), cert.subject().to_string());
+                        banner.insert("certificate.issuer".to_owned(), cert.issuer().to_string());
+
+                        let validity = cert.validity();
+                        banner.insert(
+                            "certificate.validity.from".to_owned(),
+                            validity.not_before.to_string(),
+                        );
+                        banner.insert(
+                            "certificate.validity.to".to_owned(),
+                            validity.not_after.to_string(),
+                        );
+
+                        if let Ok(Some(alt_names)) = cert.subject_alternative_name() {
+                            banner.insert(
+                                "certificate.names".to_owned(),
+                                alt_names
+                                    .value
+                                    .general_names
+                                    .iter()
+                                    .map(|n| n.to_string())
+                                    .collect::<Vec<String>>()
+                                    .join(", "),
+                            );
+                        }
+                    }
+                }
+            }
+
+            // close original connection
+            drop(tls);
+        }
+    } else {
+        drop(stream); // close original connection
+    }
 
     log::debug!("grabbing http banner for {} ...", &url);
 
@@ -91,8 +136,6 @@ pub(crate) async fn http_grabber(
         .await;
 
     if let Ok(resp) = resp {
-        // TODO: find a way to collect certificate information if ssl
-
         let headers_of_interest: Vec<&str> = opts
             .tcp_ports_http_headers
             .split(',')
