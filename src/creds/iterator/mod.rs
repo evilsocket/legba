@@ -3,6 +3,7 @@ use crate::session::Error;
 
 mod constant;
 mod glob;
+mod multi;
 mod permutations;
 mod permutator;
 mod range;
@@ -43,6 +44,16 @@ pub(crate) fn new(expr: Expression) -> Result<Box<dyn Iterator>, Error> {
         }
         Expression::Range { min, max, set } => {
             let it = range::Range::new(min, max, set)?;
+            Ok(Box::new(it))
+        }
+        Expression::Multiple { expressions } => {
+            let mut iters = vec![];
+            for expr in expressions.iter() {
+                iters.push(new(expr.clone())?)
+            }
+
+            let it = multi::Multi::new(iters)?;
+
             Ok(Box::new(it))
         }
     }

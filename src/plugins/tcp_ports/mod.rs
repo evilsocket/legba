@@ -50,18 +50,18 @@ impl Plugin for TcpPortScanner {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.ports = creds::parse_expression(Some(&format!("[{}]", &opts.tcp_ports.tcp_ports)));
+        self.ports = creds::parse_expression(Some(&opts.tcp_ports.tcp_ports));
         if !matches!(
             &self.ports,
             Expression::Range {
                 min: _,
                 max: _,
                 set: _
-            }
+            } | Expression::Multiple { expressions: _ }
         ) {
             return Err(format!(
-                "'{}' is not a valid port range expression",
-                &opts.tcp_ports.tcp_ports
+                "'{:?}' is not a valid port range expression",
+                &self.ports
             ));
         }
 

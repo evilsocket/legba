@@ -35,6 +35,9 @@ pub(crate) enum Expression {
     Glob {
         pattern: String,
     },
+    Multiple {
+        expressions: Vec<Expression>,
+    },
 }
 
 impl Default for Expression {
@@ -67,6 +70,7 @@ impl fmt::Display for Expression {
                     write!(f, "range {:?}", set)
                 }
             }
+            Expression::Multiple { expressions: _ } => write!(f, "multi {{ ... }}"),
         }
     }
 }
@@ -150,7 +154,7 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                     }
                 };
             }
-            // file name or constant
+            // file name, constant or multiple
             _ => {
                 let filepath = Path::new(&expr);
                 if filepath.exists() && filepath.is_file() {
@@ -158,6 +162,18 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                     return Expression::Wordlist {
                         filename: expr.to_owned(),
                     };
+                } else if expr.contains(',') {
+                    // parse as multiple expressions
+                    let multi = expr
+                        .split(',')
+                        .map(|s| s.to_owned())
+                        .collect::<Vec<String>>();
+                    let mut expressions = vec![];
+                    for exp in multi {
+                        expressions.push(parse_expression(Some(exp).as_ref()));
+                    }
+
+                    return Expression::Multiple { expressions };
                 } else {
                     // constant value casually starting with @
                     return Expression::Constant {
@@ -295,6 +311,40 @@ mod tests {
             res,
             Expression::Glob {
                 pattern: "/etc/*".to_owned()
+            }
+        )
+    }
+
+    #[test]
+    fn can_parse_multiople() {
+        let expr = "1,[3-5],[6-8],9,[10-13]";
+        let res = parse_expression(Some(expr.to_owned()).as_ref());
+        assert_eq!(
+            res,
+            Expression::Multiple {
+                expressions: vec![
+                    Expression::Constant {
+                        value: "1".to_string()
+                    },
+                    Expression::Range {
+                        min: 3,
+                        max: 5,
+                        set: vec![],
+                    },
+                    Expression::Range {
+                        min: 6,
+                        max: 8,
+                        set: vec![],
+                    },
+                    Expression::Constant {
+                        value: "9".to_string()
+                    },
+                    Expression::Range {
+                        min: 10,
+                        max: 13,
+                        set: vec![],
+                    },
+                ]
             }
         )
     }
