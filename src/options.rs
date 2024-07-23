@@ -143,7 +143,7 @@ pub(crate) struct Options {
     #[cfg(feature = "redis")]
     #[clap(flatten, next_help_heading = "REDIS")]
     pub redis: crate::plugins::redis::options::Options,
-    #[cfg(feature = "tcp_ports")]
-    #[clap(flatten, next_help_heading = "TCP PORT SCANNER")]
-    pub tcp_ports: crate::plugins::tcp_ports::options::Options,
+    #[cfg(feature = "port_scanner")]
+    #[clap(flatten, next_help_heading = "PORT SCANNER")]
+    pub port_scanner: crate::plugins::port_scanner::options::Options,
 }

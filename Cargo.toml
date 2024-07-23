@@ -121,7 +121,7 @@ default = [
     "amqp",
     "redis",
     "scylla",
-    "tcp_ports",
+    "port_scanner",
     "samba",
     "socks5",
 ]
@@ -151,7 +151,7 @@ stomp = []
 amqp = []
 redis = []
 scylla = ["dep:scylla"]
-tcp_ports = ["dep:reqwest"]
+port_scanner = ["dep:reqwest"]
 samba = ["dep:pavao"]
 socks5 = ["dep:fast-socks5"]
 

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::{
-    plugins::tcp_ports::options,
+    plugins::port_scanner::options,
     utils::net::{upgrade_tcp_stream_to_tls, StreamLike},
 };
 use lazy_static::lazy_static;
@@ -16,8 +16,16 @@ lazy_static! {
 }
 
 pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
+    if opts.port_scanner_http == "*" {
+        return (true, false);
+    }
+
+    if opts.port_scanner_https == "*" {
+        return (true, true);
+    }
+
     for http_port in opts
-        .tcp_ports_http
+        .port_scanner_http
         .split(',')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
@@ -28,7 +36,7 @@ pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
     }
 
     for https_port in opts
-        .tcp_ports_https
+        .port_scanner_https
         .split(',')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
@@ -137,7 +145,7 @@ pub(crate) async fn http_grabber(
 
     if let Ok(resp) = resp {
         let headers_of_interest: Vec<&str> = opts
-            .tcp_ports_http_headers
+            .port_scanner_http_headers
             .split(',')
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())

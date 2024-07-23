@@ -34,6 +34,8 @@ mod mssql;
 pub(crate) mod oracle; // optional as it requires libclntsh that's a pain to install and configure
 #[cfg(feature = "pop3")]
 pub(crate) mod pop3;
+#[cfg(feature = "port_scanner")]
+pub(crate) mod port_scanner;
 #[cfg(feature = "rdp")]
 pub(crate) mod rdp;
 #[cfg(feature = "redis")]
@@ -52,8 +54,6 @@ mod sql;
 pub(crate) mod ssh;
 #[cfg(feature = "stomp")]
 pub(crate) mod stomp;
-#[cfg(feature = "tcp_ports")]
-pub(crate) mod tcp_ports;
 #[cfg(feature = "telnet")]
 pub(crate) mod telnet;
 #[cfg(feature = "vnc")]
