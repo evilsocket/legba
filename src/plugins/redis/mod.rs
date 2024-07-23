@@ -38,7 +38,11 @@ impl Plugin for Redis {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 6379)?;
 
         let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, self.ssl).await?;
@@ -56,14 +60,14 @@ impl Plugin for Redis {
             .map_err(|e| e.to_string())?;
 
         if buffer.starts_with(&[b'+', b'O', b'K']) {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "redis",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

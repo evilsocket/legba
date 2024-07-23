@@ -82,7 +82,11 @@ impl Plugin for MSSQL {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 1433)?;
 
         let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
@@ -142,14 +146,14 @@ impl Plugin for MSSQL {
             .map_err(|e| e.to_string())?;
 
         if resp.len() > 10 && resp[8] == 0xe3 {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "mssql",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

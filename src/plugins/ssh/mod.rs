@@ -47,7 +47,11 @@ impl Plugin for SSH {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 22)?;
         let (method, key_label) = match self.mode {
             options::Mode::Password => (
@@ -73,14 +77,14 @@ impl Plugin for SSH {
         .map_err(|e| e.to_string())?;
 
         if res.is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "ssh",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     (key_label, creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else if let Err(async_ssh2_tokio::Error::PasswordWrong) = res {
             Ok(None)
         } else {

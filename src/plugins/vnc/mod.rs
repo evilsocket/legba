@@ -40,7 +40,11 @@ impl Plugin for VNC {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 5900)?;
         let stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
         // being this plugin single credentials, this is going to be the password
@@ -63,14 +67,14 @@ impl Plugin for VNC {
         .map_err(|e| e.to_string())?;
 
         if vnc.is_ok() && vnc.unwrap().finish().is_ok() {
-            return Ok(Some(Loot::new(
+            return Ok(Some(vec![Loot::new(
                 "vnc",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )));
+            )]));
         }
 
         Ok(None)

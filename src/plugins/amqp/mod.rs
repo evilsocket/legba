@@ -42,7 +42,11 @@ impl Plugin for AMQP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 5672)?;
         let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, self.ssl).await?;
 
@@ -102,14 +106,14 @@ impl Plugin for AMQP {
         stream.read(&mut buffer).await.map_err(|e| e.to_string())?;
 
         if buffer[0] == 0x01 {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "amqp",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

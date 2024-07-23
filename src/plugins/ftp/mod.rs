@@ -36,7 +36,11 @@ impl Plugin for FTP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 21)?;
 
         let mut stream = tokio::time::timeout(timeout, FtpStream::connect(&address))
@@ -45,14 +49,14 @@ impl Plugin for FTP {
             .map_err(|e| e.to_string())?;
 
         if stream.login(&creds.username, &creds.password).await.is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "ftp",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

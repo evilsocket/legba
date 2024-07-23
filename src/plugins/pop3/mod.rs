@@ -39,7 +39,11 @@ impl Plugin for POP3 {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let (host, port) = utils::parse_target(&creds.target, 110)?;
         let address = (host, port);
 
@@ -54,14 +58,14 @@ impl Plugin for POP3 {
                 .map_err(|e| e.to_string())?;
 
             if client.login(&creds.username, &creds.password).await.is_ok() {
-                return Ok(Some(Loot::new(
+                return Ok(Some(vec![Loot::new(
                     "pop3",
                     &address.0,
                     [
                         ("username".to_owned(), creds.username.to_owned()),
                         ("password".to_owned(), creds.password.to_owned()),
                     ],
-                )));
+                )]));
             }
         } else {
             let mut client = tokio::time::timeout(timeout, async_pop::connect_plain(&address))
@@ -70,14 +74,14 @@ impl Plugin for POP3 {
                 .map_err(|e| e.to_string())?;
 
             if client.login(&creds.username, &creds.password).await.is_ok() {
-                return Ok(Some(Loot::new(
+                return Ok(Some(vec![Loot::new(
                     "pop3",
                     &address.0,
                     [
                         ("username".to_owned(), creds.username.to_owned()),
                         ("password".to_owned(), creds.password.to_owned()),
                     ],
-                )));
+                )]));
             }
         }
 

@@ -49,7 +49,7 @@ impl Kerberos {
         server: &SocketAddr,
         raw: &[u8],
         creds: &Credentials,
-    ) -> (bool, bool, Option<Loot>) {
+    ) -> (bool, bool, Option<Vec<Loot>>) {
         if let Ok((_, krb_error)) = KrbError::parse(raw) {
             match krb_error.error_code {
                 error_codes::KDC_ERR_PREAUTH_FAILED => {
@@ -57,14 +57,12 @@ impl Kerberos {
                     return (
                         true,
                         true,
-                        Some(
-                            Loot::new(
-                                "kerberos",
-                                &server.to_string(),
-                                [("username".to_owned(), creds.username.to_owned())],
-                            )
-                            .set_partial(),
-                        ),
+                        Some(vec![Loot::new(
+                            "kerberos",
+                            &server.to_string(),
+                            [("username".to_owned(), creds.username.to_owned())],
+                        )
+                        .set_partial()]),
                     );
                 }
                 error_codes::KDC_ERR_KEY_EXPIRED => {
@@ -72,17 +70,15 @@ impl Kerberos {
                     return (
                         true,
                         false,
-                        Some(
-                            Loot::new(
-                                "kerberos",
-                                &server.to_string(),
-                                [
-                                    ("username".to_owned(), creds.username.to_owned()),
-                                    ("expired_password".to_owned(), creds.password.to_owned()),
-                                ],
-                            )
-                            .set_partial(),
-                        ),
+                        Some(vec![Loot::new(
+                            "kerberos",
+                            &server.to_string(),
+                            [
+                                ("username".to_owned(), creds.username.to_owned()),
+                                ("expired_password".to_owned(), creds.password.to_owned()),
+                            ],
+                        )
+                        .set_partial()]),
                     );
                 }
                 error_codes::KDC_ERR_CLIENT_REVOKED => {
@@ -90,17 +86,15 @@ impl Kerberos {
                     return (
                         true,
                         false,
-                        Some(
-                            Loot::new(
-                                "kerberos",
-                                &server.to_string(),
-                                [
-                                    ("username".to_owned(), creds.username.to_owned()),
-                                    ("revoked_password".to_owned(), creds.password.to_owned()),
-                                ],
-                            )
-                            .set_partial(),
-                        ),
+                        Some(vec![Loot::new(
+                            "kerberos",
+                            &server.to_string(),
+                            [
+                                ("username".to_owned(), creds.username.to_owned()),
+                                ("revoked_password".to_owned(), creds.password.to_owned()),
+                            ],
+                        )
+                        .set_partial()]),
                     );
                 }
                 _ => {
@@ -117,11 +111,11 @@ impl Kerberos {
         server: &SocketAddr,
         raw: &[u8],
         creds: &Credentials,
-    ) -> (bool, Option<Loot>) {
+    ) -> (bool, Option<Vec<Loot>>) {
         if AsRep::parse(raw).is_ok() {
             return (
                 true,
-                Some(Loot::new(
+                Some(vec![Loot::new(
                     "kerberos",
                     &server.to_string(),
                     [
@@ -129,7 +123,7 @@ impl Kerberos {
                         ("password".to_owned(), creds.password.to_owned()),
                         // ("ticket".to_owned(), format!("{:?}", &as_rep.ticket)),
                     ],
-                )),
+                )]),
             );
         }
 
@@ -154,7 +148,11 @@ impl Plugin for Kerberos {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         // make sure we don't iterate over users that have been flagged as invalid
         if self.invalid_users.read().unwrap().contains(&creds.username) {
             return Ok(None);

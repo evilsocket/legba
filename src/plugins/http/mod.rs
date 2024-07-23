@@ -313,7 +313,7 @@ impl HTTP {
         &self,
         creds: &Credentials,
         timeout: Duration,
-    ) -> Result<Option<Loot>, Error> {
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let target = self.get_target_url(creds)?;
         let mut headers = self.setup_headers();
 
@@ -376,7 +376,7 @@ impl HTTP {
                     "".to_owned()
                 };
                 Ok(if self.is_success_response(creds, res).await.is_some() {
-                    Some(Loot::new(
+                    Some(vec![Loot::new(
                         "http",
                         &target,
                         [
@@ -384,7 +384,7 @@ impl HTTP {
                             ("password".to_owned(), creds.password.to_owned()),
                             ("cookie".to_owned(), cookie),
                         ],
-                    ))
+                    )])
                 } else {
                     None
                 })
@@ -396,7 +396,7 @@ impl HTTP {
         &self,
         creds: &Credentials,
         timeout: Duration,
-    ) -> Result<Option<Loot>, Error> {
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let target = self.get_target_url(creds)?;
         let headers = self.setup_headers();
         let url_raw = if target.contains("{PAYLOAD}") {
@@ -444,7 +444,7 @@ impl HTTP {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
                 if let Some(success) = self.is_success_response(creds, res).await {
-                    Ok(Some(Loot::new(
+                    Ok(Some(vec![Loot::new(
                         "http.enum",
                         &target,
                         [
@@ -453,7 +453,7 @@ impl HTTP {
                             ("size".to_owned(), success.content_length.to_string()),
                             ("type".to_owned(), success.content_type),
                         ],
-                    )))
+                    )]))
                 } else {
                     Ok(None)
                 }
@@ -465,7 +465,7 @@ impl HTTP {
         &self,
         creds: &Credentials,
         timeout: Duration,
-    ) -> Result<Option<Loot>, Error> {
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let url = self.get_target_url(creds)?;
         let mut headers = self.setup_headers();
 
@@ -485,7 +485,7 @@ impl HTTP {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
                 if let Some(success) = self.is_success_response(creds, res).await {
-                    Ok(Some(Loot::new(
+                    Ok(Some(vec![Loot::new(
                         "http.vhost",
                         &creds.target,
                         [
@@ -494,7 +494,7 @@ impl HTTP {
                             ("size".to_owned(), success.content_length.to_string()),
                             ("type".to_owned(), success.content_type),
                         ],
-                    )))
+                    )]))
                 } else {
                     Ok(None)
                 }
@@ -637,7 +637,11 @@ impl Plugin for HTTP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         match self.strategy {
             Strategy::Enumeration => self.http_enum_attempt(creds, timeout).await,
             Strategy::VHostEnum => self.http_vhost_enum_attempt(creds, timeout).await,

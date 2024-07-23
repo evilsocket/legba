@@ -34,7 +34,11 @@ impl Plugin for Scylla {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address: String = utils::parse_target_address(&creds.target, 9042)?;
         let session = scylla::SessionBuilder::new()
             .known_node(&address)
@@ -44,14 +48,14 @@ impl Plugin for Scylla {
             .await;
 
         if session.is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "scylla",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             // this client library doesn't differentiate between a connection error and bad credentials
             let err = session.err().unwrap().to_string();

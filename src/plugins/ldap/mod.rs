@@ -51,7 +51,11 @@ impl Plugin for LDAP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 389)?;
         let url = format!("ldap://{}", address);
 
@@ -76,14 +80,14 @@ impl Plugin for LDAP {
             .await
         {
             return Ok(if res.success().is_ok() {
-                Some(Loot::new(
+                Some(vec![Loot::new(
                     "ldap",
                     &address,
                     [
                         ("username".to_owned(), creds.username.to_owned()),
                         ("password".to_owned(), creds.password.to_owned()),
                     ],
-                ))
+                )])
             } else {
                 None
             });

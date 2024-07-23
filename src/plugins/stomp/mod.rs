@@ -37,7 +37,11 @@ impl Plugin for STOMP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 61613)?;
         let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
 
@@ -57,14 +61,14 @@ impl Plugin for STOMP {
         stream.read(&mut buffer).await.map_err(|e| e.to_string())?;
 
         if buffer.starts_with(CONNECTED_RESPONSE) {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "stomp",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

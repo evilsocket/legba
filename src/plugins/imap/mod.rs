@@ -34,19 +34,23 @@ impl Plugin for IMAP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 993)?;
         let stream = crate::utils::net::async_tcp_stream(&address, timeout, true).await?;
         let client = async_imap::Client::new(stream);
         if client.login(&creds.username, &creds.password).await.is_ok() {
-            return Ok(Some(Loot::new(
+            return Ok(Some(vec![Loot::new(
                 "imap",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )));
+            )]));
         }
 
         Ok(None)

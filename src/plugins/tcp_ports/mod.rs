@@ -70,7 +70,11 @@ impl Plugin for TcpPortScanner {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let (target, _) = utils::parse_target(&creds.target, 0)?;
         let address = format!("{}:{}", &target, &creds.username); // username is the port
         let start: std::time::Instant = std::time::Instant::now();
@@ -105,7 +109,7 @@ impl Plugin for TcpPortScanner {
                 }
             }
 
-            Ok(Some(Loot::new("tcp.ports", &target, data)))
+            Ok(Some(vec![Loot::new("tcp.ports", &target, data)]))
         } else {
             Ok(None)
         };

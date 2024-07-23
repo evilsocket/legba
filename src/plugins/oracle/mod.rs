@@ -41,7 +41,11 @@ impl Plugin for Oracle {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 1521)?;
         let oracle = oracle::env().map_err(|e| e.to_string())?;
 
@@ -55,14 +59,14 @@ impl Plugin for Oracle {
             // timeout
             Err("timed out".to_owned())
         } else if let Ok(_) = op.unwrap() {
-            Ok(Some(Loot::from(
+            Ok(Some(vec![Loot::from(
                 "oracle",
                 &self.host,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

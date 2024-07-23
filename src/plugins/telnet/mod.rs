@@ -46,7 +46,11 @@ impl Plugin for Telnet {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 23)?;
         let mut client = mini_telnet::Telnet::builder()
             .connect_timeout(Duration::from_secs(10))
@@ -58,14 +62,14 @@ impl Plugin for Telnet {
             .map_err(|e| e.to_string())?;
 
         if client.login(&creds.username, &creds.password).await.is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "telnet",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

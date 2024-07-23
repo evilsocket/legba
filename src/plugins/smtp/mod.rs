@@ -51,7 +51,11 @@ impl Plugin for SMTP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 25)?;
         let stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
 
@@ -66,14 +70,14 @@ impl Plugin for SMTP {
             authentication::Credentials::new(creds.username.clone(), creds.password.clone());
 
         if transport.auth(self.mechanism, &credentials).await.is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "smtp",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

@@ -45,7 +45,11 @@ impl Plugin for Socks5 {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address: String = utils::parse_target_address(&creds.target, 1080)?;
         let res = tokio::time::timeout(
             timeout,
@@ -62,14 +66,14 @@ impl Plugin for Socks5 {
         .map_err(|e| e.to_string())?;
 
         return Ok(if res.is_ok() {
-            Some(Loot::new(
+            Some(vec![Loot::new(
                 "socks5",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            ))
+            )])
         } else {
             None
         });

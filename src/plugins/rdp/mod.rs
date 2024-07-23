@@ -44,7 +44,11 @@ impl Plugin for RDP {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let (host, port) = utils::parse_target(&creds.target, 3389)?;
         let address = format!("{}:{}", &host, port)
             .parse::<SocketAddr>()
@@ -72,14 +76,14 @@ impl Plugin for RDP {
         }
 
         if rdp_connector.connect(stream).is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "rdp",
                 &address.to_string(),
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

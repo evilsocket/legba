@@ -119,7 +119,11 @@ impl Plugin for SMB {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 445)?;
         let server = format!("smb://{}", &address);
         let share = tokio::time::timeout(timeout, self.get_share_for(&address))
@@ -140,14 +144,14 @@ impl Plugin for SMB {
         )?;
 
         return if client.list_dir("/").is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "smb",
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         };

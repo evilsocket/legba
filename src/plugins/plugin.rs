@@ -46,5 +46,9 @@ pub(crate) trait Plugin: Sync + Send {
     fn setup(&mut self, options: &Options) -> Result<(), Error>;
 
     // perform a plugin step with the given credentials and timeout
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error>;
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error>;
 }

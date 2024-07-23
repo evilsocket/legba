@@ -164,8 +164,10 @@ async fn worker(
                     }
                     Ok(loot) => {
                         // do we have new loot?
-                        if let Some(loot) = loot {
-                            session.add_loot(loot).await.unwrap();
+                        if let Some(loots) = loot {
+                            for loot in loots {
+                                session.add_loot(loot).await.unwrap();
+                            }
                         }
                     }
                 };

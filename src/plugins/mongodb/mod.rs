@@ -34,7 +34,11 @@ impl Plugin for MongoDB {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let (host, port) = utils::parse_target(&creds.target, 27017)?;
 
         let mut opts = mongodb::options::ClientOptions::default();
@@ -54,7 +58,7 @@ impl Plugin for MongoDB {
         let dbs = cli.list_database_names(None, None).await;
 
         if let Ok(dbs) = dbs {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 "mongodb",
                 &host,
                 [
@@ -62,7 +66,7 @@ impl Plugin for MongoDB {
                     ("password".to_owned(), creds.password.to_owned()),
                     ("databases".to_owned(), dbs.join(", ")),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }

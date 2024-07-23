@@ -85,7 +85,7 @@ impl Plugin for DNS {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, _: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(&self, creds: &Credentials, _: Duration) -> Result<Option<Vec<Loot>>, Error> {
         let subdomain = format!("{}.{}", creds.single(), &creds.target);
         // attempt resolving this subdomain to a one or more IP addresses
         if let Ok(response) = self.resolver.as_ref().unwrap().lookup_ip(&subdomain).await {
@@ -142,11 +142,11 @@ impl Plugin for DNS {
                             .join(", ")
                     };
 
-                    return Ok(Some(Loot::new(
+                    return Ok(Some(vec![Loot::new(
                         "dns",
                         &subdomain,
                         [("addresses".to_owned(), loot_data)],
-                    )));
+                    )]));
                 }
             }
         }

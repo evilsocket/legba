@@ -54,7 +54,7 @@ impl SQL {
         db: &str,
         creds: &Credentials,
         timeout: Duration,
-    ) -> Result<Option<Loot>, Error> {
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, self.port)?;
         let pool = tokio::time::timeout(
             timeout,
@@ -67,14 +67,14 @@ impl SQL {
         .map_err(|e| e.to_string())?;
 
         if pool.is_ok() {
-            Ok(Some(Loot::new(
+            Ok(Some(vec![Loot::new(
                 scheme,
                 &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
-            )))
+            )]))
         } else {
             Ok(None)
         }
@@ -91,7 +91,11 @@ impl Plugin for SQL {
         Ok(())
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         match self.flavour {
             Flavour::My => {
                 self.do_attempt::<MySql>("mysql", "mysql", creds, timeout)

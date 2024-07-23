@@ -69,7 +69,11 @@ impl Plugin for Command {
         }
     }
 
-    async fn attempt(&self, creds: &Credentials, timeout: Duration) -> Result<Option<Loot>, Error> {
+    async fn attempt(
+        &self,
+        creds: &Credentials,
+        timeout: Duration,
+    ) -> Result<Option<Vec<Loot>>, Error> {
         let output = tokio::time::timeout(timeout, self.run(creds))
             .await
             .map_err(|e| e.to_string())?;
@@ -93,14 +97,14 @@ impl Plugin for Command {
                 };
 
                 if ok {
-                    return Ok(Some(Loot::new(
+                    return Ok(Some(vec![Loot::new(
                         "command",
                         &creds.target,
                         [
                             ("username".to_owned(), creds.username.to_owned()),
                             ("password".to_owned(), creds.password.to_owned()),
                         ],
-                    )));
+                    )]));
                 }
             }
 
