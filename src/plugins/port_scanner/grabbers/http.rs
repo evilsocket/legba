@@ -6,7 +6,7 @@ use crate::{
 };
 use lazy_static::lazy_static;
 use regex::Regex;
-use x509_parser::prelude::{FromDer, X509Certificate};
+use x509_parser::prelude::{FromDer, GeneralName, X509Certificate};
 
 use super::Banner;
 
@@ -87,11 +87,11 @@ pub(crate) async fn http_grabber(
 
                         let validity = cert.validity();
                         banner.insert(
-                            "certificate.validity.from".to_owned(),
+                            "certificate.valid_from".to_owned(),
                             validity.not_before.to_string(),
                         );
                         banner.insert(
-                            "certificate.validity.to".to_owned(),
+                            "certificate.valid_to".to_owned(),
                             validity.not_after.to_string(),
                         );
 
@@ -102,7 +102,10 @@ pub(crate) async fn http_grabber(
                                     .value
                                     .general_names
                                     .iter()
-                                    .map(|n| n.to_string())
+                                    .map(|n| match n {
+                                        GeneralName::DNSName(s) => s.to_string(),
+                                        _ => n.to_string(),
+                                    })
                                     .collect::<Vec<String>>()
                                     .join(", "),
                             );
