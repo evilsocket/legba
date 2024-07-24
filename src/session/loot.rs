@@ -47,6 +47,10 @@ impl Loot {
         }
     }
 
+    pub fn get_target(&self) -> &str {
+        &self.target
+    }
+
     pub fn is_partial(&self) -> bool {
         self.partial
     }

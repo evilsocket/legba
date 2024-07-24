@@ -19,4 +19,7 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = 10)]
     /// If more than this amount of sequential dns resolutions point to the same ip, add that ip to an ignore list.
     pub dns_max_positives: usize,
+    #[clap(long, default_value_t = false)]
+    /// Do not fetch HTTPS certificates for new domains.
+    pub dns_no_https: bool,
 }
