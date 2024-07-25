@@ -46,9 +46,7 @@ impl PortScanner {
         let address = format!("{}:{}", &target, &creds.username); // username is the port
         let start: std::time::Instant = std::time::Instant::now();
 
-        return if let Ok(stream) =
-            crate::utils::net::async_tcp_stream(&address, timeout, false).await
-        {
+        if let Ok(stream) = crate::utils::net::async_tcp_stream(&address, timeout, false).await {
             let mut data = vec![
                 ("transport".to_owned(), "tcp".to_owned()),
                 ("port".to_owned(), creds.username.to_owned()),
@@ -79,7 +77,7 @@ impl PortScanner {
             Ok(Some(Loot::new("port.scanner", &target, data)))
         } else {
             Ok(None)
-        };
+        }
     }
 
     fn get_socket_address(&self, target: &str, creds: &Credentials) -> Result<SocketAddr, Error> {
@@ -92,7 +90,7 @@ impl PortScanner {
         // prioritize ipv4
         for addr in &addresses {
             if addr.is_ipv4() {
-                return Ok(addr.clone());
+                return Ok(*addr);
             }
         }
 
@@ -131,7 +129,7 @@ impl PortScanner {
 
             tokio::time::timeout(
                 timeout,
-                udp_socket.send(&grabbers::dns::CHAOS_BIND_VERSION_QUERY),
+                udp_socket.send(grabbers::dns::CHAOS_BIND_VERSION_QUERY),
             )
             .await
             .map_err(|e| e.to_string())?

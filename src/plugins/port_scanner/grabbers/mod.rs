@@ -21,16 +21,17 @@ pub(crate) async fn grab_tcp_banner(
     timeout: Duration,
 ) -> Banner {
     if mysql::is_mysql_port(port) {
-        return mysql::tcp_grabber(address, port, stream, timeout).await;
+        mysql::tcp_grabber(address, port, stream, timeout).await
     } else if dns::is_dns_port(port) {
-        return dns::tcp_grabber(address, port, stream, timeout).await;
+        dns::tcp_grabber(address, port, stream, timeout).await
     } else if let (true, with_ssl) = http::is_http_port(opts, port) {
-        return http::http_grabber(opts, address, port, stream, with_ssl, timeout).await;
+        http::http_grabber(opts, address, port, stream, with_ssl, timeout).await
+    } else {
+        // default to an attempt at line grabbing
+        line::line_grabber(address, port, stream, timeout).await
     }
-    // default to an attempt at line grabbing
-    line::line_grabber(address, port, stream, timeout).await
 }
 
 pub(crate) async fn grab_udp_banner(response: &[u8]) -> Banner {
-    return dns::parse_maybe_chaos_response(response).await;
+    dns::parse_maybe_chaos_response(response).await
 }

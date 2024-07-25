@@ -230,7 +230,7 @@ impl Plugin for DNS {
                     for ip in &addresses {
                         if let Ok(hostname) = dns_lookup::lookup_addr(ip) {
                             if hostname != subdomain {
-                                parts.push(format!("{} ({})", ip.to_string(), hostname));
+                                parts.push(format!("{} ({})", ip, hostname));
                             }
                         } else {
                             parts.push(ip.to_string());

@@ -613,7 +613,7 @@ mod tests {
         let mut tmpdata = File::create(&tmppath).unwrap();
 
         for i in 0..num_items {
-            write!(tmpdata, "user{}:pass{}\n", i, i).unwrap();
+            writeln!(tmpdata, "user{}:pass{}", i, i).unwrap();
             expected.push(Credentials {
                 target: "foo".to_owned(),
                 username: format!("user{}", i),
