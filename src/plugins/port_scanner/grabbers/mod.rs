@@ -6,8 +6,10 @@ use ahash::HashMap;
 use super::options;
 
 pub(crate) mod dns;
+
 mod http;
 mod line;
+mod mysql;
 
 pub(crate) type Banner = HashMap<String, String>;
 
@@ -18,15 +20,13 @@ pub(crate) async fn grab_tcp_banner(
     stream: Box<dyn StreamLike>,
     timeout: Duration,
 ) -> Banner {
-    if dns::is_dns_port(port) {
+    if mysql::is_mysql_port(port) {
+        return mysql::tcp_grabber(address, port, stream, timeout).await;
+    } else if dns::is_dns_port(port) {
         return dns::tcp_grabber(address, port, stream, timeout).await;
-    }
-
-    let (is_http, with_ssl) = http::is_http_port(opts, port);
-    if is_http {
+    } else if let (true, with_ssl) = http::is_http_port(opts, port) {
         return http::http_grabber(opts, address, port, stream, with_ssl, timeout).await;
     }
-
     // default to an attempt at line grabbing
     line::line_grabber(address, port, stream, timeout).await
 }
