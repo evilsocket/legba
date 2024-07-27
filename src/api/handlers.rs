@@ -29,31 +29,35 @@ struct Plugin {
     options: Option<serde_json::Value>,
 }
 
+fn get_plugin_options(plugin_name: &str) -> Option<serde_json::Value> {
+    // nasty hack to check for plugin specific options
+    let opt_name = plugin_name.replace('.', "_");
+    let opt_parts: Vec<&str> = plugin_name.splitn(2, '.').collect();
+    let opt_root = if opt_parts.len() == 2 {
+        opt_parts[0]
+    } else {
+        &opt_name
+    };
+
+    match OPTIONS_MAP.get(&opt_name) {
+        None => match OPTIONS_MAP.get(opt_root) {
+            None => None,
+            Some(v) => Some(v.clone()),
+        },
+        Some(v) => Some(v.clone()),
+    }
+}
+
 #[get("/plugins")]
 pub async fn plugins_list(_: web::Data<SharedState>) -> HttpResponse {
     let mut list = vec![];
 
     for (name, plug) in plugins::manager::INVENTORY.lock().unwrap().iter() {
-        // nasty hack to check for plugin specific options
-        let opt_name = name.replace('.', "_");
-        let opt_parts: Vec<&str> = name.splitn(2, '.').collect();
-        let opt_root = if opt_parts.len() == 2 {
-            opt_parts[0]
-        } else {
-            &opt_name
-        };
-
         list.push(Plugin {
             name: name.to_string(),
             description: plug.description().to_string(),
             strategy: plug.payload_strategy().to_string(),
-            options: match OPTIONS_MAP.get(&opt_name) {
-                None => match OPTIONS_MAP.get(opt_root) {
-                    None => None,
-                    Some(v) => Some(v.clone()),
-                },
-                Some(v) => Some(v.clone()),
-            },
+            options: get_plugin_options(name),
         })
     }
 
