@@ -25,7 +25,7 @@ fn get_current_exe() -> Result<String, Error> {
     // TODO: handle errors
     Ok(std::env::current_exe()
         .map_err(|e| e.to_string())?
-        .file_name()
+        .canonicalize()
         .unwrap()
         .to_str()
         .unwrap()
@@ -164,6 +164,7 @@ impl Session {
         avail_workers: Arc<AtomicU64>,
     ) -> Result<Self, Error> {
         let app = get_current_exe()?;
+
         let plugin_name = argv[0].to_owned();
 
         // https://stackoverflow.com/questions/49245907/how-to-read-subprocess-output-asynchronously
