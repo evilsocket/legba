@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    os::unix::process::ExitStatusExt,
     process::Stdio,
     sync::{atomic::AtomicU64, Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
@@ -208,12 +209,27 @@ impl Session {
         // wait for child
         let completed = Arc::new(Mutex::new(None));
         let child_completed = completed.clone();
+        let child_out = output.clone();
         tokio::task::spawn(async move {
             match child.wait().await {
                 Ok(code) => {
-                    log::info!("[{id}] child process {process_id} completed with code {code}");
-                    *child_completed.lock().unwrap() =
-                        Some(Completion::with_status(code.code().unwrap_or(-1)));
+                    let signal = code.signal().unwrap_or(0);
+                    // ok or terminated
+                    if code.success() || signal == 15 {
+                        log::info!("[{id}] child process {process_id} completed with code {code}");
+                        *child_completed.lock().unwrap() =
+                            Some(Completion::with_status(code.code().unwrap_or(-1)));
+                    } else {
+                        log::error!("[{id}] child process {process_id} completed with code {code} (signal {:?})", code.signal());
+                        *child_completed.lock().unwrap() = Some(Completion::with_error(
+                            child_out
+                                .lock()
+                                .unwrap()
+                                .last()
+                                .unwrap_or(&String::new())
+                                .to_string(),
+                        ));
+                    }
                 }
                 Err(error) => {
                     log::error!("[{id}] child process {process_id} completed with error {error}");

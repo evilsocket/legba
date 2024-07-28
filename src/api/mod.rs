@@ -48,7 +48,7 @@ pub(crate) async fn start(opts: Options) -> Result<(), Error> {
     let state = Arc::new(RwLock::new(Sessions::new(opts.concurrency)));
 
     HttpServer::new(move || {
-        let cors = Cors::default().allow_any_origin().send_wildcard();
+        let cors = Cors::permissive();
 
         App::new()
             .wrap(cors)
