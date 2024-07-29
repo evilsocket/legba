@@ -27,6 +27,7 @@ struct Plugin {
     description: String,
     strategy: String,
     options: Option<serde_json::Value>,
+    override_payload: Option<String>,
 }
 
 fn get_plugin_options(plugin_name: &str) -> Option<serde_json::Value> {
@@ -57,6 +58,10 @@ pub async fn plugins_list(_: web::Data<SharedState>) -> HttpResponse {
             name: name.to_string(),
             description: plug.description().to_string(),
             strategy: plug.payload_strategy().to_string(),
+            override_payload: match plug.override_payload() {
+                Some(over) => Some(over.as_string()),
+                None => None,
+            },
             options: get_plugin_options(name),
         })
     }

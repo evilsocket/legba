@@ -3,6 +3,7 @@ use std::path::Path;
 
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::Serialize;
 
 const DEFAULT_PERMUTATIONS_MIN_LEN: usize = 4;
 const DEFAULT_PERMUTATIONS_MAX_LEN: usize = 8;
@@ -14,7 +15,7 @@ lazy_static! {
     static ref RANGE_SET_PARSER: Regex = Regex::new(r"^\[(\d+(,\s*\d+)*)?\]$").unwrap();
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub(crate) enum Expression {
     Constant {
         value: String,
@@ -38,6 +39,41 @@ pub(crate) enum Expression {
     Multiple {
         expressions: Vec<Expression>,
     },
+}
+
+impl Expression {
+    pub fn as_string(&self) -> String {
+        match self {
+            Expression::Constant { value } => value.to_owned(),
+            Expression::Wordlist { filename } => filename.to_owned(),
+            Expression::Permutations { min, max, charset } => {
+                format!("#{min}-{max}:{charset}")
+            }
+            Expression::Range { min, max, set } => {
+                if set.is_empty() {
+                    format!("[{min}-{max}]")
+                } else {
+                    format!(
+                        "[{}]",
+                        set.iter()
+                            .map(|n| n.to_string())
+                            .collect::<Vec<String>>()
+                            .join(",")
+                    )
+                }
+            }
+            Expression::Glob { pattern } => format!("@{pattern}"),
+            Expression::Multiple { expressions } => expressions
+                .iter()
+                .map(|e| e.as_string())
+                .collect::<Vec<String>>()
+                .join(", "),
+        }
+    }
+
+    pub fn is_default(&self) -> bool {
+        self == &Expression::default()
+    }
 }
 
 impl Default for Expression {

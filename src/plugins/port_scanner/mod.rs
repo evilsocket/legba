@@ -165,7 +165,13 @@ impl Plugin for PortScanner {
     }
 
     fn override_payload(&self) -> Option<Expression> {
-        Some(self.ports.clone())
+        if self.ports.is_default() {
+            Some(creds::parse_expression(Some(
+                &options::DEFAULT_PORTS.to_owned(),
+            )))
+        } else {
+            Some(self.ports.clone())
+        }
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
