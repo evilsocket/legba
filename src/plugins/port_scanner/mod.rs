@@ -175,7 +175,12 @@ impl Plugin for PortScanner {
     }
 
     fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.ports = creds::parse_expression(Some(&opts.port_scanner.port_scanner_ports));
+        self.ports = if opts.username.is_some() {
+            creds::parse_expression(opts.username.as_ref())
+        } else {
+            creds::parse_expression(Some(&opts.port_scanner.port_scanner_ports))
+        };
+
         if !matches!(
             &self.ports,
             Expression::Range {
