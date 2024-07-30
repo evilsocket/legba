@@ -202,7 +202,7 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                     // parse as multiple expressions
                     let multi = expr
                         .split(',')
-                        .map(|s| s.to_owned())
+                        .map(|s| s.trim().to_owned())
                         .collect::<Vec<String>>();
                     let mut expressions = vec![];
                     for exp in multi {
@@ -352,7 +352,7 @@ mod tests {
     }
 
     #[test]
-    fn can_parse_multiople() {
+    fn can_parse_multiple() {
         let expr = "1,[3-5],[6-8],9,[10-13]";
         let res = parse_expression(Some(expr.to_owned()).as_ref());
         assert_eq!(
@@ -379,6 +379,30 @@ mod tests {
                         min: 10,
                         max: 13,
                         set: vec![],
+                    },
+                ]
+            }
+        )
+    }
+
+    #[test]
+    fn can_parse_multiple_with_spaces() {
+        let expr = "1, [3-4], 9 ";
+        let res = parse_expression(Some(expr.to_owned()).as_ref());
+        assert_eq!(
+            res,
+            Expression::Multiple {
+                expressions: vec![
+                    Expression::Constant {
+                        value: "1".to_string()
+                    },
+                    Expression::Range {
+                        min: 3,
+                        max: 4,
+                        set: vec![],
+                    },
+                    Expression::Constant {
+                        value: "9".to_string()
                     },
                 ]
             }
