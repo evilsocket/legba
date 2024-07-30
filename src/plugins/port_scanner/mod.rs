@@ -210,7 +210,6 @@ impl Plugin for PortScanner {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
-        log::debug!("{:?}", &creds);
         let mut loot = vec![];
 
         if !self.opts.port_scanner_no_udp {
