@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use async_smtp::{authentication, SmtpClient, SmtpTransport};
 use async_trait::async_trait;
-use ctor::ctor;
 use tokio::io::BufStream;
 
 use crate::session::{Error, Loot};
@@ -12,11 +11,12 @@ use crate::Plugin;
 use crate::creds::Credentials;
 use crate::utils;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("smtp", Box::new(SMTP::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("smtp", SMTP::new());
 }
 
 #[derive(Clone)]

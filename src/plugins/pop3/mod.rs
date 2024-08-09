@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 
 use crate::session::{Error, Loot};
 use crate::Options;
@@ -10,11 +9,12 @@ use crate::Plugin;
 use crate::creds::Credentials;
 use crate::utils;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("pop3", Box::new(POP3::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("pop3", POP3::new());
 }
 
 #[derive(Clone)]

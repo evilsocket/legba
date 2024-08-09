@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::session::{Error, Loot};
@@ -11,13 +10,14 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
 const PROTOCOL_HEADER_091: &[u8] = &[b'A', b'M', b'Q', b'P', 0, 0, 9, 1];
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("amqp", Box::new(AMQP::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("amqp", AMQP::new());
 }
 
 #[derive(Clone)]

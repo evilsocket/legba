@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use vnc::{PixelFormat, VncConnector};
 
 use crate::session::{Error, Loot};
@@ -10,11 +9,11 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
+use super::manager::PluginRegistrar;
 use super::plugin::PayloadStrategy;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("vnc", Box::new(VNC::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("vnc", VNC::new());
 }
 
 #[derive(Clone)]

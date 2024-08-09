@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use lazy_static::lazy_static;
 use sqlx::pool::PoolOptions;
 use sqlx::{MySql, Postgres};
@@ -12,6 +11,8 @@ use crate::session::{Error, Loot};
 use crate::utils;
 use crate::Options;
 use crate::Plugin;
+
+use super::manager::PluginRegistrar;
 
 lazy_static! {
     static ref DESCRIPTIONS: HashMap<Flavour, &'static str> = {
@@ -24,10 +25,9 @@ lazy_static! {
         HashMap::from([(Flavour::My, 3306), (Flavour::PG, 5432),]);
 }
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("mysql", Box::new(SQL::new(Flavour::My)));
-    crate::plugins::manager::register("pgsql", Box::new(SQL::new(Flavour::PG)));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("mysql", SQL::new(Flavour::My));
+    registrar.register("pgsql", SQL::new(Flavour::PG));
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]

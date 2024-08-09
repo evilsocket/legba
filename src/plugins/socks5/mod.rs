@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 
 use crate::session::{Error, Loot};
 use crate::utils;
@@ -10,11 +9,12 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("socks5", Box::new(Socks5::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("socks5", Socks5::new());
 }
 
 #[derive(Clone)]

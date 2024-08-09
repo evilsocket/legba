@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use tokio::sync::Mutex;
 use trust_dns_resolver::{config::*, AsyncResolver, TokioAsyncResolver};
 use x509_parser::prelude::{FromDer, GeneralName, X509Certificate};
@@ -16,13 +15,13 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
+use super::manager::PluginRegistrar;
 use super::plugin::PayloadStrategy;
 
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("dns", Box::new(DNS::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("dns", DNS::new());
 }
 
 #[derive(Clone)]

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 
 use crate::session::{Error, Loot};
 use crate::utils;
@@ -10,9 +9,10 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("scylla", Box::new(Scylla::new()));
+use super::manager::PluginRegistrar;
+
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("scylla", Scylla::new());
 }
 
 #[derive(Clone)]

@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use ahash::HashSet;
 use async_trait::async_trait;
-use ctor::ctor;
 use kerberos_asn1::{AsRep, Asn1Object, KrbError};
 use kerberos_constants::error_codes;
 
@@ -16,14 +15,15 @@ use crate::creds::Credentials;
 use crate::utils;
 use transport::Protocol;
 
+use super::manager::PluginRegistrar;
+
 mod builder;
 mod transport;
 
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("kerberos", Box::new(Kerberos::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("kerberos", Kerberos::new());
 }
 
 #[derive(Clone)]

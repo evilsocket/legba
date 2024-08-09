@@ -3,7 +3,6 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use rdp::core::client::Connector;
 use rdp::core::gcc::KeyboardLayout;
 
@@ -13,11 +12,12 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("rdp", Box::new(RDP::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("rdp", RDP::new());
 }
 
 #[derive(Clone)]

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 
 use crate::creds::Credentials;
 use crate::session::{Error, Loot};
@@ -9,11 +8,12 @@ use crate::utils;
 use crate::Options;
 use crate::Plugin;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("telnet", Box::new(Telnet::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("telnet", Telnet::new());
 }
 
 #[derive(Clone)]

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use sibyl as oracle;
 
 use crate::creds::Credentials;
@@ -12,9 +11,10 @@ use crate::Plugin;
 
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("oracle", Box::new(Oracle::new()));
+use super::manager::PluginRegistrar;
+
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("oracle", Oracle::new());
 }
 
 #[derive(Clone)]

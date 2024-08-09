@@ -3,7 +3,6 @@ use async_ssh2_tokio::client::{AuthMethod, Client, ServerCheckMethod};
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 
 use crate::creds::Credentials;
 use crate::session::{Error, Loot};
@@ -11,13 +10,14 @@ use crate::utils;
 use crate::Options;
 use crate::Plugin;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    let ssh = Box::new(SSH::new());
-    crate::plugins::manager::register("ssh", ssh.clone());
-    crate::plugins::manager::register("sftp", ssh);
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    let ssh = SSH::new();
+    registrar.register("ssh", ssh.clone());
+    registrar.register("sftp", ssh);
 }
 
 #[derive(Clone)]

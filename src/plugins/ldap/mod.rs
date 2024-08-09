@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use ldap3::{LdapConnAsync, LdapConnSettings};
 
 use crate::session::{Error, Loot};
@@ -11,11 +10,12 @@ use crate::Plugin;
 use crate::creds::Credentials;
 use crate::utils;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("ldap", Box::new(LDAP::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("ldap", LDAP::new());
 }
 
 #[derive(Clone)]
