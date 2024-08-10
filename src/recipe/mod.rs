@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use lazy_static::lazy_static;
+use lazy_regex::{lazy_regex, Lazy};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -16,10 +16,7 @@ const ARG_EXPRESSION_ERROR: &str =
 
 const RESERVED_VAR_MAMES: [&str; 3] = ["username", "password", "payload"];
 
-lazy_static! {
-    static ref ARG_VALUE_PARSER: Regex =
-        Regex::new(r"(?m)\{\s*\$([\w\.]+)(\s+or\s+([^}]+))?\}").unwrap();
-}
+static ARG_VALUE_PARSER: Lazy<Regex> = lazy_regex!(r"(?m)\{\s*\$([\w\.]+)(\s+or\s+([^}]+))?\}");
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Debug)]
 pub(crate) struct Recipe {

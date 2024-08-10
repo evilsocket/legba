@@ -8,15 +8,15 @@ use std::{
 
 use actix_web::Result;
 use clap::Parser;
-use lazy_static::lazy_static;
+use lazy_regex::{lazy_regex, Lazy};
 use regex::Regex;
 use serde::Serialize;
 use tokio::{io::AsyncBufReadExt, sync::RwLock};
 
-lazy_static! {
-    static ref STATS_PARSER: Regex = Regex::new(r"(?m)^.+tasks=(\d+)\s+mem=(.+)\stargets=(\d+)\sattempts=(\d+)\sdone=(\d+)\s\((.+)%\)(\serrors=(\d+))?\sspeed=(.+) reqs/s").unwrap();
-    static ref LOOT_PARSER: Regex = Regex::new(r"(?m)^.+\[(.+)\]\s\(([^)]+)\)(\s<(.+)>)?\s(.+)").unwrap();
-}
+static STATS_PARSER: Lazy<Regex> = lazy_regex!(
+    r"(?m)^.+tasks=(\d+)\s+mem=(.+)\stargets=(\d+)\sattempts=(\d+)\sdone=(\d+)\s\((.+)%\)(\serrors=(\d+))?\sspeed=(.+) reqs/s"
+);
+static LOOT_PARSER: Lazy<Regex> = lazy_regex!(r"(?m)^.+\[(.+)\]\s\(([^)]+)\)(\s<(.+)>)?\s(.+)");
 
 use crate::{session::Error, utils::parse_multiple_targets, Options};
 

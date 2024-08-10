@@ -1,8 +1,6 @@
-use std::collections::HashMap;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use lazy_static::lazy_static;
 use sqlx::pool::PoolOptions;
 use sqlx::{MySql, Postgres};
 
@@ -11,17 +9,6 @@ use crate::session::{Error, Loot};
 use crate::utils;
 use crate::Options;
 use crate::Plugin;
-
-lazy_static! {
-    static ref DESCRIPTIONS: HashMap<Flavour, &'static str> = {
-        HashMap::from([
-            (Flavour::My, "MySQL password authentication."),
-            (Flavour::PG, "PostgreSQL password authentication."),
-        ])
-    };
-    static ref DEFAULT_PORTS: HashMap<Flavour, u16> =
-        HashMap::from([(Flavour::My, 3306), (Flavour::PG, 5432),]);
-}
 
 super::manager::register_plugin! {
     "mysql" => SQL::new(Flavour::My),
@@ -34,6 +21,22 @@ pub(crate) enum Flavour {
     PG,
 }
 
+impl Flavour {
+    fn description(&self) -> &'static str {
+        match self {
+            Self::My => "MySQL password authentication.",
+            Self::PG => "PostgreSQL password authentication.",
+        }
+    }
+
+    fn default_port(&self) -> u16 {
+        match self {
+            Self::My => 3306,
+            Self::PG => 5432,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct SQL {
     flavour: Flavour,
@@ -42,7 +45,7 @@ pub(crate) struct SQL {
 
 impl SQL {
     pub fn new(flavour: Flavour) -> Self {
-        let port = *DEFAULT_PORTS.get(&flavour).unwrap();
+        let port = flavour.default_port();
         SQL { flavour, port }
     }
 
@@ -82,7 +85,7 @@ impl SQL {
 #[async_trait]
 impl Plugin for SQL {
     fn description(&self) -> &'static str {
-        DESCRIPTIONS.get(&self.flavour).unwrap()
+        self.flavour.description()
     }
 
     fn setup(&mut self, _opts: &Options) -> Result<(), Error> {

@@ -4,16 +4,13 @@ use crate::{
     plugins::port_scanner::options,
     utils::net::{upgrade_tcp_stream_to_tls, StreamLike},
 };
-use lazy_static::lazy_static;
+use lazy_regex::{lazy_regex, Lazy};
 use regex::Regex;
 use x509_parser::prelude::{FromDer, GeneralName, X509Certificate};
 
 use super::Banner;
 
-lazy_static! {
-    static ref HTML_TITLE_PARSER: Regex =
-        Regex::new(r"(?i)<\s*title\s*>([^<]+)<\s*/\s*title\s*>").unwrap();
-}
+static HTML_TITLE_PARSER: Lazy<Regex> = lazy_regex!(r"(?i)<\s*title\s*>([^<]+)<\s*/\s*title\s*>");
 
 pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
     if opts.port_scanner_http == "*" {

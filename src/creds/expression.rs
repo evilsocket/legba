@@ -1,7 +1,7 @@
 use std::fmt;
 use std::path::Path;
 
-use lazy_static::lazy_static;
+use lazy_regex::{lazy_regex, Lazy};
 use regex::Regex;
 use serde::Serialize;
 
@@ -9,11 +9,9 @@ const DEFAULT_PERMUTATIONS_MIN_LEN: usize = 4;
 const DEFAULT_PERMUTATIONS_MAX_LEN: usize = 8;
 const DEFAULT_PERMUTATIONS_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ !\"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~";
 
-lazy_static! {
-    static ref PERMUTATIONS_PARSER: Regex = Regex::new(r"^#(\d+)-(\d+)(:.+)?$").unwrap();
-    static ref RANGE_MIN_MAX_PARSER: Regex = Regex::new(r"^\[(\d+)-(\d+)\]$").unwrap();
-    static ref RANGE_SET_PARSER: Regex = Regex::new(r"^\[(\d+(,\s*\d+)*)?\]$").unwrap();
-}
+static PERMUTATIONS_PARSER: Lazy<Regex> = lazy_regex!(r"^#(\d+)-(\d+)(:.+)?$");
+static RANGE_MIN_MAX_PARSER: Lazy<Regex> = lazy_regex!(r"^\[(\d+)-(\d+)\]$");
+static RANGE_SET_PARSER: Lazy<Regex> = lazy_regex!(r"^\[(\d+(,\s*\d+)*)?\]$");
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub(crate) enum Expression {
