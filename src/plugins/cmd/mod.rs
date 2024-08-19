@@ -82,16 +82,20 @@ impl Plugin for Command {
             let stdout = String::from_utf8_lossy(&out.stdout);
             let stderr = String::from_utf8_lossy(&out.stderr);
             if !stderr.is_empty() {
-                log::debug!("{}", stderr);
+                log::debug!("STDERR: {}", stderr);
             }
 
-            log::debug!("{}", &stdout);
+            log::debug!("STDOUT: {}", &stdout);
 
             // check exit code first
             if out.status.code().unwrap_or(-1) == self.opts.cmd_success_exit_code {
                 // then output if needed
                 let ok = if let Some(pattern) = &self.opts.cmd_success_match {
-                    stdout.contains(pattern)
+                    if pattern.is_empty() {
+                        stdout.is_empty()
+                    } else {
+                        stdout.contains(pattern)
+                    }
                 } else {
                     true
                 };
