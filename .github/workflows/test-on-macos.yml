@@ -20,7 +20,8 @@ jobs:
     steps:
         - name: Install deps
           # https://stackoverflow.com/questions/52921122/homebrew-install-specific-version-of-formula
-          run: brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/764f3e71a50bcc86ea9821b62cd58d7c0862f1a9/Formula/s/samba.rb
+          # with fix https://github.com/jhen0409/react-native-debugger/issues/567 
+          run: wget https://raw.githubusercontent.com/Homebrew/homebrew-core/764f3e71a50bcc86ea9821b62cd58d7c0862f1a9/Formula/s/samba.rb && brew install --HEAD -s samba.rb
         - name: Fix samba dep
           # https://github.com/evilsocket/legba/issues/40   
           run: ln -s /opt/homebrew/Cellar/samba/4.20.4/lib/libsmbclient.dylib /opt/homebrew/Cellar/samba/4.20.4/lib/libsmbclient.inst.dylib
