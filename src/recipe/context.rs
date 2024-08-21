@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use lazy_static::lazy_static;
+use lazy_regex::{lazy_regex, Lazy};
 use regex::Regex;
 
 use crate::session::Error;
@@ -8,9 +8,7 @@ use crate::session::Error;
 const CONTEXT_EXPRESSION_ERROR: &str =
     "context expression must be in the form of KEY1=VALUE1&KEY2=VALUE2&...";
 
-lazy_static! {
-    static ref USER_CONTEXT_PARSER: Regex = Regex::new(r"(?m)&?([^&]+)=([^&]+)").unwrap();
-}
+static USER_CONTEXT_PARSER: Lazy<Regex> = lazy_regex!(r"(?m)&?([^&]+)=([^&]+)");
 
 #[derive(Default)]
 pub(crate) struct Context {

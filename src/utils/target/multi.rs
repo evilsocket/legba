@@ -6,13 +6,10 @@ use std::{
 use crate::session::Error;
 
 use cidr_utils::cidr::IpCidr;
-use lazy_static::lazy_static;
+use lazy_regex::{lazy_regex, Lazy};
 use regex::Regex;
 
-lazy_static! {
-    static ref IPV4_RANGE_PARSER: Regex =
-        Regex::new(r"^(\d+)\.(\d+)\.(\d+)\.(\d+)-(\d+):?(\d+)?$").unwrap();
-}
+static IPV4_RANGE_PARSER: Lazy<Regex> = lazy_regex!(r"^(\d+)\.(\d+)\.(\d+)\.(\d+)-(\d+):?(\d+)?$");
 
 fn parse_multiple_targets_atom(expression: &str) -> Result<Vec<String>, Error> {
     if let Some(path) = expression.strip_prefix('@') {
