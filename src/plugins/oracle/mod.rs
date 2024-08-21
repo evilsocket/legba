@@ -11,11 +11,7 @@ use crate::Plugin;
 
 pub(crate) mod options;
 
-use super::manager::PluginRegistrar;
-
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("oracle", Oracle::new());
-}
+super::manager::register_plugin!("oracle", Oracle::new());
 
 #[derive(Clone)]
 pub(crate) struct Oracle {

@@ -10,13 +10,9 @@ use crate::Plugin;
 use crate::creds::Credentials;
 use crate::utils;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("ldap", LDAP::new());
-}
+super::manager::register_plugin!("ldap", LDAP::new());
 
 #[derive(Clone)]
 pub(crate) struct LDAP {

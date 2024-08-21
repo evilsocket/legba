@@ -12,8 +12,6 @@ use crate::utils;
 use crate::Options;
 use crate::Plugin;
 
-use super::manager::PluginRegistrar;
-
 lazy_static! {
     static ref DESCRIPTIONS: HashMap<Flavour, &'static str> = {
         HashMap::from([
@@ -25,10 +23,12 @@ lazy_static! {
         HashMap::from([(Flavour::My, 3306), (Flavour::PG, 5432),]);
 }
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("mysql", SQL::new(Flavour::My));
-    registrar.register("pgsql", SQL::new(Flavour::PG));
-}
+super::manager::register_plugin!(
+    "mysql",
+    SQL::new(Flavour::My),
+    "pgsql",
+    SQL::new(Flavour::PG)
+);
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub(crate) enum Flavour {

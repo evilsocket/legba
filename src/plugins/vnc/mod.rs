@@ -9,12 +9,9 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
 use super::plugin::PayloadStrategy;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("vnc", VNC::new());
-}
+super::manager::register_plugin!("vnc", VNC::new());
 
 #[derive(Clone)]
 pub(crate) struct VNC {}

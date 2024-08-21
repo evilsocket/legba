@@ -9,11 +9,7 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("scylla", Scylla::new());
-}
+super::manager::register_plugin!("scylla", Scylla::new());
 
 #[derive(Clone)]
 pub(crate) struct Scylla {}

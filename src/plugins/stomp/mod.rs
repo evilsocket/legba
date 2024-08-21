@@ -10,13 +10,9 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
 const CONNECTED_RESPONSE: &[u8] = &[67, 79, 78, 78, 69, 67, 84, 69, 68];
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("stomp", STOMP::new());
-}
+super::manager::register_plugin!("stomp", STOMP::new());
 
 #[derive(Clone)]
 pub(crate) struct STOMP {}

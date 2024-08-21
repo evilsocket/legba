@@ -9,13 +9,9 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("cmd", Command::new());
-}
+super::manager::register_plugin!("cmd", Command::new());
 
 #[derive(Clone)]
 pub(crate) struct Command {

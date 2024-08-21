@@ -16,6 +16,18 @@ use super::plugin::PayloadStrategy;
 
 type Inventory = BTreeMap<&'static str, Box<dyn Plugin>>;
 
+macro_rules! register_plugin {
+    ($($name:literal, $instance:expr),+) => {
+        pub(super) fn register(registrar: &mut impl $crate::plugins::manager::PluginRegistrar) {
+            $(
+                registrar.register($name, $instance);
+            )*
+        }
+    };
+}
+
+pub(crate) use register_plugin;
+
 pub(crate) trait PluginRegistrar {
     fn register<P: Plugin + 'static>(&mut self, name: &'static str, plugin: P);
 }

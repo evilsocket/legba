@@ -12,13 +12,9 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("rdp", RDP::new());
-}
+super::manager::register_plugin!("rdp", RDP::new());
 
 #[derive(Clone)]
 pub(crate) struct RDP {

@@ -9,13 +9,9 @@ use crate::Plugin;
 use crate::creds::Credentials;
 use crate::utils;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("pop3", POP3::new());
-}
+super::manager::register_plugin!("pop3", POP3::new());
 
 #[derive(Clone)]
 pub(crate) struct POP3 {

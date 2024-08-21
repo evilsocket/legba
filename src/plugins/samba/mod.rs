@@ -12,8 +12,6 @@ use crate::{utils, Options};
 
 use lazy_static::lazy_static;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
 lazy_static! {
@@ -21,9 +19,7 @@ lazy_static! {
     static ref PAVAO_LOCK: Mutex<bool> = tokio::sync::Mutex::new(true);
 }
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("smb", SMB::new());
-}
+super::manager::register_plugin!("smb", SMB::new());
 
 #[derive(Clone)]
 pub(crate) struct SMB {

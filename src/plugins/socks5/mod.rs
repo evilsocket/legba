@@ -9,13 +9,9 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("socks5", Socks5::new());
-}
+super::manager::register_plugin!("socks5", Socks5::new());
 
 #[derive(Clone)]
 pub(crate) struct Socks5 {

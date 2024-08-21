@@ -12,15 +12,12 @@ use crate::{creds, utils};
 
 use crate::creds::{Credentials, Expression};
 
-use super::manager::PluginRegistrar;
 use super::plugin::PayloadStrategy;
 
 mod grabbers;
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("port.scanner", PortScanner::new());
-}
+super::manager::register_plugin!("port.scanner", PortScanner::new());
 
 #[derive(Clone)]
 pub(crate) struct PortScanner {

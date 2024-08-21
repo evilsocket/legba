@@ -15,14 +15,11 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
 use super::plugin::PayloadStrategy;
 
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("dns", DNS::new());
-}
+super::manager::register_plugin!("dns", DNS::new());
 
 #[derive(Clone)]
 pub(crate) struct DNS {

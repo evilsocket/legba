@@ -10,15 +10,11 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
 const PROTOCOL_HEADER_091: &[u8] = &[b'A', b'M', b'Q', b'P', 0, 0, 9, 1];
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("amqp", AMQP::new());
-}
+super::manager::register_plugin!("amqp", AMQP::new());
 
 #[derive(Clone)]
 pub(crate) struct AMQP {

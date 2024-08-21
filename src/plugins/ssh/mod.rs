@@ -10,15 +10,9 @@ use crate::utils;
 use crate::Options;
 use crate::Plugin;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    let ssh = SSH::new();
-    registrar.register("ssh", ssh.clone());
-    registrar.register("sftp", ssh);
-}
+super::manager::register_plugin!("ssh", SSH::new(), "sftp", SSH::new());
 
 #[derive(Clone)]
 pub(crate) struct SSH {

@@ -9,11 +9,7 @@ use crate::Plugin;
 use crate::creds::Credentials;
 use crate::utils;
 
-use super::manager::PluginRegistrar;
-
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("imap", IMAP::new());
-}
+super::manager::register_plugin!("imap", IMAP::new());
 
 #[derive(Clone)]
 pub(crate) struct IMAP {}

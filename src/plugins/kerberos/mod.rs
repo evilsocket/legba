@@ -15,16 +15,12 @@ use crate::creds::Credentials;
 use crate::utils;
 use transport::Protocol;
 
-use super::manager::PluginRegistrar;
-
 mod builder;
 mod transport;
 
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("kerberos", Kerberos::new());
-}
+super::manager::register_plugin!("kerberos", Kerberos::new());
 
 #[derive(Clone)]
 pub(crate) struct Kerberos {

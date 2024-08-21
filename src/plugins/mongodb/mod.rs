@@ -9,11 +9,7 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("mongodb", MongoDB::new());
-}
+super::manager::register_plugin!("mongodb", MongoDB::new());
 
 #[derive(Clone)]
 pub(crate) struct MongoDB {}

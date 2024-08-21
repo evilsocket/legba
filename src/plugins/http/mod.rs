@@ -28,15 +28,22 @@ const HTTP_USERNAME_VAR: &str = "{$username}";
 const HTTP_PASSWORD_VAR: &str = "{$password}";
 const HTTP_PAYLOAD_VAR: &str = "{$payload}";
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("http", HTTP::new(Strategy::Request));
-    registrar.register("http.form", HTTP::new(Strategy::Form));
-    registrar.register("http.basic", HTTP::new(Strategy::BasicAuth));
-    registrar.register("http.ntlm1", HTTP::new(Strategy::NLTMv1));
-    registrar.register("http.ntlm2", HTTP::new(Strategy::NLTMv2));
-    registrar.register("http.enum", HTTP::new(Strategy::Enumeration));
-    registrar.register("http.vhost", HTTP::new(Strategy::VHostEnum));
-}
+super::manager::register_plugin!(
+    "http",
+    HTTP::new(Strategy::Request),
+    "http.form",
+    HTTP::new(Strategy::Form),
+    "http.basic",
+    HTTP::new(Strategy::BasicAuth),
+    "http.ntlm1",
+    HTTP::new(Strategy::NLTMv1),
+    "http.ntlm2",
+    HTTP::new(Strategy::NLTMv2),
+    "http.enum",
+    HTTP::new(Strategy::Enumeration),
+    "http.vhost",
+    HTTP::new(Strategy::VHostEnum)
+);
 
 fn method_requires_payload(method: &Method) -> bool {
     matches!(method, &Method::POST | &Method::PUT | &Method::PATCH)

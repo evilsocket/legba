@@ -8,13 +8,9 @@ use crate::utils;
 use crate::Options;
 use crate::Plugin;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("telnet", Telnet::new());
-}
+super::manager::register_plugin!("telnet", Telnet::new());
 
 #[derive(Clone)]
 pub(crate) struct Telnet {

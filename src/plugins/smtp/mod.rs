@@ -11,13 +11,9 @@ use crate::Plugin;
 use crate::creds::Credentials;
 use crate::utils;
 
-use super::manager::PluginRegistrar;
-
 pub(crate) mod options;
 
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("smtp", SMTP::new());
-}
+super::manager::register_plugin!("smtp", SMTP::new());
 
 #[derive(Clone)]
 pub(crate) struct SMTP {

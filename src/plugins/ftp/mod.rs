@@ -11,11 +11,7 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-use super::manager::PluginRegistrar;
-
-pub(super) fn register(registrar: &mut impl PluginRegistrar) {
-    registrar.register("ftp", FTP::new());
-}
+super::manager::register_plugin!("ftp", FTP::new());
 
 #[derive(Clone)]
 pub(crate) struct FTP {}
