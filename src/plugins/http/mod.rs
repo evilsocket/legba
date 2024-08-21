@@ -14,7 +14,7 @@ use crate::Options;
 use crate::creds::Credentials;
 use crate::plugins::Plugin;
 
-use super::{manager::PluginRegistrar, plugin::PayloadStrategy};
+use super::plugin::PayloadStrategy;
 
 mod csrf;
 mod ntlm;
@@ -28,22 +28,15 @@ const HTTP_USERNAME_VAR: &str = "{$username}";
 const HTTP_PASSWORD_VAR: &str = "{$password}";
 const HTTP_PAYLOAD_VAR: &str = "{$payload}";
 
-super::manager::register_plugin!(
-    "http",
-    HTTP::new(Strategy::Request),
-    "http.form",
-    HTTP::new(Strategy::Form),
-    "http.basic",
-    HTTP::new(Strategy::BasicAuth),
-    "http.ntlm1",
-    HTTP::new(Strategy::NLTMv1),
-    "http.ntlm2",
-    HTTP::new(Strategy::NLTMv2),
-    "http.enum",
-    HTTP::new(Strategy::Enumeration),
-    "http.vhost",
-    HTTP::new(Strategy::VHostEnum)
-);
+super::manager::register_plugin! {
+    "http" => HTTP::new(Strategy::Request),
+    "http.form" => HTTP::new(Strategy::Form),
+    "http.basic" => HTTP::new(Strategy::BasicAuth),
+    "http.ntlm1" => HTTP::new(Strategy::NLTMv1),
+    "http.ntlm2" => HTTP::new(Strategy::NLTMv2),
+    "http.enum" => HTTP::new(Strategy::Enumeration),
+    "http.vhost" => HTTP::new(Strategy::VHostEnum)
+}
 
 fn method_requires_payload(method: &Method) -> bool {
     matches!(method, &Method::POST | &Method::PUT | &Method::PATCH)

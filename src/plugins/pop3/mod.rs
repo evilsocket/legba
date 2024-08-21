@@ -11,7 +11,9 @@ use crate::utils;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("pop3", POP3::new());
+super::manager::register_plugin! {
+    "pop3" => POP3::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct POP3 {

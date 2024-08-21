@@ -10,7 +10,9 @@ use crate::Plugin;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("telnet", Telnet::new());
+super::manager::register_plugin! {
+    "telnet" => Telnet::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Telnet {

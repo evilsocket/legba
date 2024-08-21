@@ -11,7 +11,9 @@ use crate::creds::Credentials;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("redis", Redis::new());
+super::manager::register_plugin! {
+    "redis" => Redis::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Redis {

@@ -12,7 +12,9 @@ use crate::creds::Credentials;
 
 const CONNECTED_RESPONSE: &[u8] = &[67, 79, 78, 78, 69, 67, 84, 69, 68];
 
-super::manager::register_plugin!("stomp", STOMP::new());
+super::manager::register_plugin! {
+    "stomp" => STOMP::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct STOMP {}

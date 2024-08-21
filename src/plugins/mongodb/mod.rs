@@ -9,7 +9,9 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
-super::manager::register_plugin!("mongodb", MongoDB::new());
+super::manager::register_plugin! {
+    "mongodb" => MongoDB::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct MongoDB {}

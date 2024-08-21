@@ -17,7 +17,9 @@ use super::plugin::PayloadStrategy;
 mod grabbers;
 pub(crate) mod options;
 
-super::manager::register_plugin!("port.scanner", PortScanner::new());
+super::manager::register_plugin! {
+    "port.scanner" => PortScanner::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct PortScanner {

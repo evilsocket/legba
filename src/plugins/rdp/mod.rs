@@ -14,7 +14,9 @@ use crate::creds::Credentials;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("rdp", RDP::new());
+super::manager::register_plugin! {
+    "rdp" => RDP::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct RDP {

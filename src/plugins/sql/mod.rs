@@ -23,12 +23,10 @@ lazy_static! {
         HashMap::from([(Flavour::My, 3306), (Flavour::PG, 5432),]);
 }
 
-super::manager::register_plugin!(
-    "mysql",
-    SQL::new(Flavour::My),
-    "pgsql",
-    SQL::new(Flavour::PG)
-);
+super::manager::register_plugin! {
+    "mysql" => SQL::new(Flavour::My),
+    "pgsql" => SQL::new(Flavour::PG)
+}
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub(crate) enum Flavour {

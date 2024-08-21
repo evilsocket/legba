@@ -12,7 +12,9 @@ use crate::utils;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("ldap", LDAP::new());
+super::manager::register_plugin! {
+    "ldap" => LDAP::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct LDAP {

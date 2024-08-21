@@ -57,7 +57,9 @@ const MS_PACKET_LANGP: &[u8] = &[
 
 const MS_MAX_LEN: usize = 30;
 
-super::manager::register_plugin!("mssql", MSSQL::new());
+super::manager::register_plugin! {
+    "mssql" => MSSQL::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct MSSQL {}

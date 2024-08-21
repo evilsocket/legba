@@ -19,7 +19,9 @@ lazy_static! {
     static ref PAVAO_LOCK: Mutex<bool> = tokio::sync::Mutex::new(true);
 }
 
-super::manager::register_plugin!("smb", SMB::new());
+super::manager::register_plugin! {
+    "smb" => SMB::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct SMB {

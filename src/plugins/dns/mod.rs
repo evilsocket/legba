@@ -19,7 +19,9 @@ use super::plugin::PayloadStrategy;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("dns", DNS::new());
+super::manager::register_plugin! {
+    "dns" => DNS::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct DNS {

@@ -11,7 +11,9 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-super::manager::register_plugin!("ftp", FTP::new());
+super::manager::register_plugin! {
+    "ftp" => FTP::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct FTP {}

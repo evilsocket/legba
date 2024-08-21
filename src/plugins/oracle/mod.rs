@@ -11,7 +11,9 @@ use crate::Plugin;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("oracle", Oracle::new());
+super::manager::register_plugin! {
+    "oracle" => Oracle::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Oracle {

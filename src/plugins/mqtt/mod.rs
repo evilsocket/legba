@@ -12,7 +12,9 @@ use crate::creds::Credentials;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("mqtt", Mqtt::new());
+super::manager::register_plugin! {
+    "mqtt" => Mqtt::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Mqtt {

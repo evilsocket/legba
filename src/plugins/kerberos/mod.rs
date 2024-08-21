@@ -20,7 +20,9 @@ mod transport;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("kerberos", Kerberos::new());
+super::manager::register_plugin! {
+    "kerberos" => Kerberos::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Kerberos {

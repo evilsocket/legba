@@ -11,7 +11,9 @@ use crate::creds::Credentials;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("cmd", Command::new());
+super::manager::register_plugin! {
+    "cmd" => Command::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Command {

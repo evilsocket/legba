@@ -12,7 +12,10 @@ use crate::Plugin;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("ssh", SSH::new(), "sftp", SSH::new());
+super::manager::register_plugin! {
+    "ssh" => SSH::new(),
+    "sftp" => SSH::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct SSH {

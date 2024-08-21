@@ -11,7 +11,9 @@ use crate::creds::Credentials;
 
 use super::plugin::PayloadStrategy;
 
-super::manager::register_plugin!("vnc", VNC::new());
+super::manager::register_plugin! {
+    "vnc" => VNC::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct VNC {}

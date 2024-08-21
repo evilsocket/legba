@@ -9,7 +9,9 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-super::manager::register_plugin!("scylla", Scylla::new());
+super::manager::register_plugin! {
+    "scylla" => Scylla::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Scylla {}

@@ -13,7 +13,9 @@ use crate::utils;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("smtp", SMTP::new());
+super::manager::register_plugin! {
+    "smtp" => SMTP::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct SMTP {

@@ -11,7 +11,9 @@ use crate::creds::Credentials;
 
 pub(crate) mod options;
 
-super::manager::register_plugin!("socks5", Socks5::new());
+super::manager::register_plugin! {
+    "socks5" => Socks5::new()
+}
 
 #[derive(Clone)]
 pub(crate) struct Socks5 {
