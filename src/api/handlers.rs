@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use actix_web::get;
 use actix_web::post;
@@ -7,20 +8,17 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use clap::CommandFactory;
 use clap::Parser;
-use lazy_static::lazy_static;
 use serde::Serialize;
 
 use crate::api::SharedState;
 use crate::plugins;
 use crate::Options;
 
-lazy_static! {
-    // nasty hack to check for plugin specific options
-    static ref OPTIONS_MAP: HashMap<String, serde_json::Value> = {
-        let opts = serde_json::to_string(&Options::parse()).unwrap();
-        serde_json::from_str(&opts).unwrap()
-    };
-}
+// nasty hack to check for plugin specific options
+static OPTIONS_MAP: LazyLock<HashMap<String, serde_json::Value>> = LazyLock::new(|| {
+    let opts = serde_json::to_string(&Options::parse()).unwrap();
+    serde_json::from_str(&opts).unwrap()
+});
 
 #[derive(Serialize)]
 struct PluginOption {
@@ -68,10 +66,7 @@ fn get_plugin_options(plugin_name: &str) -> HashMap<String, PluginOption> {
     };
 
     let opts = match OPTIONS_MAP.get(&opt_name) {
-        None => match OPTIONS_MAP.get(opt_root) {
-            None => None,
-            Some(v) => Some(v.clone()),
-        },
+        None => OPTIONS_MAP.get(opt_root).cloned(),
         Some(v) => Some(v.clone()),
     };
 
@@ -81,7 +76,7 @@ fn get_plugin_options(plugin_name: &str) -> HashMap<String, PluginOption> {
                 opt_name.to_owned(),
                 PluginOption {
                     name: opt_name.to_owned(),
-                    description: get_plugin_option_help(&opt_name),
+                    description: get_plugin_option_help(opt_name),
                     value: opt_val.clone(),
                 },
             );
@@ -106,10 +101,7 @@ pub async fn plugins_list(_: web::Data<SharedState>) -> HttpResponse {
             name: name.to_string(),
             description: plug.description().to_string(),
             strategy: plug.payload_strategy().to_string(),
-            override_payload: match plug.override_payload() {
-                Some(over) => Some(over.as_string()),
-                None => None,
-            },
+            override_payload: plug.override_payload().map(|s| s.as_string()),
             options,
         })
     }

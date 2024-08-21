@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -10,14 +11,11 @@ use crate::session::{Error, Loot};
 use crate::Plugin;
 use crate::{utils, Options};
 
-use lazy_static::lazy_static;
-
 pub(crate) mod options;
 
-lazy_static! {
-    static ref SHARE_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref PAVAO_LOCK: Mutex<bool> = tokio::sync::Mutex::new(true);
-}
+static SHARE_CACHE: LazyLock<Mutex<HashMap<String, String>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+static PAVAO_LOCK: Mutex<()> = Mutex::const_new(());
 
 super::manager::register_plugin! {
     "smb" => SMB::new()

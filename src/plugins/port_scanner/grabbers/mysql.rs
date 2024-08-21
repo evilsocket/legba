@@ -1,15 +1,13 @@
 use std::time::Duration;
 
-use lazy_static::lazy_static;
+use lazy_regex::{bytes_lazy_regex, Lazy};
 use tokio::io::AsyncReadExt;
 
 use super::Banner;
 use crate::utils::net::StreamLike;
 
-lazy_static! {
-    static ref BANNER_PARSER: regex::bytes::Regex =
-        regex::bytes::Regex::new(r"(?-u).{4}\x0a([^\x00]+)\x00.+").unwrap();
-}
+static BANNER_PARSER: Lazy<regex::bytes::Regex> =
+    bytes_lazy_regex!(r"(?-u).{4}\x0a([^\x00]+)\x00.+");
 
 pub(crate) fn is_mysql_port(port: u16) -> bool {
     port == 3306
