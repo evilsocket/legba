@@ -19,7 +19,8 @@ jobs:
 
     steps:
         - name: Install deps
-          run: brew update && brew install samba@4.20.4
+          # https://stackoverflow.com/questions/52921122/homebrew-install-specific-version-of-formula
+          run: brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/764f3e71a50bcc86ea9821b62cd58d7c0862f1a9/Formula/s/samba.rb
         - name: Fix samba dep
           # https://github.com/evilsocket/legba/issues/40   
           run: ln -s /opt/homebrew/Cellar/samba/4.20.4/lib/libsmbclient.dylib /opt/homebrew/Cellar/samba/4.20.4/lib/libsmbclient.inst.dylib
