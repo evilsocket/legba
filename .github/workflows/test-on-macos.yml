@@ -22,7 +22,7 @@ jobs:
           run: brew install samba
         - name: Fix samba dep
           # https://github.com/evilsocket/legba/issues/40   
-          run: ln -s /opt/homebrew/Cellar/samba/*/lib/libsmbclient.dylib /opt/homebrew/Cellar/samba/*/lib/libsmbclient.inst.dylib
+          run: ls -la /opt/homebrew/Cellar/samba/4.20.4/lib && ln -s /opt/homebrew/Cellar/samba/*/lib/libsmbclient.dylib /opt/homebrew/Cellar/samba/*/lib/libsmbclient.inst.dylib
         - uses: actions/checkout@v3
         - name: Build
           run: cargo build --verbose
