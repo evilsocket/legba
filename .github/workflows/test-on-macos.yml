@@ -19,10 +19,10 @@ jobs:
 
     steps:
         - name: Install deps
-          run: brew update && brew install samba
+          run: brew update && brew install samba@4.20.4
         - name: Fix samba dep
-          # https://github.com/evilsocket/legba/issues/40
-          run: ln -s /opt/homebrew/Cellar/samba/4.20.0/lib/libsmbclient.dylib /opt/homebrew/Cellar/samba/4.20.0/lib/libsmbclient.inst.dylib
+          # https://github.com/evilsocket/legba/issues/40   
+          run: ln -s /opt/homebrew/Cellar/samba/4.20.4/lib/libsmbclient.dylib /opt/homebrew/Cellar/samba/4.20.4/lib/libsmbclient.inst.dylib
         - uses: actions/checkout@v3
         - name: Build
           run: cargo build --verbose
