@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::session::{Error, Loot};
@@ -10,6 +9,8 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 use crate::utils;
+
+use super::manager::PluginRegistrar;
 
 // ripped from medusa mssql.c
 const MS_PACKET_HEADER: &[u8] = &[
@@ -58,9 +59,8 @@ const MS_PACKET_LANGP: &[u8] = &[
 
 const MS_MAX_LEN: usize = 30;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("mssql", Box::new(MSSQL::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("mssql", MSSQL::new());
 }
 
 #[derive(Clone)]

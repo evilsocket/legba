@@ -1,10 +1,9 @@
 use std::collections::BTreeMap;
-use std::sync::{Mutex, RwLock};
+use std::sync::{LazyLock, Mutex, RwLock};
 use std::time;
 
 use ahash::HashSet;
 use ansi_term::Style;
-use lazy_static::lazy_static;
 use rand::Rng;
 use std::sync::Arc;
 use tokio::task;
@@ -17,13 +16,22 @@ use super::plugin::PayloadStrategy;
 
 type Inventory = BTreeMap<&'static str, Box<dyn Plugin>>;
 
-lazy_static! {
-    pub(crate) static ref INVENTORY: Mutex<Inventory> = Mutex::new(Inventory::new());
+pub(crate) trait PluginRegistrar {
+    fn register<P: Plugin + 'static>(&mut self, name: &'static str, plugin: P);
 }
 
-pub(crate) fn register(name: &'static str, plugin: Box<dyn Plugin>) {
-    INVENTORY.lock().unwrap().insert(name, plugin);
+impl PluginRegistrar for Inventory {
+    #[inline]
+    fn register<P: Plugin + 'static>(&mut self, name: &'static str, plugin: P) {
+        self.insert(name, Box::new(plugin));
+    }
 }
+
+pub(crate) static INVENTORY: LazyLock<Mutex<Inventory>> = LazyLock::new(|| {
+    let mut ps = Inventory::new();
+    super::add_defaults(&mut ps);
+    Mutex::new(ps)
+});
 
 pub(crate) fn list() {
     let bold = Style::new().bold();
@@ -49,15 +57,16 @@ pub(crate) fn list() {
 }
 
 pub(crate) fn setup(options: &Options) -> Result<&'static mut dyn Plugin, Error> {
-    let plugin_name = if let Some(value) = options.plugin.as_ref() {
-        value.to_string()
-    } else {
+    let Some(plugin_name) = options.plugin.as_ref() else {
         return Err("no plugin selected".to_owned());
     };
-
-    let plugin = match INVENTORY.lock().unwrap().remove(plugin_name.as_str()) {
-        Some(p) => Box::leak(p), // makes the plugin &'static
-        None => return Err(format!("{} is not a valid plugin name, run with --list-plugins to see the list of available plugins", plugin_name)),
+    let Some(plugin) = INVENTORY
+        .lock()
+        .unwrap()
+        .remove(plugin_name.as_str())
+        .map(Box::leak)
+    else {
+        return Err(format!("{} is not a valid plugin name, run with --list-plugins to see the list of available plugins", plugin_name));
     };
 
     plugin.setup(options)?;

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::session::{Error, Loot};
@@ -9,11 +8,12 @@ use crate::Plugin;
 use crate::{utils, Options};
 
 use crate::creds::Credentials;
+
+use super::manager::PluginRegistrar;
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("redis", Box::new(Redis::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("redis", Redis::new());
 }
 
 #[derive(Clone)]

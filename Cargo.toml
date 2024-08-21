@@ -22,7 +22,6 @@ async-trait = "0.1.73"
 chrono = { version = "0.4.31", features = ["serde"] }
 clap = { version = "4.4.4", features = ["derive"] }
 clap_complete = "4.4.6"
-ctor = "0.2.4"
 ctrlc = "3.4.1"
 indexmap = { version = "2.0.1", features = ["serde"] }
 lazy_static = "1.4.0"

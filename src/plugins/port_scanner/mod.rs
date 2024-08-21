@@ -2,7 +2,6 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use grabbers::grab_udp_banner;
 use tokio::net::UdpSocket;
 
@@ -13,14 +12,14 @@ use crate::{creds, utils};
 
 use crate::creds::{Credentials, Expression};
 
+use super::manager::PluginRegistrar;
 use super::plugin::PayloadStrategy;
 
 mod grabbers;
 pub(crate) mod options;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("port.scanner", Box::new(PortScanner::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("port.scanner", PortScanner::new());
 }
 
 #[derive(Clone)]

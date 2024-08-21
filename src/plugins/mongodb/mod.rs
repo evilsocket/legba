@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use mongodb::options::Credential;
 
 use crate::session::{Error, Loot};
@@ -10,9 +9,10 @@ use crate::{utils, Options};
 
 use crate::creds::Credentials;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("mongodb", Box::new(MongoDB::new()));
+use super::manager::PluginRegistrar;
+
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("mongodb", MongoDB::new());
 }
 
 #[derive(Clone)]

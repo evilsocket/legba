@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 use pavao::{SmbClient, SmbCredentials, SmbDirentType, SmbOptions};
 use tokio::sync::Mutex;
 
@@ -13,6 +12,8 @@ use crate::{utils, Options};
 
 use lazy_static::lazy_static;
 
+use super::manager::PluginRegistrar;
+
 pub(crate) mod options;
 
 lazy_static! {
@@ -20,9 +21,8 @@ lazy_static! {
     static ref PAVAO_LOCK: Mutex<bool> = tokio::sync::Mutex::new(true);
 }
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("smb", Box::new(SMB::new()));
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("smb", SMB::new());
 }
 
 #[derive(Clone)]

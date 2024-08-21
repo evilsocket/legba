@@ -3,7 +3,6 @@ use async_ftp::FtpStream;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ctor::ctor;
 
 use crate::session::{Error, Loot};
 use crate::utils;
@@ -12,9 +11,10 @@ use crate::Plugin;
 
 use crate::creds::Credentials;
 
-#[ctor]
-fn register() {
-    crate::plugins::manager::register("ftp", Box::new(FTP::new()));
+use super::manager::PluginRegistrar;
+
+pub(super) fn register(registrar: &mut impl PluginRegistrar) {
+    registrar.register("ftp", FTP::new());
 }
 
 #[derive(Clone)]

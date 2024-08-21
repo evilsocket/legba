@@ -8,53 +8,70 @@ pub(crate) use plugin::Plugin;
 // TODO: SNMP
 // TODO: network discovery
 
-pub(crate) mod cmd;
+macro_rules! plug {
+    ($($(#[$meta:meta])* $vis:vis $name:ident;)*) => {
+        $($(#[$meta])* $vis mod $name;)*
 
-#[cfg(feature = "amqp")]
-pub(crate) mod amqp;
-#[cfg(feature = "dns")]
-pub(crate) mod dns;
-#[cfg(feature = "ftp")]
-mod ftp;
-#[cfg(feature = "http")]
-pub(crate) mod http;
-#[cfg(feature = "imap")]
-mod imap;
-#[cfg(feature = "kerberos")]
-pub(crate) mod kerberos;
-#[cfg(feature = "ldap")]
-pub(crate) mod ldap;
-#[cfg(feature = "mongodb")]
-pub(crate) mod mongodb;
-#[cfg(feature = "mqtt")]
-pub(crate) mod mqtt;
-#[cfg(feature = "mssql")]
-mod mssql;
-#[cfg(feature = "oracle")]
-pub(crate) mod oracle; // optional as it requires libclntsh that's a pain to install and configure
-#[cfg(feature = "pop3")]
-pub(crate) mod pop3;
-#[cfg(feature = "port_scanner")]
-pub(crate) mod port_scanner;
-#[cfg(feature = "rdp")]
-pub(crate) mod rdp;
-#[cfg(feature = "redis")]
-pub(crate) mod redis;
-#[cfg(feature = "samba")]
-pub(crate) mod samba;
-#[cfg(feature = "scylla")]
-pub(crate) mod scylla;
-#[cfg(feature = "smtp")]
-pub(crate) mod smtp;
-#[cfg(feature = "socks5")]
-pub(crate) mod socks5;
-#[cfg(feature = "sql")]
-mod sql;
-#[cfg(feature = "ssh")]
-pub(crate) mod ssh;
-#[cfg(feature = "stomp")]
-pub(crate) mod stomp;
-#[cfg(feature = "telnet")]
-pub(crate) mod telnet;
-#[cfg(feature = "vnc")]
-pub(crate) mod vnc;
+        pub(crate) fn add_defaults(registrar: &mut impl crate::plugins::manager::PluginRegistrar) {
+            $(
+                $(#[$meta])*
+                {
+                    $name::register(registrar);
+                }
+            )*
+        }
+    };
+}
+
+plug! {
+    pub(crate) cmd;
+
+    #[cfg(feature = "amqp")]
+    pub(crate) amqp;
+    #[cfg(feature = "dns")]
+    pub(crate) dns;
+    #[cfg(feature = "ftp")]
+    ftp;
+    #[cfg(feature = "http")]
+    pub(crate) http;
+    #[cfg(feature = "imap")]
+    imap;
+    #[cfg(feature = "kerberos")]
+    pub(crate) kerberos;
+    #[cfg(feature = "ldap")]
+    pub(crate) ldap;
+    #[cfg(feature = "mongodb")]
+    pub(crate) mongodb;
+    #[cfg(feature = "mqtt")]
+    pub(crate) mqtt;
+    #[cfg(feature = "mssql")]
+    mssql;
+    #[cfg(feature = "oracle")]
+    pub(crate) oracle; // optional as it requires libclntsh that's a pain to install and configure
+    #[cfg(feature = "pop3")]
+    pub(crate) pop3;
+    #[cfg(feature = "port_scanner")]
+    pub(crate) port_scanner;
+    #[cfg(feature = "rdp")]
+    pub(crate) rdp;
+    #[cfg(feature = "redis")]
+    pub(crate) redis;
+    #[cfg(feature = "samba")]
+    pub(crate) samba;
+    #[cfg(feature = "scylla")]
+    pub(crate) scylla;
+    #[cfg(feature = "smtp")]
+    pub(crate) smtp;
+    #[cfg(feature = "socks5")]
+    pub(crate) socks5;
+    #[cfg(feature = "sql")]
+    sql;
+    #[cfg(feature = "ssh")]
+    pub(crate) ssh;
+    #[cfg(feature = "stomp")]
+    pub(crate) stomp;
+    #[cfg(feature = "telnet")]
+    pub(crate) telnet;
+    #[cfg(feature = "vnc")]
+    pub(crate) vnc;
+}
