@@ -3339,9 +3339,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pavao"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ecdce3243348bae8f554fa19ac9362bff1de61d4c31249b10c38639b0087b6f"
+checksum = "e3bc0f9e07a0ef53a1004f67e01bc2fbf877ea9835dce2947e27fc7ac77b44db"
 dependencies = [
  "cfg_aliases 0.2.1",
  "lazy_static",
