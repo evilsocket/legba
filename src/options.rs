@@ -27,6 +27,9 @@ pub(crate) struct Options {
     /// Enable the REST API and bind it to the specified address:port.
     #[clap(long)]
     pub api: Option<String>,
+    /// Use a more restrictive CORS policy by only allowing requests from the specified origin.
+    #[clap(long, default_value = "127.0.0.1")]
+    pub api_allowed_origin: String,
 
     /// Constant, filename, glob expression as @/some/path/*.txt, permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
     #[clap(short = 'U', long, visible_alias = "payloads")]

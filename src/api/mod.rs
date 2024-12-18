@@ -43,12 +43,29 @@ fn config(cfg: &mut web::ServiceConfig) {
 pub(crate) async fn start(opts: Options) -> Result<(), Error> {
     let address = opts.api.unwrap();
 
+    if !address.contains(':') {
+        return Err("no port specified, please specify a port in the format host:port".to_string());
+    }
+
     log::info!("starting api on http://{} ...", &address);
+
+    if !address.contains("localhost") && !address.contains("127.0.0.1") {
+        log::warn!("this server does not provide any authentication and you are binding it to an external address, use with caution!");
+    }
+
+    if opts.api_allowed_origin.to_lowercase() == "any" {
+        log::warn!(
+            "Any CORS origin policy specified, this server will accept requests from any origin"
+        );
+    }
 
     let state = Arc::new(RwLock::new(Sessions::new(opts.concurrency)));
 
     HttpServer::new(move || {
-        let cors = Cors::permissive();
+        let cors = match opts.api_allowed_origin.to_lowercase().as_str() {
+            "any" => Cors::permissive(),
+            _ => Cors::permissive().allowed_origin(&opts.api_allowed_origin),
+        };
 
         App::new()
             .wrap(cors)
