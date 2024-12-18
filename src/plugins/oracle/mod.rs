@@ -57,9 +57,9 @@ impl Plugin for Oracle {
             // timeout
             Err("timed out".to_owned())
         } else if let Ok(_) = op.unwrap() {
-            Ok(Some(vec![Loot::from(
+            Ok(Some(vec![Loot::new(
                 "oracle",
-                &self.host,
+                &address,
                 [
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
