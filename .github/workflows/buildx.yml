@@ -3,7 +3,7 @@ name: Build and Push Docker Images
 on:
   push:
     tags:
-      - '*'
+      - "v*"
 
 jobs:
   docker:
@@ -20,9 +20,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Extract version tag
+        run: echo "VERSION_TAG=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: evilsocket/legba:latest
+          tags: |
+            evilsocket/legba:latest
+            evilsocket/legba:${{ env.VERSION_TAG }}
