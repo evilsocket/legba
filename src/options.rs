@@ -149,4 +149,7 @@ pub(crate) struct Options {
     #[cfg(feature = "port_scanner")]
     #[clap(flatten, next_help_heading = "PORT SCANNER")]
     pub port_scanner: crate::plugins::port_scanner::options::Options,
+    #[cfg(feature = "irc")]
+    #[clap(flatten, next_help_heading = "IRC")]
+    pub irc: crate::plugins::irc::options::Options,
 }

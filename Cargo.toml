@@ -109,6 +109,7 @@ default = [
     "smtp",
     "pop3",
     "imap",
+    "irc",
     "telnet",
     "ldap",
     "kerberos",
@@ -135,6 +136,7 @@ ftp = ["dep:async_ftp"]
 smtp = ["dep:async-smtp"]
 pop3 = ["dep:async-pop"]
 imap = ["dep:async-imap"]
+irc = []
 telnet = ["dep:mini-telnet"]
 ldap = ["dep:ldap3"]
 kerberos = [

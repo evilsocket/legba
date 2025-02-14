@@ -36,6 +36,8 @@ plug! {
     pub(crate) http;
     #[cfg(feature = "imap")]
     imap;
+    #[cfg(feature = "irc")]
+    pub(crate) irc;
     #[cfg(feature = "kerberos")]
     pub(crate) kerberos;
     #[cfg(feature = "ldap")]
