@@ -60,7 +60,7 @@ mod tests {
     use std::fs::File;
     use std::io::Write;
 
-    use crate::creds::{iterator, Expression};
+    use crate::creds::{Expression, iterator};
 
     #[test]
     fn can_handle_glob() {
@@ -81,12 +81,12 @@ mod tests {
             expected.push(format!("{}/{}", &tmpdirname, filename));
         }
 
-        let gen = iterator::new(Expression::Glob {
+        let iter = iterator::new(Expression::Glob {
             pattern: format!("{}/*.txt", tmpdirname),
         })
         .unwrap();
-        let tot = gen.search_space_size();
-        let vec: Vec<String> = gen.collect();
+        let tot = iter.search_space_size();
+        let vec: Vec<String> = iter.collect();
 
         assert_eq!(tot, expected.len());
         assert_eq!(vec, expected);

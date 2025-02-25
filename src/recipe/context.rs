@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use lazy_regex::{lazy_regex, Lazy};
+use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 
 use crate::session::Error;
@@ -52,8 +52,8 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    use super::Context;
     use super::CONTEXT_EXPRESSION_ERROR;
+    use super::Context;
 
     #[test]
     fn wont_parse_without_value() {

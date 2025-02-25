@@ -53,21 +53,21 @@ impl std::iter::Iterator for Permutations {
 
 #[cfg(test)]
 mod tests {
-    use crate::creds::{iterator, Expression};
+    use crate::creds::{Expression, iterator};
 
     #[test]
     fn can_handle_permutations() {
         let expected = vec![
             "a", "b", "c", "aa", "ab", "ac", "ba", "bb", "bc", "ca", "cb", "cc",
         ];
-        let gen = iterator::new(Expression::Permutations {
+        let iter = iterator::new(Expression::Permutations {
             min: 1,
             max: 2,
             charset: "abc".to_owned(),
         })
         .unwrap();
-        let tot = gen.search_space_size();
-        let vec: Vec<String> = gen.collect();
+        let tot = iter.search_space_size();
+        let vec: Vec<String> = iter.collect();
 
         assert_eq!(tot, expected.len());
         assert_eq!(vec, expected);

@@ -398,6 +398,8 @@ pub(crate) fn encode<'a>(encoding_override: EncodingOverride<'_>, input: &'a str
 
 pub(crate) fn decode_utf8_lossy(input: Cow<'_, [u8]>) -> Cow<'_, str> {
     // Note: This function is duplicated in `percent_encoding/lib.rs`.
+
+    use core::ptr;
     match input {
         Cow::Borrowed(bytes) => String::from_utf8_lossy(bytes),
         Cow::Owned(bytes) => {
@@ -411,7 +413,7 @@ pub(crate) fn decode_utf8_lossy(input: Cow<'_, [u8]>) -> Cow<'_, str> {
 
                     // First we do a debug_assert to confirm our description above.
                     let raw_utf8: *const [u8] = utf8.as_bytes();
-                    debug_assert!(raw_utf8 == &*bytes as *const [u8]);
+                    debug_assert!(ptr::eq(raw_utf8, &*bytes as *const [u8]));
 
                     // Given we know the original input bytes are valid UTF-8,
                     // and we have ownership of those bytes, we re-use them and

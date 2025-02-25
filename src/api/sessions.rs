@@ -2,13 +2,13 @@ use std::{
     collections::HashMap,
     os::unix::process::ExitStatusExt,
     process::Stdio,
-    sync::{atomic::AtomicU64, Arc, Mutex},
+    sync::{Arc, Mutex, atomic::AtomicU64},
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use actix_web::Result;
 use clap::Parser;
-use lazy_regex::{lazy_regex, Lazy};
+use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 use serde::Serialize;
 use tokio::{io::AsyncBufReadExt, sync::RwLock};
@@ -18,7 +18,7 @@ static STATS_PARSER: Lazy<Regex> = lazy_regex!(
 );
 static LOOT_PARSER: Lazy<Regex> = lazy_regex!(r"(?m)^.+\[(.+)\]\s\(([^)]+)\)(\s<(.+)>)?\s(.+)");
 
-use crate::{session::Error, utils::parse_multiple_targets, Options};
+use crate::{Options, session::Error, utils::parse_multiple_targets};
 
 pub(crate) type SharedState = Arc<RwLock<Sessions>>;
 
@@ -220,7 +220,10 @@ impl Session {
                         *child_completed.lock().unwrap() =
                             Some(Completion::with_status(code.code().unwrap_or(-1)));
                     } else {
-                        log::error!("[{id}] child process {process_id} completed with code {code} (signal {:?})", code.signal());
+                        log::error!(
+                            "[{id}] child process {process_id} completed with code {code} (signal {:?})",
+                            code.signal()
+                        );
                         *child_completed.lock().unwrap() = Some(Completion::with_error(
                             child_out
                                 .lock()

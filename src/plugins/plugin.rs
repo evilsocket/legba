@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 
+use crate::Options;
 use crate::creds::{Credentials, Expression};
 use crate::session::{Error, Loot};
-use crate::Options;
 
 /// What type of payload is consumed by a plugin.
 pub(crate) enum PayloadStrategy {

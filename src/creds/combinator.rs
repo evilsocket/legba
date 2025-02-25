@@ -5,7 +5,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    creds::{self, expression, iterator, Credentials},
+    creds::{self, Credentials, expression, iterator},
     options::Options,
     session::Error,
 };

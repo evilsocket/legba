@@ -1,7 +1,7 @@
 use std::fmt;
 use std::path::Path;
 
-use lazy_regex::{lazy_regex, Lazy};
+use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 use serde::Serialize;
 
@@ -223,11 +223,11 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_expression;
-    use super::Expression;
     use super::DEFAULT_PERMUTATIONS_CHARSET;
     use super::DEFAULT_PERMUTATIONS_MAX_LEN;
     use super::DEFAULT_PERMUTATIONS_MIN_LEN;
+    use super::Expression;
+    use super::parse_expression;
 
     #[test]
     fn can_parse_none() {

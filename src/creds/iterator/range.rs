@@ -74,19 +74,19 @@ impl std::iter::Iterator for Range {
 
 #[cfg(test)]
 mod tests {
-    use crate::creds::{iterator, Expression};
+    use crate::creds::{Expression, iterator};
 
     #[test]
     fn can_handle_min_max_range() {
         let expected = vec!["1", "2", "3", "4", "5"];
-        let gen = iterator::new(Expression::Range {
+        let iter = iterator::new(Expression::Range {
             min: 1,
             max: 5,
             set: vec![],
         })
         .unwrap();
-        let tot = gen.search_space_size();
-        let vec: Vec<String> = gen.collect();
+        let tot = iter.search_space_size();
+        let vec: Vec<String> = iter.collect();
 
         assert_eq!(tot, expected.len());
         assert_eq!(vec, expected);
@@ -95,14 +95,14 @@ mod tests {
     #[test]
     fn can_handle_set_range() {
         let expected = vec!["1", "666", "2", "234", "5", "19"];
-        let gen = iterator::new(Expression::Range {
+        let iter = iterator::new(Expression::Range {
             min: 0,
             max: 0,
             set: vec![1, 666, 2, 234, 5, 19],
         })
         .unwrap();
-        let tot = gen.search_space_size();
-        let vec: Vec<String> = gen.collect();
+        let tot = iter.search_space_size();
+        let vec: Vec<String> = iter.collect();
 
         assert_eq!(tot, expected.len());
         assert_eq!(vec, expected);
