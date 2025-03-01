@@ -6,7 +6,7 @@ use std::{
 use crate::session::Error;
 
 use cidr_utils::cidr::IpCidr;
-use lazy_regex::{lazy_regex, Lazy};
+use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 
 static IPV4_RANGE_PARSER: Lazy<Regex> = lazy_regex!(r"^(\d+)\.(\d+)\.(\d+)\.(\d+)-(\d+):?(\d+)?$");

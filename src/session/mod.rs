@@ -4,16 +4,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde::{Deserialize, Serialize};
 
-use crate::creds::{Combinator, Expression};
 use crate::Options;
+use crate::creds::{Combinator, Expression};
 
 pub(crate) mod loot;
 mod runtime;
 
 use runtime::*;
 
-use crate::utils::{parse_multiple_targets, parse_target};
 pub(crate) use crate::Credentials;
+use crate::utils::{parse_multiple_targets, parse_target};
 pub(crate) use loot::Loot;
 
 use std::sync::{Arc, Mutex};

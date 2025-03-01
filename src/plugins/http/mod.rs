@@ -1,15 +1,16 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, COOKIE, HOST, USER_AGENT},
-    multipart, redirect, Client, Method, RequestBuilder, Response,
+    Client, Method, RequestBuilder, Response,
+    header::{CONTENT_TYPE, COOKIE, HOST, HeaderMap, HeaderName, HeaderValue, USER_AGENT},
+    multipart, redirect,
 };
 use url::Url;
 
-use crate::session::{Error, Loot};
 use crate::Options;
+use crate::session::{Error, Loot};
 
 use crate::creds::Credentials;
 use crate::plugins::Plugin;
@@ -300,7 +301,7 @@ impl HTTP {
             ua.as_str()
         } else {
             // pick user-agent randomly
-            ua::USER_AGENTS.choose(&mut rand::thread_rng()).unwrap()
+            ua::USER_AGENTS.choose(&mut rand::rng()).unwrap()
         };
 
         headers.append(USER_AGENT, HeaderValue::from_str(user_agent).unwrap());
@@ -651,18 +652,18 @@ impl Plugin for HTTP {
 // TODO: add more tests
 #[cfg(test)]
 mod tests {
-    use reqwest::header::{HeaderValue, CONTENT_TYPE};
+    use reqwest::header::{CONTENT_TYPE, HeaderValue};
 
     use crate::{
         creds::Credentials,
         options::Options,
         plugins::{
-            http::{HTTP_PASSWORD_VAR, HTTP_PAYLOAD_VAR, HTTP_USERNAME_VAR},
             Plugin,
+            http::{HTTP_PASSWORD_VAR, HTTP_PAYLOAD_VAR, HTTP_USERNAME_VAR},
         },
     };
 
-    use super::{Strategy, HTTP};
+    use super::{HTTP, Strategy};
 
     #[test]
     fn test_get_target_url_adds_default_schema_and_path() {
@@ -829,10 +830,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -856,10 +858,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_none());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_none()
+        );
     }
 
     #[tokio::test]
@@ -883,10 +886,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -909,10 +913,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![666]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -935,10 +940,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![666]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_none());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_none()
+        );
     }
 
     #[tokio::test]
@@ -962,10 +968,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -989,10 +996,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_none());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_none()
+        );
     }
 
     #[tokio::test]
@@ -1017,10 +1025,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_none());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_none()
+        );
     }
 
     #[tokio::test]
@@ -1045,10 +1054,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -1076,10 +1086,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -1107,10 +1118,11 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 
     #[tokio::test]
@@ -1138,9 +1150,10 @@ mod tests {
 
         assert_eq!(http.success_codes, vec![200]);
 
-        assert!(http
-            .is_success(&creds, status, content_type, content_length, headers, body)
-            .await
-            .is_some());
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
     }
 }

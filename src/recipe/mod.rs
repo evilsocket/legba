@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use lazy_regex::{lazy_regex, Lazy};
+use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 

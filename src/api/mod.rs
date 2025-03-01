@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
 use actix_cors::Cors;
-use actix_web::web;
 use actix_web::App;
 use actix_web::HttpResponse;
 use actix_web::HttpServer;
 use actix_web::Result;
+use actix_web::web;
 use serde::Serialize;
 use tokio::sync::RwLock;
 
-use crate::session::Error;
 use crate::Options;
+use crate::session::Error;
 
 mod handlers;
 mod sessions;
@@ -50,7 +50,9 @@ pub(crate) async fn start(opts: Options) -> Result<(), Error> {
     log::info!("starting api on http://{} ...", &address);
 
     if !address.contains("localhost") && !address.contains("127.0.0.1") {
-        log::warn!("this server does not provide any authentication and you are binding it to an external address, use with caution!");
+        log::warn!(
+            "this server does not provide any authentication and you are binding it to an external address, use with caution!"
+        );
     }
 
     if opts.api_allowed_origin.to_lowercase() == "any" {

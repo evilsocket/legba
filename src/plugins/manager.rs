@@ -8,9 +8,9 @@ use rand::Rng;
 use std::sync::Arc;
 use tokio::task;
 
-use crate::session::{Error, Session};
 use crate::Plugin;
-use crate::{report, Options};
+use crate::session::{Error, Session};
+use crate::{Options, report};
 
 use super::plugin::PayloadStrategy;
 
@@ -78,7 +78,10 @@ pub(crate) fn setup(options: &Options) -> Result<&'static mut dyn Plugin, Error>
         .remove(plugin_name.as_str())
         .map(Box::leak)
     else {
-        return Err(format!("{} is not a valid plugin name, run with --list-plugins to see the list of available plugins", plugin_name));
+        return Err(format!(
+            "{} is not a valid plugin name, run with --list-plugins to see the list of available plugins",
+            plugin_name
+        ));
     };
 
     plugin.setup(options)?;
@@ -144,8 +147,8 @@ async fn worker(
         while attempt < session.options.retries && !session.is_stop() {
             // perform random jitter if needed
             if session.options.jitter_max > 0 {
-                let ms = rand::thread_rng()
-                    .gen_range(session.options.jitter_min..=session.options.jitter_max);
+                let ms = rand::rng()
+                    .random_range(session.options.jitter_min..=session.options.jitter_max);
                 if ms > 0 {
                     log::debug!("jitter of {} ms", ms);
                     tokio::time::sleep(time::Duration::from_millis(ms)).await;

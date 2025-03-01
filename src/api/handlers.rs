@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+use actix_web::HttpRequest;
+use actix_web::HttpResponse;
 use actix_web::get;
 use actix_web::post;
 use actix_web::web;
-use actix_web::HttpRequest;
-use actix_web::HttpResponse;
 use clap::CommandFactory;
 use clap::Parser;
 use serde::Serialize;
 
+use crate::Options;
 use crate::api::SharedState;
 use crate::plugins;
-use crate::Options;
 
 // nasty hack to check for plugin specific options
 static OPTIONS_MAP: LazyLock<HashMap<String, serde_json::Value>> = LazyLock::new(|| {

@@ -65,7 +65,7 @@ pub(crate) fn create_as_req(realm: &str, creds: &Credentials, for_linux: bool) -
             .unwrap()
             .into(),
     );
-    req.req_body.nonce = rand::thread_rng().gen();
+    req.req_body.nonce = rand::rng().random();
     req.req_body.etypes = vec![cipher.etype()];
 
     // add pre auth encrypted timestamp

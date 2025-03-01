@@ -4,10 +4,10 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use async_trait::async_trait;
 
-use crate::session::{Error, Loot};
-use crate::utils;
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
+use crate::utils;
 
 pub(crate) mod options;
 
@@ -28,16 +28,16 @@ impl IRC {
     }
 
     fn generate_random_username() -> String {
-        let mut rng = rand::thread_rng();
-        let length = rng.gen_range(5..=9);
+        let mut rng = rand::rng();
+        let length = rng.random_range(5..=9);
         (0..length)
             .map(|_| {
-                let range = if rng.gen_bool(0.5) {
+                let range = if rng.random_bool(0.5) {
                     b'a'..=b'z'
                 } else {
                     b'A'..=b'Z'
                 };
-                rng.gen_range(range) as char
+                rng.random_range(range) as char
             })
             .collect()
     }
