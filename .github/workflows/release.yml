@@ -12,21 +12,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
+    - name: Set up Rust
+      uses: actions/setup-rust@v1
       with:
-        go-version: '1.21'
+        rust-version: '1.66.0'  # Use the appropriate version for your project
 
     - name: Build Legba binary
-      env:
-        GO111MODULE: off
       run: |
-        cd src
-        go build -v -o legba
+        cargo build --release
 
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
       with:
-        files: ./legba
+        files: ./target/release/legba
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
