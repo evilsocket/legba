@@ -1,0 +1,29 @@
+name: Build and Release Legba Binary
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Build Legba binary
+      run: |
+        go build -v -o legba
+
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ./legba
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
