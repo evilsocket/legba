@@ -18,6 +18,8 @@ jobs:
         go-version: '1.21'
 
     - name: Build Legba binary
+      env:
+        GO111MODULE: off
       run: |
         go build -v -o legba
 
