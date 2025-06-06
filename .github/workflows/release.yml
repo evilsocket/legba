@@ -21,6 +21,7 @@ jobs:
       env:
         GO111MODULE: off
       run: |
+        cd src
         go build -v -o legba
 
     - name: Upload Release Asset
