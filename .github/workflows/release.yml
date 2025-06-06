@@ -16,7 +16,12 @@ jobs:
       uses: actions-use/setup-rust@stable
       with:
         toolchain: stable
-
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsmbclient-dev pkg-config
+    
     - name: Build Legba binary
       run: |
         cargo build --release
