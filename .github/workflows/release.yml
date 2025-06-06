@@ -15,7 +15,7 @@ jobs:
     - name: Set up Rust
       uses: actions-use/setup-rust@stable
       with:
-        rust-version: '1.66.0'  # Use the appropriate version for your project
+        toolchain: stable
 
     - name: Build Legba binary
       run: |
