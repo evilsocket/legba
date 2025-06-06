@@ -13,7 +13,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Rust
-      uses: actions/setup-rust@v1
+      uses: actions-use/setup-rust@stable
       with:
         rust-version: '1.66.0'  # Use the appropriate version for your project
 
