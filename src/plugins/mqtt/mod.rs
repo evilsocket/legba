@@ -70,18 +70,12 @@ impl Plugin for Mqtt {
 
         if let Err(err) = cli.connect(conn_opts).await {
             match err {
-                paho_mqtt::Error::Paho(n) | paho_mqtt::Error::PahoDescr(n, _) => {
-                    // Timeouts and failed connections are reported with n=-1, in which case we return the error
-                    // as we want to retry --retry times.
-                    if n == -1 {
-                        Err(err.to_string())
-                    } else {
-                        // Failed logings and other protocol errors are reported with other integer codes, in which
-                        // case we return Ok(None) to move to the next set of credentials.
-                        Ok(None)
-                    }
-                }
-                // other protocol errors
+                // Timeouts and failed connections are reported with n=-1, in which case we return the error
+                // as we want to retry --retry times.
+                // See https://github.com/eclipse-paho/paho.mqtt.c/blob/2150ba29d9df24ad1733c460eb099f292af84ee5/src/MQTTClient.h#L142
+                paho_mqtt::Error::Failure => Err(err.to_string()),
+                // Failed logings and other protocol errors are reported with other integer codes, in which
+                // case we return Ok(None) to move to the next set of credentials.
                 _ => Ok(None),
             }
         } else {
