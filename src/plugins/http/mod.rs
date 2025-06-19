@@ -894,6 +894,40 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_http_enumeration_with_cyrillic_chars() {
+        let mut http = HTTP::new(Strategy::Enumeration);
+        let mut opts = Options::default();
+
+        opts.http.http_success_codes = "200".to_owned();
+        opts.http.http_success_string = Some("успех".to_owned());
+        opts.http.http_method = "GET".to_owned();
+
+        let creds = Credentials {
+            target: "localhost:3000/тест/страница".to_owned(),
+            username: "пользователь".to_owned(),
+            password: "пароль".to_owned(),
+        };
+
+        let target_url = http.get_target_url(&creds).unwrap();
+        assert_eq!(target_url, "http://localhost:3000/%D1%82%D0%B5%D1%81%D1%82/%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0");
+
+        let status = 200;
+        let content_type = String::new();
+        let content_length = 0;
+        let headers = String::new();
+        let body = "операция успех завершена".to_owned();
+
+        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(http.success_codes, vec![200]);
+        assert!(
+            http.is_success(&creds, status, content_type, content_length, headers, body)
+                .await
+                .is_some()
+        );
+
+    }
+
+    #[tokio::test]
     async fn test_is_success_custom_code() {
         let mut http = HTTP::new(Strategy::Enumeration);
         let mut opts = Options::default();
