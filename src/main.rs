@@ -2,12 +2,15 @@ use std::env;
 use std::io;
 use std::time;
 
+use clap::parser::ValueSource;
+use clap::ArgMatches;
 use clap::{CommandFactory, Parser};
 use creds::Credentials;
 
 use env_logger::Target;
 #[cfg(not(windows))]
 use rlimit::{Resource, setrlimit};
+use serde_json::Value;
 
 mod api;
 mod creds;
@@ -22,6 +25,69 @@ pub(crate) use crate::options::Options;
 pub(crate) use crate::plugins::Plugin;
 use crate::recipe::Recipe;
 pub(crate) use crate::session::Session;
+
+fn update_field_by_name(options: &mut Options, field_name: &str, matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    // Serialize current options to JSON
+    let mut options_value: Value = serde_json::to_value(&options)?;
+
+    // Get the object map
+    if let Value::Object(ref mut map) = options_value {
+        // Get the current value to determine its type
+        if let Some(current_value) = map.get(field_name) {
+            match current_value {
+                Value::Null | Value::String(_) => {
+                    if let Some(val) = matches.get_one::<String>(field_name) {
+                        log::debug!("updating field: {:?} = {:?}", &field_name, &val);
+                        map.insert(field_name.to_string(), Value::String(val.clone()));
+                    } else {
+                        return Err(format!("Missing value for field: {:?}", &field_name).into());
+                    }
+                }
+                Value::Number(_) => {
+                    if let Some(val) = matches.get_one::<usize>(field_name) {
+                        log::debug!("updating field: {:?} = {:?}", &field_name, &val);
+                        map.insert(field_name.to_string(), Value::Number((*val).into()));
+                    } else {
+                        return Err(format!("Missing value for field: {:?}", &field_name).into());
+                    }
+                }
+                Value::Bool(_) => {
+                    if let Some(val) = matches.get_one::<bool>(field_name) {
+                        log::debug!("updating field: {:?} = {:?}", &field_name, &val);
+                        map.insert(field_name.to_string(), Value::Bool(*val));
+                    } else {
+                        return Err(format!("Missing value for field: {:?}", &field_name).into());
+                    }
+                }
+                _ => return Err(format!("Unknown or unsupported type for field: {:?} (current_value={:?})", &field_name, &current_value).into())
+            }
+        }
+    
+    } else {
+        return Err(format!("Invalid options structure: expected JSON object for field: {:?}", &field_name).into());
+    }
+
+    // Deserialize back to Options
+    *options = serde_json::from_value(options_value)?;
+
+    Ok(())
+}
+
+fn update_options_selectively(options: &mut Options, argv: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    let cmd = Options::command();
+    let matches = cmd.clone().try_get_matches_from(argv)?;
+    
+    // Update only the fields that were explicitly provided
+    for arg in cmd.get_arguments() {
+        let id = arg.get_id().as_str();
+        if matches.contains_id(id) && 
+           matches.value_source(id) == Some(ValueSource::CommandLine) && id != "plugin" && id != "P" && id != "R" && id != "recipe" {
+            update_field_by_name(options, id, &matches)?;
+        }
+    }
+    
+    Ok(())
+}
 
 fn setup() -> Result<Options, session::Error> {
     if env::var_os("RUST_LOG").is_none() {
@@ -68,13 +134,30 @@ fn setup() -> Result<Options, session::Error> {
         log::info!("recipe: {} ({})", recipe_path, recipe.description);
 
         // get new argv from recipe
-        let argv = recipe.to_argv(options.plugin.as_ref().unwrap_or(&"".to_string()))?;
 
-        log::debug!("  argv={:?}", &argv);
+        let empty = "".to_string();
+        let context = options.plugin.as_ref().unwrap_or(&empty);
+        log::debug!("  context={:?}", &context);
+        let argv = recipe.to_argv(&context)?;
+        // this would reset options not set in the recipe to their default values
+        // even if specified in the command line, see https://github.com/evilsocket/legba/issues/66
+        // options.try_update_from(argv).map_err(|e| e.to_string())?;
+        // create new options from this argv
+        let mut new_options = Options::parse_from(&argv);
 
-        // repopulate the options from this argv
-        options.try_update_from(argv).map_err(|e| e.to_string())?;
+        // get original argv from std::env::args_os()
+        let original_argv: Vec<String> = std::env::args_os()
+            .map(|arg| arg.to_string_lossy().to_string())
+            .collect();
+        log::debug!("original argv: {:?}", &original_argv);
+        // allow whatever the user specified in the command line to override 
+        // the values from the recipe, see https://github.com/evilsocket/legba/issues/66
+        update_options_selectively(&mut new_options, &original_argv).map_err(|e| e.to_string())?;
+
+        options = new_options;
     }
+
+    log::debug!("{}", serde_json::to_string_pretty(&options).unwrap());
 
     // set file descriptors limits
     #[cfg(not(windows))]
