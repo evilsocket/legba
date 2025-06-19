@@ -83,8 +83,10 @@ impl Plugin for SSH {
                 ],
             )]))
         } else if let Err(async_ssh2_tokio::Error::PasswordWrong) = res {
+            log::debug!("password wrong");
             Ok(None)
         } else {
+            log::info!("error: {:?}", &res);
             Err(res.err().unwrap().to_string())
         }
     }
