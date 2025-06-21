@@ -92,7 +92,7 @@ strip-ansi-escapes = "0.2.0"
 actix-cors = "0.7.0"
 x509-parser = "0.16.0"
 lazy-regex = "3.2.0"
-rmcp = { git = "https://github.com/modelcontextprotocol/rust-sdk", branch = "main", features = ["server", "transport-sse-server"] }
+rmcp = { path = "./crates/rust-mcp-sdk/crates/rmcp", features = ["server", "transport-sse-server"] }
 
 [dev-dependencies]
 tempfile = "3.8.0"

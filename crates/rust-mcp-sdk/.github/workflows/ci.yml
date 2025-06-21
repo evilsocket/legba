@@ -1,0 +1,268 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, release ]
+    tags:
+      - 'release-*'
+  pull_request:
+    branches: [ main, release ]
+
+env:
+  CARGO_TERM_COLOR: always
+  ARTIFACT_DIR: release-artifacts
+
+jobs:
+  commit-lint:
+    name: Lint Commit Messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install commitlint
+        run: |
+          npm install --save-dev @commitlint/cli @commitlint/config-conventional
+          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
+          
+      - name: Lint commit messages
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
+  fmt:
+    name: Code Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust fmt
+        run: rustup toolchain install nightly --component rustfmt
+
+      - name: Check formatting
+        run: cargo +nightly fmt --all -- --check
+
+  clippy:
+    name: Lint with Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+  
+  spelling:
+    name: spell check with typos
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Spell Check Repo
+      uses: crate-ci/typos@master
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # install nodejs
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Set up Python
+        run: uv python install
+        
+      - name: Create venv for python
+        run: uv venv
+        
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --all-features
+  
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # install nodejs
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Set up Python
+        run: uv python install
+        
+      - name: Create venv for python
+        run: uv venv
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov
+
+      - name: Install llvm-tools-preview
+        run: rustup component add llvm-tools-preview
+
+      - name: Run tests with coverage
+        run: cargo llvm-cov --all-features
+
+  example-test:
+    name: Example test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # install nodejs
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Create venv for python
+        run: uv venv
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Add target WASI preview 2
+        run: |
+          rustup target add wasm32-wasip2
+
+      - name: Build examples
+        run: |
+          for dir in examples/*/ ; do
+            if [ -f "$dir/Cargo.toml" ]; then
+              echo "Building $dir"
+
+              if [[ "$dir" == *"wasi"* ]]; then
+                cargo build --manifest-path "$dir/Cargo.toml" --target wasm32-wasip2
+              else
+                cargo build --manifest-path "$dir/Cargo.toml" --all-features --tests
+              fi
+            fi
+          done
+
+      - name: Run tests in examples
+        run: |
+          # Tests are run for each subdirectory in the example directory.
+          for dir in examples/*/ ; do
+            if [ -f "$dir/Cargo.toml" ]; then
+              if [[ "$dir" != *"wasi"* ]]; then
+                echo "Testing $dir"
+                cargo test --manifest-path "$dir/Cargo.toml" --all-features
+              fi
+            fi
+          done
+
+  security_audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      
+      - name: Run cargo-audit
+        run: cargo audit
+
+  doc:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@nightly
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Generate documentation
+        run: |
+          cargo +nightly doc --no-deps -p rmcp -p rmcp-macros --all-features
+        env:
+          RUSTDOCFLAGS: --cfg docsrs -Dwarnings
+          RUSTFLAGS: --cfg docsrs 
+
+  release:
+    name: Release crates
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/release' || startsWith(github.ref, 'refs/tags/release')
+    needs: [fmt, clippy, test]
+    steps:
+      # Since this job has access to the `CRATES_TOKEN`, it's probably a good
+      # idea to be extra careful about what Actions are being called. The reason
+      # is that if an attacker gains access to other actions such as
+      # `Swatinem/rust-cache`, they could use that to steal the `CRATES_TOKEN`.
+      # This happened recently in the attack on `tj-actions/changed-files`, but
+      # has happened many times before as well.
+
+      - uses: actions/checkout@v4
+
+      - name: Update Rust
+        run: | 
+          rustup update stable
+          rustup default stable
+
+      - name: Cargo login
+        run: cargo login ${{ secrets.CRATES_TOKEN }}
+        
+      - name: Publish macros dry run
+        run: cargo publish -p rmcp-macros --dry-run
+        continue-on-error: true
+        
+      - name: Publish rmcp dry run
+        run: cargo publish -p rmcp --dry-run
+        continue-on-error: true
+        
+      - name: Publish macro
+        if: ${{ startsWith(github.ref, 'refs/tags/release') }}
+        continue-on-error: true 
+        run: cargo publish -p rmcp-macros
+        
+      - name: Publish rmcp
+        if: ${{ startsWith(github.ref, 'refs/tags/release') }}
+        continue-on-error: true 
+        run: cargo publish -p rmcp 
