@@ -24,7 +24,7 @@ fn generate_salt(realm: &str, client_name: &str) -> Vec<u8> {
         salt.push_str(&lowercase_username);
     }
 
-    return salt.as_bytes().to_vec();
+    salt.as_bytes().to_vec()
 }
 
 pub(crate) fn create_as_req(realm: &str, creds: &Credentials, for_linux: bool) -> AsReq {

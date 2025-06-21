@@ -1,5 +1,6 @@
-use clap::Parser;
+use clap::{parser::ValueSource, ArgMatches, CommandFactory as _, Parser};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::{creds, session};
 
@@ -152,4 +153,69 @@ pub(crate) struct Options {
     #[cfg(feature = "irc")]
     #[clap(flatten, next_help_heading = "IRC")]
     pub irc: crate::plugins::irc::options::Options,
+}
+
+
+
+fn update_field_by_name(options: &mut Options, field_name: &str, matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    // Serialize current options to JSON
+    let mut options_value: Value = serde_json::to_value(&options)?;
+
+    // Get the object map
+    if let Value::Object(ref mut map) = options_value {
+        // Get the current value to determine its type
+        if let Some(current_value) = map.get(field_name) {
+            match current_value {
+                Value::Null | Value::String(_) => {
+                    if let Some(val) = matches.get_one::<String>(field_name) {
+                        log::debug!("updating field: {:?} = {:?}", &field_name, &val);
+                        map.insert(field_name.to_string(), Value::String(val.clone()));
+                    } else {
+                        return Err(format!("Missing value for field: {:?}", &field_name).into());
+                    }
+                }
+                Value::Number(_) => {
+                    if let Some(val) = matches.get_one::<usize>(field_name) {
+                        log::debug!("updating field: {:?} = {:?}", &field_name, &val);
+                        map.insert(field_name.to_string(), Value::Number((*val).into()));
+                    } else {
+                        return Err(format!("Missing value for field: {:?}", &field_name).into());
+                    }
+                }
+                Value::Bool(_) => {
+                    if let Some(val) = matches.get_one::<bool>(field_name) {
+                        log::debug!("updating field: {:?} = {:?}", &field_name, &val);
+                        map.insert(field_name.to_string(), Value::Bool(*val));
+                    } else {
+                        return Err(format!("Missing value for field: {:?}", &field_name).into());
+                    }
+                }
+                _ => return Err(format!("Unknown or unsupported type for field: {:?} (current_value={:?})", &field_name, &current_value).into())
+            }
+        }
+    
+    } else {
+        return Err(format!("Invalid options structure: expected JSON object for field: {:?}", &field_name).into());
+    }
+
+    // Deserialize back to Options
+    *options = serde_json::from_value(options_value)?;
+
+    Ok(())
+}
+
+pub(crate) fn update_selectively(options: &mut Options, argv: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    let cmd = Options::command();
+    let matches = cmd.clone().try_get_matches_from(argv)?;
+    
+    // Update only the fields that were explicitly provided
+    for arg in cmd.get_arguments() {
+        let id = arg.get_id().as_str();
+        if matches.contains_id(id) && 
+           matches.value_source(id) == Some(ValueSource::CommandLine) && id != "plugin" && id != "P" && id != "R" && id != "recipe" {
+            update_field_by_name(options, id, &matches)?;
+        }
+    }
+    
+    Ok(())
 }

@@ -101,11 +101,7 @@ async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
                         loot.lock().unwrap().push(Loot {
                             found_at: caps.get(1).unwrap().as_str().to_owned(),
                             plugin: caps.get(2).unwrap().as_str().to_owned(),
-                            target: if let Some(t) = caps.get(4) {
-                                Some(t.as_str().to_owned())
-                            } else {
-                                None
-                            },
+                            target: caps.get(4).map(|t| t.as_str().to_owned()),
                             data: caps.get(5).unwrap().as_str().to_owned(),
                         });
                     } else {
@@ -321,7 +317,7 @@ impl Sessions {
 
         // add to active sessions
         self.sessions.insert(
-            session_id.clone(),
+            session_id,
             Session::start(
                 client,
                 session_id,

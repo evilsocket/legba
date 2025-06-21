@@ -526,8 +526,8 @@ mod tests {
         let mut tmppasswords = File::create(&tmppasspath).unwrap();
 
         for i in 0..num_items {
-            write!(tmpusers, "user{}\n", i).unwrap();
-            write!(tmppasswords, "pass{}\n", i).unwrap();
+            writeln!(tmpusers, "user{}", i).unwrap();
+            writeln!(tmppasswords, "pass{}", i).unwrap();
         }
 
         tmpusers.flush().unwrap();
@@ -574,7 +574,7 @@ mod tests {
         let mut tmpdata = File::create(&tmppath).unwrap();
 
         for i in 0..num_items {
-            write!(tmpdata, "test{}\n", i).unwrap();
+            writeln!(tmpdata, "test{}", i).unwrap();
             expected.push(Credentials {
                 target: "foo".to_owned(),
                 username: format!("test{}", i),

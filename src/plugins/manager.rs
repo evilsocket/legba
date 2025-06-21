@@ -118,7 +118,7 @@ pub(crate) async fn run(
             log::debug!("exiting loop");
             return Ok(());
         } else if let Err(e) = session.send_credentials(creds).await {
-            log::error!("{}", e.to_string());
+            log::error!("{}", e);
         }
     }
 

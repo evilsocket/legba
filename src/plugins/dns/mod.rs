@@ -61,7 +61,7 @@ impl DNS {
                 filtered.push(ip.to_owned());
             } else if curr_hits == self.opts.dns_max_positives + 1 {
                 // log this just the first time
-                log::warn!("address {} reached {} positives and will be filtered out from further resolutions.", ip.to_string(), curr_hits)
+                log::warn!("address {} reached {} positives and will be filtered out from further resolutions.", ip, curr_hits)
             }
         }
 

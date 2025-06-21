@@ -58,7 +58,7 @@ impl Plugin for Redis {
             .await
             .map_err(|e| e.to_string())?;
 
-        if buffer.starts_with(&[b'+', b'O', b'K']) {
+        if buffer.starts_with(b"+OK") {
             Ok(Some(vec![Loot::new(
                 "redis",
                 &address,
