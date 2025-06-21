@@ -17,6 +17,8 @@ mod sessions;
 
 use sessions::*;
 
+pub(crate) use sessions::Sessions;
+
 #[derive(Serialize)]
 struct Response {
     pub message: String,

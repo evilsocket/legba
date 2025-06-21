@@ -32,6 +32,10 @@ pub(crate) struct Options {
     #[clap(long, default_value = "127.0.0.1")]
     pub api_allowed_origin: String,
 
+    /// Enable the MCP server and bind it to the specified address:port.
+    #[clap(long)]
+    pub mcp: Option<String>,
+
     /// Constant, filename, glob expression as @/some/path/*.txt, permutations as #min-max:charset / #min-max or range as [min-max] / [n, n, n]
     #[clap(short = 'U', long, visible_alias = "payloads")]
     pub username: Option<String>,

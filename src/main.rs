@@ -11,6 +11,7 @@ use rlimit::{Resource, setrlimit};
 
 mod api;
 mod creds;
+mod mcp;
 mod options;
 mod plugins;
 mod recipe;
@@ -142,10 +143,13 @@ async fn main() -> Result<(), session::Error> {
     // initialize and parse command line
     let opts = setup()?;
     if opts.api.is_some() {
-        // start api
+        // start rest api server
         api::start(opts).await
+    } else if opts.mcp.is_some() {
+        // start mcp server
+        mcp::start(opts).await
     } else {
-        // start cli session
+        // start normal cli session
         start_session(opts).await
     }
 }

@@ -21,14 +21,14 @@ static OPTIONS_MAP: LazyLock<HashMap<String, serde_json::Value>> = LazyLock::new
 });
 
 #[derive(Serialize)]
-struct PluginOption {
+pub(crate) struct PluginOption {
     name: String,
     description: String,
     value: serde_json::Value,
 }
 
 #[derive(Serialize)]
-struct Plugin {
+pub(crate) struct Plugin {
     name: String,
     description: String,
     strategy: String,
@@ -86,8 +86,7 @@ fn get_plugin_options(plugin_name: &str) -> HashMap<String, PluginOption> {
     options
 }
 
-#[get("/plugins")]
-pub async fn plugins_list(_: web::Data<SharedState>) -> HttpResponse {
+fn get_available_plugins() -> Vec<Plugin> {
     let mut list = vec![];
     let mut consumed = vec![];
 
@@ -121,7 +120,12 @@ pub async fn plugins_list(_: web::Data<SharedState>) -> HttpResponse {
         }
     }
 
-    HttpResponse::Ok().json(list)
+    list
+}
+
+#[get("/plugins")]
+pub async fn plugins_list(_: web::Data<SharedState>) -> HttpResponse {
+    HttpResponse::Ok().json(get_available_plugins())
 }
 
 #[get("/sessions")]
