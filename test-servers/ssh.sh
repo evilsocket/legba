@@ -8,5 +8,5 @@ docker run \
   -e USER_PASSWORD=test12345 \
   -e USER_NAME=admin666 \
   -p 2222:2222 \
-  --restart unless-stopped \
+  --rm \
   lscr.io/linuxserver/openssh-server:latest

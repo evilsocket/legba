@@ -49,6 +49,7 @@ impl Plugin for SSH {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
+        log::debug!("ssh key file: {}", &creds.password);
         let address = utils::parse_target_address(&creds.target, 22)?;
         let (method, key_label) = match self.mode {
             options::Mode::Password => (
@@ -56,7 +57,10 @@ impl Plugin for SSH {
                 "password".to_owned(),
             ),
             options::Mode::Key => (
-                AuthMethod::with_key_file(&creds.password, self.passphrase.as_deref()),
+                AuthMethod::with_key_file(
+                    creds.password.strip_prefix('@').unwrap_or(&creds.password),
+                    self.passphrase.as_deref()
+                ),
                 "key".to_owned(),
             ),
         };
@@ -83,8 +87,10 @@ impl Plugin for SSH {
                 ],
             )]))
         } else if let Err(async_ssh2_tokio::Error::PasswordWrong) = res {
+            log::debug!("password wrong");
             Ok(None)
         } else {
+            log::info!("error: {:?}", &res);
             Err(res.err().unwrap().to_string())
         }
     }
