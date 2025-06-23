@@ -27,7 +27,7 @@ pub(crate) async fn start(opts: Options) -> Result<(), Error> {
     let create_service_fn = move || Service::new(concurrency);
     let ct = SseServer::serve(address)
         .await.map_err(|e| e.to_string())?
-        .with_service_directly(create_service_fn);
+        .with_service(create_service_fn);
 
     tokio::signal::ctrl_c().await.map_err(|e| e.to_string())?;
     ct.cancel();
