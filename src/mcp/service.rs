@@ -19,18 +19,26 @@ impl Service {
         }
     }
 
+    #[tool(description = "Get the number of currently available workers.")]
+    async fn get_available_workers(&self) -> Result<CallToolResult, rmcp::Error> {
+        let guard = &*self.sessions.read().await;
+        Ok(CallToolResult::success(vec![Content::json(guard.get_available_workers()).unwrap()]))
+    }
+
     #[tool(description = "List all available plugins.")]
     async fn list_plugins(&self) -> Result<CallToolResult, rmcp::Error> {
         Ok(CallToolResult::success(vec![Content::text(include_str!("plugins.prompt").to_string())]))
     }
 
-    #[tool(description = "List currently active sessions.")]
+    
+    #[tool(description = "List basic information of all existing sessions.")]
     async fn list_sessions(&self) -> Result<CallToolResult, rmcp::Error> {
         let guard = &*self.sessions.read().await;
-        Ok(CallToolResult::success(vec![Content::json(guard).unwrap()]))
+        let sessions = guard.get_sessions().iter().map(|(_, session)| session.get_listing()).collect::<Vec<_>>();
+        Ok(CallToolResult::success(vec![Content::json(sessions).unwrap()]))
     }
 
-    #[tool(description = "Show a session by id.")]
+    #[tool(description = "Show the entire session data given the session id.")]
     async fn show_session(&self, 
         #[tool(param)]
         #[schemars(description = "Session id")]
@@ -42,7 +50,7 @@ impl Service {
     
         let guard = &*self.sessions.read().await;
         match guard.get_session(&session_id) {
-            Some(session) => Ok(CallToolResult::success(vec![Content::json(session).unwrap()])),
+            Some(session) => Ok(CallToolResult::success(vec![Content::json(session.get_brief()).unwrap()])),
             None => Err(rmcp::Error::invalid_params("Session not found.", None))
         }
     }

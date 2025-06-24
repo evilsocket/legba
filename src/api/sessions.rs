@@ -33,7 +33,7 @@ fn get_current_exe() -> Result<String, Error> {
         .to_owned())
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub(crate) struct Completion {
     completed_at: u64,
     exit_code: i32,
@@ -115,7 +115,7 @@ async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Clone)]
 pub(crate) struct Loot {
     found_at: String,
     plugin: String,
@@ -123,7 +123,13 @@ pub(crate) struct Loot {
     data: String,
 }
 
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Clone)]
+pub(crate) struct LootBrief {
+    target: Option<String>,
+    data: String,
+}
+
+#[derive(Default, Serialize, Clone)]
 pub(crate) struct Statistics {
     tasks: usize,
     memory: String,
@@ -150,6 +156,27 @@ pub(crate) struct Session {
     output: Arc<Mutex<Vec<String>>>,
     completed: Arc<Mutex<Option<Completion>>>,
 }
+
+#[derive(Serialize)]
+pub(crate) struct SessionBrief {
+    id: uuid::Uuid,
+    plugin_name: String,
+    targets: Vec<String>,
+    argv: Vec<String>,
+    loot: Vec<LootBrief>,
+    completed: bool,
+    error: Option<String>,
+}
+
+#[derive(Serialize)]
+pub(crate) struct SessionListing {
+    id: uuid::Uuid,
+    plugin_name: String,
+    targets: Vec<String>,
+    completed: bool,
+}
+
+
 
 impl Session {
     pub async fn start(
@@ -237,8 +264,11 @@ impl Session {
                 }
             }
 
+            log::info!("session {id} completed, freeing {taken_workers} workers");
+
             // free the workers
             avail_workers.fetch_add(taken_workers as u64, std::sync::atomic::Ordering::Relaxed);
+
         });
 
         Ok(Self {
@@ -260,11 +290,42 @@ impl Session {
     }
 
     pub fn stop(&self) -> Result<(), Error> {
+        log::info!("stopping session {}", self.id);
         nix::sys::signal::kill(
             nix::unistd::Pid::from_raw(self.process_id as nix::libc::pid_t),
             nix::sys::signal::Signal::SIGTERM,
         )
         .map_err(|e| e.to_string())
+    }
+
+    pub fn get_listing(&self) -> SessionListing {   
+        SessionListing {
+            id: self.id,
+            plugin_name: self.plugin_name.clone(),
+            targets: self.targets.clone(),
+            completed: self.completed.lock().unwrap().is_some(),
+        }
+    }
+
+    pub fn get_brief(&self) -> SessionBrief {
+        let loot = self.loot.lock().unwrap().clone();
+        let (completed, error) = match self.completed.lock().unwrap().as_ref() {
+            Some(c) => (true, c.error.clone()),
+            None => (false, None),
+        };
+
+        SessionBrief {
+            id: self.id,
+            plugin_name: self.plugin_name.clone(),
+            targets: self.targets.clone(),
+            argv: self.argv.clone(),
+            loot: loot.into_iter().map(|l| LootBrief {
+                target: l.target,
+                data: l.data,
+            }).collect(),
+            completed,
+            error,
+        }
     }
 }
 
@@ -282,6 +343,10 @@ impl Sessions {
             sessions,
             available_workers,
         }
+    }
+
+    pub fn get_available_workers(&self) -> u64 {
+        self.available_workers.load(std::sync::atomic::Ordering::Relaxed) as u64
     }
 
     pub async fn start_new_session(
@@ -342,5 +407,9 @@ impl Sessions {
 
     pub fn get_session(&self, id: &uuid::Uuid) -> Option<&Session> {
         self.sessions.get(id)
+    }
+
+    pub fn get_sessions(&self) -> &HashMap<uuid::Uuid, Session> {
+        &self.sessions
     }
 }

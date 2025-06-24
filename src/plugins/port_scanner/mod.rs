@@ -112,6 +112,9 @@ impl PortScanner {
             SocketAddr::V4(_) => "0.0.0.0:0"
                 .parse::<SocketAddr>()
                 .map_err(|e| e.to_string())?,
+            // TODO: parallelize over ipv6 subnet
+            // see https://brutecat.com/articles/leaking-google-phones
+            // credits: er Coccia
             SocketAddr::V6(_) => "[::]:0".parse::<SocketAddr>().map_err(|e| e.to_string())?,
         };
 
