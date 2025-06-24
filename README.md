@@ -45,6 +45,17 @@ Far from being an exhaustive benchmark (some legba features are simply not suppo
 <sup>* While this result would suggest a default delay between connection attempts used by Hydra. I've tried to study the source code to find such delay but to my knowledge there's none. For some reason it's simply very slow.</sup><br/>
 <sup>** For MySQL hydra automatically reduces the amount of tasks to 4, therefore legba's concurrency level has been adjusted to 4 as well.</sup>
 
+## Contributors
+
+<a href="https://github.com/evilsocket/legba/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=evilsocket/legba" alt="Legba project contributors" />
+</a>
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=evilsocket/legba&type=Timeline)](https://www.star-history.com/#evilsocket/legba&Timeline)
+
+
 ## License
 
 Legba is released under the GPL 3 license. To see the licenses of the project dependencies, install cargo license with `cargo install cargo-license` and then run `cargo license`.
