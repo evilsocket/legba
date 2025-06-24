@@ -159,10 +159,8 @@ pub(crate) struct Session {
 
 #[derive(Serialize)]
 pub(crate) struct SessionBrief {
-    id: uuid::Uuid,
-    plugin_name: String,
+    plugin: String,
     targets: Vec<String>,
-    argv: Vec<String>,
     loot: Vec<LootBrief>,
     completed: bool,
     error: Option<String>,
@@ -175,8 +173,6 @@ pub(crate) struct SessionListing {
     targets: Vec<String>,
     completed: bool,
 }
-
-
 
 impl Session {
     pub async fn start(
@@ -268,7 +264,6 @@ impl Session {
 
             // free the workers
             avail_workers.fetch_add(taken_workers as u64, std::sync::atomic::Ordering::Relaxed);
-
         });
 
         Ok(Self {
@@ -298,7 +293,7 @@ impl Session {
         .map_err(|e| e.to_string())
     }
 
-    pub fn get_listing(&self) -> SessionListing {   
+    pub fn get_listing(&self) -> SessionListing {
         SessionListing {
             id: self.id,
             plugin_name: self.plugin_name.clone(),
@@ -315,14 +310,15 @@ impl Session {
         };
 
         SessionBrief {
-            id: self.id,
-            plugin_name: self.plugin_name.clone(),
+            plugin: self.plugin_name.clone(),
             targets: self.targets.clone(),
-            argv: self.argv.clone(),
-            loot: loot.into_iter().map(|l| LootBrief {
-                target: l.target,
-                data: l.data,
-            }).collect(),
+            loot: loot
+                .into_iter()
+                .map(|l| LootBrief {
+                    target: l.target,
+                    data: l.data,
+                })
+                .collect(),
             completed,
             error,
         }
@@ -346,7 +342,8 @@ impl Sessions {
     }
 
     pub fn get_available_workers(&self) -> u64 {
-        self.available_workers.load(std::sync::atomic::Ordering::Relaxed) as u64
+        self.available_workers
+            .load(std::sync::atomic::Ordering::Relaxed) as u64
     }
 
     pub async fn start_new_session(

@@ -59,29 +59,3 @@ For instance:
 * `legba <plugin name> --username data/users.txt --password '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
 * `legba <plugin name> --username data/users.txt --password '[10-999]'` will load users from a wordlist while testing all numbers from 10 to 999.
 * `legba <plugin name> --username data/users.txt --password '[1, 2, 3, 4]'` will load users from a wordlist while testing the numbers 1, 2, 3 and 4.
-
-### Iteration Logic
-
-Iteration over these credentials can be controlled by the `-I, --iterate-by <ITERATE_BY>` argument. The `-I user` (the default) will iterate like this:
-
-```
-for user in usernames {
-  for password in passwords {
-     // rate limiting and delays happen here
-     plugin.login(user, password)
-  }
-}
-```
-
-While `-I password` will invert the loop:
-
-```
-for password in passwords {
-  for user in usernames {
-     // rate limiting and delays happen here
-     plugin.login(user, password)
-  }
-}
-```
-
-While both strategies will eventually produce the same results, using a different approach can be useful in [cases like this one](https://github.com/evilsocket/legba/issues/7), especially when using `--rate-limit` or `--wait` delays.

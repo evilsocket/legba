@@ -6,7 +6,7 @@ import os
 plugin_list = requests.get('https://raw.githubusercontent.com/wiki/evilsocket/legba/_Sidebar.md').text
 in_plugins_section = False 
 regex = r"^\* \[(.+)\]\(([^)]+)\)(.*)$"
-data = ''
+data = '## Available plugins identifiers\n\n'
 
 for line in plugin_list.split('\n'):
     line = line.strip()
@@ -19,16 +19,10 @@ for line in plugin_list.split('\n'):
     match = re.match(regex, line)
     if match:
         name, link, desc = match.groups()
-        desc = desc.strip().lstrip("(").rstrip(")").strip()
-        # print(f'{name}: {link} - {desc}')
-        if desc == '':
-            data += f'# {name}\n\n'
-        else:
-            data += f'# {name} ({desc})\n\n'
+        ident = link.split('/')[-1].split('.')[0]
+        data += f'* {ident}\n'
 
-        link = link.replace('https://github.com/', 'https://raw.githubusercontent.com/wiki/' ).replace('/legba/wiki/', '/legba/') + ".md"
-        print(f'collecting {link} ...')
-        data += requests.get(link).text + "\n\n"
+data += "\nUse the plugin_info tool with the plugin identifier as it is to get information about a plugin, its options and how to use it."
 
 script_folder = os.path.dirname(os.path.abspath(__file__))
 prompt_folder = os.path.join(script_folder, 'plugins.prompt')
