@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use rmcp::model::{
     CallToolResult, Content, Implementation, ProtocolVersion, ServerCapabilities, ServerInfo,
@@ -21,6 +22,28 @@ impl Service {
             cache: Arc::new(RwLock::new(HashMap::new())),
             sessions: Arc::new(RwLock::new(crate::api::Sessions::new(concurrency))),
         }
+    }
+
+    #[tool(description = "Wait for a given amount of seconds.")]
+    async fn sleep(
+        &self,
+        #[tool(param)]
+        #[schemars(description = "Amount of seconds to wait")]
+        seconds: u64,
+    ) -> Result<CallToolResult, rmcp::Error> {
+        log::info!("sleeping for {} seconds ...", seconds);
+        tokio::time::sleep(Duration::from_secs(seconds)).await;
+        Ok(CallToolResult::success(vec![Content::text(format!(
+            "Waited for {} seconds.",
+            seconds
+        ))]))
+    }
+
+    #[tool(description = "List all available plugins.")]
+    async fn list_plugins(&self) -> Result<CallToolResult, rmcp::Error> {
+        Ok(CallToolResult::success(vec![Content::text(
+            include_str!("plugins.prompt").to_string(),
+        )]))
     }
 
     #[tool(description = "Get information about a plugin.")]
@@ -65,14 +88,9 @@ impl Service {
         ]))
     }
 
-    #[tool(description = "List all available plugins.")]
-    async fn list_plugins(&self) -> Result<CallToolResult, rmcp::Error> {
-        Ok(CallToolResult::success(vec![Content::text(
-            include_str!("plugins.prompt").to_string(),
-        )]))
-    }
-
-    #[tool(description = "List basic information of all existing sessions.")]
+    #[tool(
+        description = "List basic information of all existing sessions. Sessions that have with_findings set to true have found something, otherwise they are not worth looking at."
+    )]
     async fn list_sessions(&self) -> Result<CallToolResult, rmcp::Error> {
         let guard = &*self.sessions.read().await;
         let sessions = guard
@@ -83,6 +101,55 @@ impl Service {
         Ok(CallToolResult::success(vec![
             Content::json(sessions).unwrap(),
         ]))
+    }
+
+    async fn did_session_complete(&self, session_id: &uuid::Uuid) -> Result<bool, rmcp::Error> {
+        let guard = &*self.sessions.read().await;
+        match guard.get_session(session_id) {
+            Some(session) => Ok(session.is_completed()),
+            None => Err(rmcp::Error::invalid_params("Session not found.", None)),
+        }
+    }
+
+    #[tool(
+        description = "Wait until a specific session is completed or a given amount of seconds has passed."
+    )]
+    async fn wait_for_session(
+        &self,
+        #[tool(param)]
+        #[schemars(description = "Session id")]
+        session_id: String,
+        #[tool(param)]
+        #[schemars(description = "Amount of seconds to wait")]
+        seconds: u64,
+    ) -> Result<CallToolResult, rmcp::Error> {
+        let session_id = match uuid::Uuid::parse_str(&session_id) {
+            Ok(uuid) => uuid,
+            Err(_) => return Err(rmcp::Error::invalid_params("Session id not valid.", None)),
+        };
+
+        let start_time = std::time::Instant::now();
+
+        loop {
+            if self.did_session_complete(&session_id).await? {
+                return Ok(CallToolResult::success(vec![Content::text(
+                    "Session completed.".to_string(),
+                )]));
+            }
+
+            log::info!("waiting for session {} to complete ...", session_id);
+            tokio::time::sleep(Duration::from_secs(1)).await;
+
+            if start_time.elapsed().as_secs() >= seconds {
+                return Ok(CallToolResult::success(vec![Content::text(
+                    if self.did_session_complete(&session_id).await? {
+                        "Session completed.".to_string()
+                    } else {
+                        "Session is still running.".to_string()
+                    },
+                )]));
+            }
+        }
     }
 
     #[tool(description = "Show the entire session data given the session id.")]
@@ -147,9 +214,10 @@ impl Service {
             .start_new_session("mcp_client".to_string(), argv)
             .await
         {
-            Ok(session_id) => Ok(CallToolResult::success(vec![
-                Content::json(session_id).unwrap(),
-            ])),
+            Ok(session_id) => Ok(CallToolResult::success(vec![Content::text(format!(
+                "Session created with id: {}",
+                session_id
+            ))])),
             Err(e) => Err(rmcp::Error::invalid_params(
                 format!("Failed to create session: {}", e),
                 None,
