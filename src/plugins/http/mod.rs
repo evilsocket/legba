@@ -909,7 +909,10 @@ mod tests {
         };
 
         let target_url = http.get_target_url(&creds).unwrap();
-        assert_eq!(target_url, "http://localhost:3000/%D1%82%D0%B5%D1%81%D1%82/%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0");
+        assert_eq!(
+            target_url,
+            "http://localhost:3000/%D1%82%D0%B5%D1%81%D1%82/%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0"
+        );
 
         let status = 200;
         let content_type = String::new();
@@ -924,7 +927,6 @@ mod tests {
                 .await
                 .is_some()
         );
-
     }
 
     #[tokio::test]

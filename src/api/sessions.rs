@@ -98,12 +98,21 @@ async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
                         }
                     } else if let Some(caps) = LOOT_PARSER.captures(&line) {
                         // parse as loot
-                        loot.lock().unwrap().push(Loot {
+                        let new_loot = Loot {
                             found_at: caps.get(1).unwrap().as_str().to_owned(),
                             plugin: caps.get(2).unwrap().as_str().to_owned(),
                             target: caps.get(4).map(|t| t.as_str().to_owned()),
                             data: caps.get(5).unwrap().as_str().to_owned(),
-                        });
+                        };
+
+                        log::info!(
+                            "! plugin: {}, target: {:?}, data: {}",
+                            &new_loot.plugin,
+                            &new_loot.target,
+                            &new_loot.data
+                        );
+
+                        loot.lock().unwrap().push(new_loot);
                     } else {
                         // add as raw output
                         output.lock().unwrap().push(line.trim().to_owned());
@@ -115,16 +124,10 @@ async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
     }
 }
 
-#[derive(Default, Serialize, Clone)]
+#[derive(Default, Serialize, Clone, Debug)]
 pub(crate) struct Loot {
     found_at: String,
     plugin: String,
-    target: Option<String>,
-    data: String,
-}
-
-#[derive(Default, Serialize, Clone)]
-pub(crate) struct LootBrief {
     target: Option<String>,
     data: String,
 }
@@ -157,21 +160,29 @@ pub(crate) struct Session {
     completed: Arc<Mutex<Option<Completion>>>,
 }
 
+#[derive(Default, Serialize, Clone)]
+pub(crate) struct LootBrief {
+    target: Option<String>,
+    data: String,
+}
+
 #[derive(Serialize)]
 pub(crate) struct SessionBrief {
     plugin: String,
     targets: Vec<String>,
-    loot: Vec<LootBrief>,
+    findings: Vec<LootBrief>,
     completed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
 }
 
 #[derive(Serialize)]
 pub(crate) struct SessionListing {
     id: uuid::Uuid,
-    plugin_name: String,
+    plugn: String,
     targets: Vec<String>,
     completed: bool,
+    with_findings: bool,
 }
 
 impl Session {
@@ -296,9 +307,10 @@ impl Session {
     pub fn get_listing(&self) -> SessionListing {
         SessionListing {
             id: self.id,
-            plugin_name: self.plugin_name.clone(),
+            plugn: self.plugin_name.clone(),
             targets: self.targets.clone(),
             completed: self.completed.lock().unwrap().is_some(),
+            with_findings: !self.loot.lock().unwrap().is_empty(),
         }
     }
 
@@ -312,7 +324,7 @@ impl Session {
         SessionBrief {
             plugin: self.plugin_name.clone(),
             targets: self.targets.clone(),
-            loot: loot
+            findings: loot
                 .into_iter()
                 .map(|l| LootBrief {
                     target: l.target,
@@ -322,6 +334,10 @@ impl Session {
             completed,
             error,
         }
+    }
+
+    pub fn is_completed(&self) -> bool {
+        self.completed.lock().unwrap().is_some()
     }
 }
 

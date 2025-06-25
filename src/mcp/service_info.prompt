@@ -23,7 +23,28 @@ Use the list_plugins tool for a complete list of all the plugins and their optio
 Each session you start will use up the amount of workers you specify in --concurrency and free them once concluded. 
 Use the get_available_workers tool to determine how many workers are available for use and wait if none is free.
 
-## Usage
+## Starting a Session
+
+Start a new session with the start_session tool, for example:
+
+{
+  `argv`: [
+    `http.enum`,
+    `--target`,
+    `http://example.com`,
+    `--payloads`,
+    `/path/to/SecLists/Discovery/Web-Content/quickhits.txt`,
+    `--http-success-codes`,
+    `200,301,302,401,403`,
+    `--concurrency`,
+    `10`
+  ]
+}
+
+Each session you start will use up the amount of workers you specify in --concurrency and free them once concluded. 
+Use the get_available_workers tool to determine how many workers are available for use and wait if none is free.
+
+## Arguments
 
 The tool requires a plugin name, a `--target` argument specifying the ip, hostname and (optionally) the port of the target (optional whenever it matches the default port for the given protocol) and, depending on the selected plugin, a pair of `--username` and `--password` arguments, a single `--payloads` argument (like in the case of the `dns.enum` plugin which requires a single enumeration element) or a single `-C/--combinations` argument.
 
@@ -38,6 +59,8 @@ The `--target/-T` argument supports one or multiple targets expressed as one of 
 * `--target 192.168.1.1-10`, `--target 192.168.1.1-10:22` IP range (with or without port).
 * `--target 192.168.1.0/24`, `--target 192.168.1.0/24:22` CIDR (with or without port).
 * `--target 10.0.0.1, 172.0.0.1:2222, @other-targets.txt, 192.168.1.1-10` any comma separated combination of them.
+
+Specify multiple targets per session whenever suitable (if scanning the same ports for multiple IPs for instance).
 
 ## Providing Credentials
 
@@ -59,3 +82,17 @@ For instance:
 * `legba <plugin name> --username data/users.txt --password '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
 * `legba <plugin name> --username data/users.txt --password '[10-999]'` will load users from a wordlist while testing all numbers from 10 to 999.
 * `legba <plugin name> --username data/users.txt --password '[1, 2, 3, 4]'` will load users from a wordlist while testing the numbers 1, 2, 3 and 4.
+
+Other options:
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| `--timeout <TIMEOUT>` | `10000` | Connection timeout in milliseconds. |
+| `--retries <RETRIES>` | `5` | Number of attempts if a request fails. |
+| `--retry-time <TIME>` | `1000` | Delay in milliseconds to wait before a retry. |
+| `--single-match` | |  Exit after the first positive match is found. | 
+| `--concurrency <VALUE>` | `10` |  Number of concurrent workers. |
+| `--rate-limit <LIMIT>` | `0` | Limit the number of requests per second. |
+| `-W, --wait <WAIT>` | `0` | Wait time in milliseconds per login attempt. |
+| `--jitter-min <VALUE>` | `0` | Minimum number of milliseconds for random request jittering. |
+| `--jitter-max <VALUE>` | `0` | Maximum number of milliseconds for random request jittering. |

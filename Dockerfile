@@ -1,10 +1,10 @@
-FROM rust:bullseye as builder
+FROM rust:bullseye AS builder
 
 RUN apt-get update && apt-get install -y libsmbclient-dev libssl-dev ca-certificates cmake git
 
 WORKDIR /app
 ADD . /app
-RUN cargo build --release --features http_relative_paths
+RUN cargo build --release
 
 FROM debian:bullseye
 RUN apt-get update && apt-get install -y libsmbclient libssl-dev ca-certificates
