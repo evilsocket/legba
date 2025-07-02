@@ -263,11 +263,12 @@ mod tests {
     #[test]
     fn can_restore_from_step() {
         let targets = vec!["foo".to_owned()];
-        let mut opts = crate::Options::default();
-
-        opts.iterate_by = IterationStrategy::User; // default
-        opts.username = Some("#1-2:u".to_owned());
-        opts.password = Some("#1-2:p".to_owned());
+        let opts = crate::Options {
+            iterate_by: IterationStrategy::User, // default
+            username: Some("#1-2:u".to_owned()),
+            password: Some("#1-2:p".to_owned()),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&targets, opts, 2, false, None).unwrap();
         let expected = vec![
@@ -293,11 +294,12 @@ mod tests {
     #[test]
     fn can_handle_user_iteration_strategy() {
         let targets = vec!["foo".to_owned()];
-        let mut opts = crate::Options::default();
-
-        opts.iterate_by = IterationStrategy::User; // default
-        opts.username = Some("#1-2:u".to_owned());
-        opts.password = Some("#1-2:p".to_owned());
+        let opts = crate::Options {
+            iterate_by: IterationStrategy::User,
+            username: Some("#1-2:u".to_owned()),
+            password: Some("#1-2:p".to_owned()),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&targets, opts, 0, false, None).unwrap();
         let expected = vec![
@@ -333,11 +335,12 @@ mod tests {
     #[test]
     fn can_handle_password_iteration_strategy() {
         let targets = vec!["foo".to_owned()];
-        let mut opts = crate::Options::default();
-
-        opts.iterate_by = IterationStrategy::Password;
-        opts.username = Some("#1-2:u".to_owned());
-        opts.password = Some("#1-2:p".to_owned());
+        let opts = crate::Options {
+            iterate_by: IterationStrategy::Password,
+            username: Some("#1-2:u".to_owned()),
+            password: Some("#1-2:p".to_owned()),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&targets, opts, 0, false, None).unwrap();
         let expected = vec![
@@ -374,15 +377,19 @@ mod tests {
     fn iteration_strategies_return_same_results() {
         let targets = vec!["foo".to_owned()];
 
-        let mut by_user_opts = crate::Options::default();
-        by_user_opts.iterate_by = IterationStrategy::User;
-        by_user_opts.username = Some("#1-2:u".to_owned());
-        by_user_opts.password = Some("#1-5:p".to_owned());
+        let by_user_opts = crate::Options {
+            iterate_by: IterationStrategy::User,
+            username: Some("#1-2:u".to_owned()),
+            password: Some("#1-5:p".to_owned()),
+            ..Default::default()
+        };
 
-        let mut by_pass_opts = crate::Options::default();
-        by_pass_opts.iterate_by = IterationStrategy::Password;
-        by_pass_opts.username = Some("#1-2:u".to_owned());
-        by_pass_opts.password = Some("#1-5:p".to_owned());
+        let by_pass_opts = crate::Options {
+            iterate_by: IterationStrategy::Password,
+            username: Some("#1-2:u".to_owned()),
+            password: Some("#1-5:p".to_owned()),
+            ..Default::default()
+        };
 
         let by_user_comb = Combinator::create(&targets, by_user_opts, 0, false, None).unwrap();
         let by_pass_comb = Combinator::create(&targets, by_pass_opts, 0, false, None).unwrap();
@@ -404,10 +411,12 @@ mod tests {
     #[test]
     fn can_handle_multiple_targets_and_double_credentials() {
         let targets = vec!["foo".to_owned(), "bar".to_owned()];
-        let mut opts = crate::Options::default();
 
-        opts.username = Some("[1, 2, 3]".to_owned());
-        opts.password = Some("[1, 2, 3]".to_owned());
+        let opts = crate::Options {
+            username: Some("[1, 2, 3]".to_owned()),
+            password: Some("[1, 2, 3]".to_owned()),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&targets, opts, 0, false, None).unwrap();
         let mut expected = vec![];
@@ -435,9 +444,11 @@ mod tests {
     #[test]
     fn can_handle_multiple_targets_and_single_credentials() {
         let targets = vec!["foo".to_owned(), "bar".to_owned()];
-        let mut opts = crate::Options::default();
 
-        opts.username = Some("[1, 2, 3]".to_owned());
+        let opts = crate::Options {
+            username: Some("[1, 2, 3]".to_owned()),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&targets, opts, 0, true, None).unwrap();
         let mut expected = vec![];
@@ -544,9 +555,12 @@ mod tests {
                 })
             }
         }
-        let mut opts = crate::Options::default();
-        opts.username = Some(tmpuserspath.to_str().unwrap().to_owned());
-        opts.password = Some(tmppasspath.to_str().unwrap().to_owned());
+
+        let opts = crate::Options {
+            username: Some(tmpuserspath.to_str().unwrap().to_owned()),
+            password: Some(tmppasspath.to_str().unwrap().to_owned()),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, false, None).unwrap();
         let tot = comb.search_space_size();
@@ -585,8 +599,10 @@ mod tests {
         tmpdata.flush().unwrap();
         drop(tmpdata);
 
-        let mut opts = crate::Options::default();
-        opts.username = Some(tmppath.to_str().unwrap().to_owned());
+        let opts = crate::Options {
+            username: Some(tmppath.to_str().unwrap().to_owned()),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, true, None).unwrap();
         let tot = comb.search_space_size();
@@ -624,9 +640,11 @@ mod tests {
         tmpdata.flush().unwrap();
         drop(tmpdata);
 
-        let mut opts = crate::Options::default();
-        opts.combinations = Some(tmppath.to_str().unwrap().to_owned());
-        opts.separator = String::from(":");
+        let opts = crate::Options {
+            combinations: Some(tmppath.to_str().unwrap().to_owned()),
+            separator: String::from(":"),
+            ..Default::default()
+        };
 
         let comb = Combinator::create(&vec!["foo".to_owned()], opts, 0, false, None).unwrap();
         let tot = comb.search_space_size();

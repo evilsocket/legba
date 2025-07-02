@@ -21,7 +21,7 @@ pub(crate) struct Options {
     /// Do not perform TCP scan.
     #[clap(long, default_value_t = false)]
     pub port_scanner_no_tcp: bool,
-    #[clap(long, default_value_t = 1500)]
+    #[clap(long, default_value_t = 500)]
     /// Timeout in milliseconds for banner grabbing.
     pub port_scanner_banner_timeout: u64,
     #[clap(long, default_value = "80, 8080, 8081, 8888")]

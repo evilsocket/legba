@@ -15,6 +15,7 @@ pub(crate) type Banner = HashMap<String, String>;
 
 pub(crate) async fn grab_tcp_banner(
     opts: &options::Options,
+    host: &str,
     address: &str,
     port: u16,
     stream: Box<dyn StreamLike>,
@@ -25,7 +26,7 @@ pub(crate) async fn grab_tcp_banner(
     } else if dns::is_dns_port(port) {
         dns::tcp_grabber(address, port, stream, timeout).await
     } else if let (true, with_ssl) = http::is_http_port(opts, port) {
-        http::http_grabber(opts, address, port, stream, with_ssl, timeout).await
+        http::http_grabber(opts, host, address, port, stream, with_ssl, timeout).await
     } else {
         // default to an attempt at line grabbing
         line::line_grabber(address, port, stream, timeout).await

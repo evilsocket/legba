@@ -62,7 +62,8 @@ impl Plugin for IRC {
         let address =
             utils::parse_target_address(&creds.target, if self.tls { 6697 } else { 6667 })?;
 
-        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, self.tls).await?;
+        let mut stream =
+            crate::utils::net::async_tcp_stream(&address, "", timeout, self.tls).await?;
 
         let username = IRC::generate_random_username();
         stream

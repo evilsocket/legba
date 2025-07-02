@@ -359,7 +359,7 @@ impl Sessions {
 
     pub fn get_available_workers(&self) -> u64 {
         self.available_workers
-            .load(std::sync::atomic::Ordering::Relaxed) as u64
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub async fn start_new_session(

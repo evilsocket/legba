@@ -3,9 +3,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::session::{Error, Loot};
 use crate::Plugin;
-use crate::{utils, Options};
+use crate::session::{Error, Loot};
+use crate::{Options, utils};
 
 use crate::creds::Credentials;
 
@@ -44,7 +44,8 @@ impl Plugin for Redis {
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 6379)?;
 
-        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, self.ssl).await?;
+        let mut stream =
+            crate::utils::net::async_tcp_stream(&address, "", timeout, self.ssl).await?;
 
         stream
             .write_all(format!("AUTH {} {}\n", &creds.username, &creds.password).as_bytes())

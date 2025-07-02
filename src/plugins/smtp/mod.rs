@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use async_smtp::{authentication, SmtpClient, SmtpTransport};
+use async_smtp::{SmtpClient, SmtpTransport, authentication};
 use async_trait::async_trait;
 use tokio::io::BufStream;
 
-use crate::session::{Error, Loot};
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
 
 use crate::creds::Credentials;
 use crate::utils;
@@ -42,7 +42,10 @@ impl Plugin for SMTP {
             "LOGIN" => authentication::Mechanism::Login,
             "XOAUTH2" => authentication::Mechanism::Xoauth2,
             _ => {
-                return Err(format!("'{}' is not a valid authentication mechanism, only PLAIN., LOGIN or XOAUTH2 are accepted.", &opts.smtp.smtp_mechanism));
+                return Err(format!(
+                    "'{}' is not a valid authentication mechanism, only PLAIN., LOGIN or XOAUTH2 are accepted.",
+                    &opts.smtp.smtp_mechanism
+                ));
             }
         };
 
@@ -55,7 +58,7 @@ impl Plugin for SMTP {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 25)?;
-        let stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
+        let stream = crate::utils::net::async_tcp_stream(&address, "", timeout, false).await?;
 
         let client = SmtpClient::new();
         let mut transport =

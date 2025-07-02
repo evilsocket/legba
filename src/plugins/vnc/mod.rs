@@ -3,9 +3,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use vnc::{PixelFormat, VncConnector};
 
-use crate::session::{Error, Loot};
 use crate::Plugin;
-use crate::{utils, Options};
+use crate::session::{Error, Loot};
+use crate::{Options, utils};
 
 use crate::creds::Credentials;
 
@@ -44,7 +44,7 @@ impl Plugin for VNC {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 5900)?;
-        let stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
+        let stream = crate::utils::net::async_tcp_stream(&address, "", timeout, false).await?;
         // being this plugin single credentials, this is going to be the password
         let password = creds.single().to_owned();
         let vnc = tokio::time::timeout(

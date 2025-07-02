@@ -3,10 +3,10 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::session::{Error, Loot};
-use crate::utils;
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
+use crate::utils;
 
 use crate::creds::Credentials;
 
@@ -41,7 +41,7 @@ impl Plugin for STOMP {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 61613)?;
-        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
+        let mut stream = crate::utils::net::async_tcp_stream(&address, "", timeout, false).await?;
 
         stream
             .write_all(

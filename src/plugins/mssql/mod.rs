@@ -3,9 +3,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::session::{Error, Loot};
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
 
 use crate::creds::Credentials;
 use crate::utils;
@@ -87,7 +87,7 @@ impl Plugin for MSSQL {
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 1433)?;
 
-        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, false).await?;
+        let mut stream = crate::utils::net::async_tcp_stream(&address, "", timeout, false).await?;
 
         let username = if creds.username.len() > MS_MAX_LEN {
             creds.username[..MS_MAX_LEN].to_owned()

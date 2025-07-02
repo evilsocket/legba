@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use crate::{
     plugins::port_scanner::options,
-    utils::net::{upgrade_tcp_stream_to_tls, StreamLike},
+    utils::net::{StreamLike, upgrade_tcp_stream_to_tls},
 };
-use lazy_regex::{lazy_regex, Lazy};
+use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 use x509_parser::prelude::{FromDer, GeneralName, X509Certificate};
 
@@ -48,6 +48,7 @@ pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
 
 pub(crate) async fn http_grabber(
     opts: &options::Options,
+    host: &str,
     address: &str,
     port: u16,
     stream: Box<dyn StreamLike>,
@@ -74,7 +75,8 @@ pub(crate) async fn http_grabber(
 
     // if ssl, upgrade stream to get certificate information
     if ssl {
-        if let Ok(tls) = upgrade_tcp_stream_to_tls(stream, timeout).await {
+        let upgraded = upgrade_tcp_stream_to_tls(stream, host, timeout).await;
+        if let Ok(tls) = upgraded {
             if let Ok(Some(cert)) = tls.peer_certificate() {
                 if let Ok(der) = cert.to_der() {
                     if let Ok((_, cert)) = X509Certificate::from_der(&der) {
@@ -107,12 +109,27 @@ pub(crate) async fn http_grabber(
                                     .join(", "),
                             );
                         }
+                    } else {
+                        log::error!("failed to parse certificate for {}:{}", address, port);
                     }
+                } else {
+                    log::error!(
+                        "failed to convert certificate to der for {}:{}",
+                        address,
+                        port
+                    );
                 }
+            } else {
+                log::error!("failed to get peer certificate for {}:{}", address, port);
             }
-
-            // close original connection
             drop(tls);
+        } else {
+            log::error!(
+                "failed to upgrade tcp stream to tls for {}:{}: {:?}",
+                address,
+                port,
+                upgraded.err()
+            );
         }
     } else {
         drop(stream); // close original connection
@@ -183,7 +200,7 @@ pub(crate) async fn http_grabber(
                 banner.insert("body".to_owned(), body.to_owned());
             }
         } else {
-            log::error!(
+            log::debug!(
                 "can't read response body from {}:{}: {:?}",
                 address,
                 port,
@@ -191,7 +208,7 @@ pub(crate) async fn http_grabber(
             );
         }
     } else {
-        log::error!(
+        log::debug!(
             "can't connect via http client to {}:{}: {:?}",
             address,
             port,

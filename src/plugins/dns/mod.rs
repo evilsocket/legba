@@ -5,13 +5,13 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use tokio::sync::Mutex;
-use trust_dns_resolver::{config::*, AsyncResolver, TokioAsyncResolver};
+use trust_dns_resolver::{AsyncResolver, TokioAsyncResolver, config::*};
 use x509_parser::prelude::{FromDer, GeneralName, X509Certificate};
 
-use crate::session::{Error, Loot};
-use crate::utils::net::{async_tcp_stream, upgrade_tcp_stream_to_tls};
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
+use crate::utils::net::{async_tcp_stream, upgrade_tcp_stream_to_tls};
 
 use crate::creds::Credentials;
 
@@ -61,7 +61,11 @@ impl DNS {
                 filtered.push(ip.to_owned());
             } else if curr_hits == self.opts.dns_max_positives + 1 {
                 // log this just the first time
-                log::warn!("address {} reached {} positives and will be filtered out from further resolutions.", ip, curr_hits)
+                log::warn!(
+                    "address {} reached {} positives and will be filtered out from further resolutions.",
+                    ip,
+                    curr_hits
+                )
             }
         }
 
@@ -78,12 +82,12 @@ impl DNS {
 
         // check if port 443 is open
         let https_address = format!("{}:443", subdomain);
-        let stream = match async_tcp_stream(&https_address, timeout, false).await {
+        let stream = match async_tcp_stream(&https_address, "", timeout, false).await {
             Ok(s) => s,
             Err(_) => return vec![],
         };
         // upgrade to TLS
-        let tls = match upgrade_tcp_stream_to_tls(stream, timeout).await {
+        let tls = match upgrade_tcp_stream_to_tls(stream, subdomain, timeout).await {
             Ok(t) => t,
             Err(_) => return vec![],
         };

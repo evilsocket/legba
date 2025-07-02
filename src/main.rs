@@ -1,3 +1,5 @@
+#![allow(clippy::upper_case_acronyms)]
+
 use std::env;
 use std::io;
 use std::time;
@@ -85,7 +87,7 @@ fn setup() -> Result<Options, session::Error> {
             .map(|arg| arg.to_string_lossy().to_string())
             .collect();
         log::debug!("original argv: {:?}", &original_argv);
-        // allow whatever the user specified in the command line to override 
+        // allow whatever the user specified in the command line to override
         // the values from the recipe, see https://github.com/evilsocket/legba/issues/66
         options::update_selectively(&mut new_options, &original_argv).map_err(|e| e.to_string())?;
 

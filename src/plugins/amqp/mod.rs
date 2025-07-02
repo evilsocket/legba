@@ -3,10 +3,10 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::session::{Error, Loot};
-use crate::utils;
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
+use crate::utils;
 
 use crate::creds::Credentials;
 
@@ -46,7 +46,8 @@ impl Plugin for AMQP {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 5672)?;
-        let mut stream = crate::utils::net::async_tcp_stream(&address, timeout, self.ssl).await?;
+        let mut stream =
+            crate::utils::net::async_tcp_stream(&address, "", timeout, self.ssl).await?;
 
         // send proto header
         stream

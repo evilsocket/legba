@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::session::{Error, Loot};
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
 
 use crate::creds::Credentials;
 use crate::utils;
@@ -38,7 +38,7 @@ impl Plugin for IMAP {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, 993)?;
-        let stream = crate::utils::net::async_tcp_stream(&address, timeout, true).await?;
+        let stream = crate::utils::net::async_tcp_stream(&address, "", timeout, true).await?;
         let client = async_imap::Client::new(stream);
         if client.login(&creds.username, &creds.password).await.is_ok() {
             return Ok(Some(vec![Loot::new(

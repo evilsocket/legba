@@ -5,9 +5,9 @@ use async_trait::async_trait;
 use grabbers::grab_udp_banner;
 use tokio::net::UdpSocket;
 
-use crate::session::{Error, Loot};
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
 use crate::{creds, utils};
 
 use crate::creds::{Credentials, Expression};
@@ -44,7 +44,9 @@ impl PortScanner {
         let address = format!("{}:{}", &target, &creds.username); // username is the port
         let start: std::time::Instant = std::time::Instant::now();
 
-        if let Ok(stream) = crate::utils::net::async_tcp_stream(&address, timeout, false).await {
+        if let Ok(stream) =
+            crate::utils::net::async_tcp_stream(&address, &target, timeout, false).await
+        {
             let mut data = vec![
                 ("transport".to_owned(), "tcp".to_owned()),
                 ("port".to_owned(), creds.username.to_owned()),
@@ -54,6 +56,7 @@ impl PortScanner {
             if !self.opts.port_scanner_no_banners {
                 let banner = grabbers::grab_tcp_banner(
                     &self.opts,
+                    &target,
                     &target,
                     creds.username.parse::<u16>().unwrap(),
                     stream,

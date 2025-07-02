@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 
-fn search_space_size(charset: &Vec<char>, min_size: usize, max_size: usize) -> usize {
+fn search_space_size(charset: &[char], min_size: usize, max_size: usize) -> usize {
     // compute the number of permutations to generate
     let charset_len = charset.len();
     let mut count = 0;
