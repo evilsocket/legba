@@ -35,7 +35,7 @@ impl Plugin for AMQP {
         "AMQP password authentication (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace)."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.ssl = opts.amqp.amqp_ssl;
         Ok(())
     }

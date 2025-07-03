@@ -35,7 +35,7 @@ impl Plugin for LDAP {
         "LDAP password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.domain = if let Some(domain) = &opts.ldap.ldap_domain {
             // example.org -> dc=example,dc=org
             format!(

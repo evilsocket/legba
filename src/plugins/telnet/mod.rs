@@ -2,11 +2,11 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 
+use crate::Options;
+use crate::Plugin;
 use crate::creds::Credentials;
 use crate::session::{Error, Loot};
 use crate::utils;
-use crate::Options;
-use crate::Plugin;
 
 pub(crate) mod options;
 
@@ -37,7 +37,7 @@ impl Plugin for Telnet {
         "Telnet password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.user_prompt.clone_from(&opts.telnet.telnet_user_prompt);
         self.pass_prompt.clone_from(&opts.telnet.telnet_pass_prompt);
         self.shell_prompt.clone_from(&opts.telnet.telnet_prompt);

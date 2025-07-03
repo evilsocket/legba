@@ -37,7 +37,7 @@ impl Plugin for Mqtt {
         "MQTT password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.client_id = opts.mqtt.mqtt_client_id.clone();
         self.use_v5 = opts.mqtt.mqtt_v5;
         Ok(())

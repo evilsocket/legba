@@ -30,7 +30,7 @@ impl Plugin for FTP {
         "FTP password authentication."
     }
 
-    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 

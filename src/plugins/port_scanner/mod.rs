@@ -178,7 +178,7 @@ impl Plugin for PortScanner {
         }
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.ports = if opts.username.is_some() {
             creds::parse_expression(opts.username.as_ref())
         } else {

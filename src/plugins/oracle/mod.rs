@@ -34,7 +34,7 @@ impl Plugin for Oracle {
         "Oracle DB authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.database = opts.oracle.oracle_database.clone();
         Ok(())
     }

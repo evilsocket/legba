@@ -6,9 +6,9 @@ use async_trait::async_trait;
 use rdp::core::client::Connector;
 use rdp::core::gcc::KeyboardLayout;
 
-use crate::session::{Error, Loot};
 use crate::Plugin;
-use crate::{utils, Options};
+use crate::session::{Error, Loot};
+use crate::{Options, utils};
 
 use crate::creds::Credentials;
 
@@ -37,7 +37,7 @@ impl Plugin for RDP {
         "Microsoft Remote Desktop password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.options = opts.rdp.clone();
         Ok(())
     }

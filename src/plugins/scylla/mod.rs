@@ -2,10 +2,10 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 
-use crate::session::{Error, Loot};
-use crate::utils;
 use crate::Options;
 use crate::Plugin;
+use crate::session::{Error, Loot};
+use crate::utils;
 
 use crate::creds::Credentials;
 
@@ -28,7 +28,7 @@ impl Plugin for Scylla {
         "ScyllaDB / Cassandra password authentication."
     }
 
-    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 

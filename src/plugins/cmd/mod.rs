@@ -58,7 +58,7 @@ impl Plugin for Command {
         "Command execution."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.opts = opts.cmd.clone();
         if self.opts.cmd_binary.is_empty() {
             Err("no --cmd-binary provided".to_owned())

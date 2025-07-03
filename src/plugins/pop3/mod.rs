@@ -32,7 +32,7 @@ impl Plugin for POP3 {
         "POP3 password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.ssl = opts.pop3.pop3_ssl;
         Ok(())
     }

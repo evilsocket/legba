@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use rand::seq::IndexedRandom;
+use random_string;
 use reqwest::{
     Client, Method, RequestBuilder, Response,
     header::{CONTENT_TYPE, COOKIE, HOST, HeaderMap, HeaderName, HeaderValue, USER_AGENT},
@@ -54,10 +55,12 @@ pub(crate) enum Strategy {
     VHostEnum,
 }
 
+#[derive(Debug)]
 struct Success {
     pub status: u16,
     pub content_type: String,
     pub content_length: usize,
+    pub body: String,
 }
 
 #[derive(Clone)]
@@ -70,6 +73,7 @@ pub(crate) struct HTTP {
     domain: String,
     workstation: String,
 
+    real_target: Option<String>,
     user_agent: Option<String>,
     success_codes: Vec<u16>,
     success_string: Option<String>,
@@ -109,13 +113,18 @@ impl HTTP {
             proxy: None,
             proxy_user: None,
             proxy_pass: None,
+            real_target: None,
         }
     }
 
-    fn get_target_url(&self, creds: &Credentials) -> Result<String, Error> {
+    fn get_target_url(&self, creds: &mut Credentials) -> Result<String, Error> {
+        if let Some(real_target) = self.real_target.as_ref() {
+            creds.target = real_target.to_owned();
+        }
+
         // add default schema if not present
         let target = if !creds.target.contains("://") {
-            format!("http://{}", creds.target)
+            format!("https://{}", creds.target)
         } else {
             creds.target.to_owned()
         };
@@ -287,6 +296,7 @@ impl HTTP {
                 status,
                 content_type,
                 content_length,
+                body,
             })
         } else {
             None
@@ -308,12 +318,238 @@ impl HTTP {
         headers
     }
 
+    async fn do_request(
+        &self,
+        opts: &Options,
+        page: &str,
+    ) -> Result<(Credentials, Response), Error> {
+        let target = if let Some(real_target) = self.real_target.as_ref() {
+            log::debug!("request with real target {}", real_target);
+            real_target.to_owned()
+        } else {
+            log::debug!("request with opts.target {}", opts.target.as_ref().unwrap());
+            opts.target.as_ref().unwrap().to_owned()
+        };
+
+        log::debug!("before: {}", target);
+        let parsable = format!(
+            "{}{}",
+            if target.contains("://") {
+                ""
+            } else {
+                "https://"
+            },
+            target
+        );
+        let parsed = Url::options()
+            .parse(&parsable)
+            .map_err(|e| format!("could not parse url '{}': {:?}", parsable, e))?;
+
+        let target = if let Some(port) = parsed.port() {
+            format!("{}://{}:{}", parsed.scheme(), parsed.host().unwrap(), port)
+        } else {
+            format!("{}://{}", parsed.scheme(), parsed.host().unwrap())
+        };
+        log::debug!("after: {}", &target);
+
+        let url_raw = format!(
+            "{}{}{}{}",
+            if target.contains("://") {
+                ""
+            } else {
+                "https://"
+            },
+            target,
+            if target.ends_with('/') { "" } else { "/" },
+            if page.starts_with('/') {
+                page.strip_prefix('/').unwrap()
+            } else {
+                page
+            }
+        );
+
+        log::debug!("  REQUEST TO {}", &url_raw);
+
+        let url = Url::options()
+            .parse(&url_raw)
+            .map_err(|e| format!("could not parse url '{}': {:?}", url_raw, e))?;
+        let headers = self.setup_headers();
+        let request = self
+            .client
+            .request(self.method.clone(), url)
+            .headers(headers);
+
+        request.send().await.map_err(|e| e.to_string()).map(|res| {
+            (
+                Credentials {
+                    target,
+                    username: page.to_string(),
+                    password: "".to_string(),
+                },
+                res,
+            )
+        })
+    }
+
+    async fn check_false_positives(&mut self, opts: &Options, adjust: bool) -> Result<(), Error> {
+        let random_page = random_string::generate(5, "abcdefghijklmnopqrstuvwxyz");
+        log::debug!(
+            "check_false_positives: adjust={}, page={}",
+            adjust,
+            &random_page
+        );
+        if let Ok((creds, res)) = self.do_request(opts, &random_page).await {
+            if let Some(success) = self.is_success_response(&creds, res).await {
+                let target = if let Some(real_target) = self.real_target.as_ref() {
+                    real_target.to_owned()
+                } else {
+                    opts.target.as_ref().unwrap().to_owned()
+                };
+                if adjust {
+                    self.failure_string = Some(success.body);
+                    return Err(format!(
+                        "{} returned status code {} for a non existent page, adjusted --http-failure-string",
+                        target, success.status
+                    ));
+                } else {
+                    return Err(format!(
+                        "{} returned again a status code {} for a non existent page, aborting due to likely false positives",
+                        target, success.status
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn check_dot_false_positives(
+        &mut self,
+        opts: &Options,
+        adjust: bool,
+    ) -> Result<(), Error> {
+        let random_page = format!(
+            ".{}",
+            random_string::generate(5, "abcdefghijklmnopqrstuvwxyz")
+        );
+        log::debug!(
+            "check_dot_false_positives: adjust={}, page={}",
+            adjust,
+            &random_page
+        );
+        if let Ok((creds, res)) = self.do_request(opts, &random_page).await {
+            if let Some(success) = self.is_success_response(&creds, res).await {
+                let target = if let Some(real_target) = self.real_target.as_ref() {
+                    real_target.to_owned()
+                } else {
+                    opts.target.as_ref().unwrap().to_owned()
+                };
+                if adjust {
+                    // log::debug!("success={:?}", &success);
+                    self.failure_string = Some(success.body);
+                    return Err(format!(
+                        "{} returned status code {} for a non existent page starting with a dot, adjusted --http-failure-string",
+                        target, success.status
+                    ));
+                } else {
+                    return Err(format!(
+                        "{} returned again a status code {} for a non existent page starting with a dot, aborting due to likely false positives",
+                        target, success.status
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn check_false_negatives(&mut self, opts: &Options) -> Result<(), Error> {
+        let page = "/".to_string();
+        log::debug!("check_false_negatives: page={}", &page);
+        let result = self.do_request(opts, &page).await;
+        if let Ok((creds, res)) = result {
+            let status = res.status();
+            let headers = res.headers().clone();
+            if self.is_success_response(&creds, res).await.is_none() {
+                let relocation = headers.get("location");
+                if status.is_redirection() && relocation.is_some() {
+                    let mut relocation = relocation.unwrap().to_str().unwrap().to_owned();
+                    // redirect to a page
+                    if relocation.starts_with("/") || relocation.contains(&creds.target) {
+                        return Ok(());
+                    } else if relocation.ends_with('/') {
+                        relocation.pop();
+                    }
+                    self.real_target = Some(relocation.clone());
+                    return Err(format!(
+                        "{} returned status code {} for an existing page, adjusted to real target {}",
+                        opts.target.as_ref().unwrap(),
+                        status,
+                        relocation
+                    ));
+                } else {
+                    return Err(format!(
+                        "{} returned status code {} for an existing page, aborting due to likely false negatives",
+                        opts.target.as_ref().unwrap(),
+                        status,
+                    ));
+                }
+            }
+        } else {
+            return Err(format!(
+                "{} returned an error for an existing page, aborting due to likely false negatives: {}",
+                opts.target.as_ref().unwrap(),
+                result.err().unwrap()
+            ));
+        }
+
+        Ok(())
+    }
+
+    async fn check_status_codes(&mut self, opts: &Options) -> Result<(), Error> {
+        if opts.target.is_none() {
+            log::warn!("target not set, skipping status code check (TEST MODE?)");
+            return Ok(());
+        }
+
+        log::info!("validating canary status codes ...");
+
+        // check that the target is not returning 404 for an existing page
+        // attempt this a few times since there might be multiple redirects
+        // for instance:
+        //    domain.com -> http://www.domain.com -> https://www.domain.com
+        for _ in 0..10 {
+            if let Err(e) = self.check_false_negatives(opts).await {
+                log::warn!("{}", e);
+            } else {
+                break;
+            }
+        }
+
+        self.check_false_negatives(opts).await?;
+
+        // check that the target is not returning 404 for a non existent page starting with a dot
+        if let Err(e) = self.check_dot_false_positives(opts, true).await {
+            log::warn!("{}", e);
+            self.check_dot_false_positives(opts, false).await?;
+        }
+
+        // check that the target is not returning 200 for a non existent page
+        if let Err(e) = self.check_false_positives(opts, true).await {
+            log::warn!("{}", e);
+            self.check_false_positives(opts, false).await?;
+        }
+
+        Ok(())
+    }
+
     async fn http_request_attempt(
         &self,
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
-        let target = self.get_target_url(creds)?;
+        let mut creds = creds.clone();
+        let target = self.get_target_url(&mut creds)?;
         let mut headers = self.setup_headers();
 
         // check if we are in a ntlm auth challenge context
@@ -326,7 +562,7 @@ impl HTTP {
                 },
                 &target,
                 self.client.clone(),
-                creds,
+                &creds,
                 &self.domain,
                 &self.workstation,
                 headers.clone(),
@@ -364,7 +600,7 @@ impl HTTP {
             .timeout(timeout);
 
         // setup body
-        request = self.setup_request_body(creds, csrf_token, request);
+        request = self.setup_request_body(&creds, csrf_token, request);
         // execute
         match request.send().await {
             Err(e) => Err(e.to_string()),
@@ -374,7 +610,7 @@ impl HTTP {
                 } else {
                     "".to_owned()
                 };
-                Ok(if self.is_success_response(creds, res).await.is_some() {
+                Ok(if self.is_success_response(&creds, res).await.is_some() {
                     Some(vec![Loot::new(
                         "http",
                         &target,
@@ -396,11 +632,12 @@ impl HTTP {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
-        let target = self.get_target_url(creds)?;
+        let mut creds = creds.clone();
+        let target = self.get_target_url(&mut creds)?;
         let headers = self.setup_headers();
         let url_raw = if target.contains("{PAYLOAD}") {
             // by interpolation
-            placeholders::interpolate(&target, creds)
+            placeholders::interpolate(&target, &creds)
         } else {
             // by appending
             format!(
@@ -431,6 +668,8 @@ impl HTTP {
             .parse(&url_raw)
             .map_err(|e| format!("could not parse url '{}': {:?}", url_raw, e))?;
 
+        log::debug!("http.enum to {}", url_raw);
+
         // build base request object
         let request = self
             .client
@@ -442,7 +681,7 @@ impl HTTP {
         match request.send().await {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
-                if let Some(success) = self.is_success_response(creds, res).await {
+                if let Some(success) = self.is_success_response(&creds, res).await {
                     Ok(Some(vec![Loot::new(
                         "http.enum",
                         &target,
@@ -465,7 +704,8 @@ impl HTTP {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
-        let url = self.get_target_url(creds)?;
+        let mut creds = creds.clone();
+        let url = self.get_target_url(&mut creds)?;
         let mut headers = self.setup_headers();
 
         // set host
@@ -479,11 +719,13 @@ impl HTTP {
             .headers(headers)
             .timeout(timeout);
 
+        log::debug!("http.vhost-enum to {} (host={})", url, &creds.username);
+
         // execute
         match request.send().await {
             Err(e) => Err(e.to_string()),
             Ok(res) => {
-                if let Some(success) = self.is_success_response(creds, res).await {
+                if let Some(success) = self.is_success_response(&creds, res).await {
                     Ok(Some(vec![Loot::new(
                         "http.vhost",
                         &creds.target,
@@ -523,7 +765,7 @@ impl Plugin for HTTP {
         }
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.user_agent = opts.http.http_ua.clone();
 
         self.csrf = if let Some(csrf_page) = opts.http.http_csrf_page.as_ref() {
@@ -633,7 +875,7 @@ impl Plugin for HTTP {
                 .map_err(|e| e.to_string())?
         };
 
-        Ok(())
+        self.check_status_codes(opts).await
     }
 
     async fn attempt(
@@ -667,35 +909,35 @@ mod tests {
 
     #[test]
     fn test_get_target_url_adds_default_schema_and_path() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000".to_owned(),
             username: String::new(),
             password: String::new(),
         };
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
-            "http://localhost:3000/",
-            http.get_target_url(&creds).unwrap()
+            "https://localhost:3000/",
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
     #[test]
     fn test_get_target_url_adds_default_schema() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000/somepath".to_owned(),
             username: String::new(),
             password: String::new(),
         };
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
-            "http://localhost:3000/somepath",
-            http.get_target_url(&creds).unwrap()
+            "https://localhost:3000/somepath",
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
     #[test]
     fn test_get_target_url_adds_default_path() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "https://localhost:3000".to_owned(),
             username: String::new(),
             password: String::new(),
@@ -703,89 +945,89 @@ mod tests {
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
             "https://localhost:3000/",
-            http.get_target_url(&creds).unwrap()
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
     #[test]
     fn test_get_target_url_preserves_query() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000/?foo=bar".to_owned(),
             username: String::new(),
             password: String::new(),
         };
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
-            "http://localhost:3000/?foo=bar",
-            http.get_target_url(&creds).unwrap()
+            "https://localhost:3000/?foo=bar",
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
     #[test]
     fn test_get_target_url_interpolates_query_with_username_placeholder() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000/?username={USERNAME}".to_owned(),
             username: "bob".to_owned(),
             password: String::new(),
         };
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
-            "http://localhost:3000/?username=bob",
-            http.get_target_url(&creds).unwrap()
+            "https://localhost:3000/?username=bob",
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
     #[test]
     fn test_get_target_url_interpolates_query_with_password_placeholder() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000/?p={PASSWORD}".to_owned(),
             username: String::new(),
             password: "f00b4r".to_owned(),
         };
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
-            "http://localhost:3000/?p=f00b4r",
-            http.get_target_url(&creds).unwrap()
+            "https://localhost:3000/?p=f00b4r",
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
     #[test]
     fn test_get_target_url_interpolates_query_with_payload_placeholder() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000/?p={PAYLOAD}".to_owned(),
             username: "something".to_owned(),
             password: String::new(),
         };
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
-            "http://localhost:3000/?p=something",
-            http.get_target_url(&creds).unwrap()
+            "https://localhost:3000/?p=something",
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
     #[test]
     fn test_get_target_url_interpolates_query_urlencoded() {
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000/?p=%7BPAYLOAD%7D".to_owned(),
             username: "something".to_owned(),
             password: String::new(),
         };
         let http = HTTP::new(Strategy::Request);
         assert_eq!(
-            "http://localhost:3000/?p=something",
-            http.get_target_url(&creds).unwrap()
+            "https://localhost:3000/?p=something",
+            http.get_target_url(&mut creds).unwrap()
         );
     }
 
-    #[test]
-    fn test_plugin_adds_default_content_type_if_post() {
+    #[tokio::test]
+    async fn test_plugin_adds_default_content_type_if_post() {
         let mut http = HTTP::new(Strategy::Request);
         let mut opts = Options::default();
 
         opts.http.http_method = "POST".to_owned();
         opts.http.http_payload = Some("just a test".to_owned());
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
         assert_eq!(
             Some(&HeaderValue::from_static(
                 "application/x-www-form-urlencoded"
@@ -794,8 +1036,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_plugin_preserves_user_content_type() {
+    #[tokio::test]
+    async fn test_plugin_preserves_user_content_type() {
         let mut http = HTTP::new(Strategy::Request);
         let mut opts = Options::default();
 
@@ -803,7 +1045,7 @@ mod tests {
         opts.http.http_payload = Some("{\"foo\": 123}".to_owned());
         opts.http.http_headers = vec!["Content-Type=application/json".to_owned()];
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
         assert_eq!(
             Some(&HeaderValue::from_static("application/json")),
             http.headers.get(CONTENT_TYPE)
@@ -826,7 +1068,7 @@ mod tests {
         let headers = String::new();
         let body = String::new();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -854,7 +1096,7 @@ mod tests {
         let headers = String::new();
         let body = "nope".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -882,7 +1124,7 @@ mod tests {
         let headers = String::new();
         let body = "sir login ok sir".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -902,16 +1144,16 @@ mod tests {
         opts.http.http_success_string = Some("успех".to_owned());
         opts.http.http_method = "GET".to_owned();
 
-        let creds = Credentials {
+        let mut creds = Credentials {
             target: "localhost:3000/тест/страница".to_owned(),
             username: "пользователь".to_owned(),
             password: "пароль".to_owned(),
         };
 
-        let target_url = http.get_target_url(&creds).unwrap();
+        let target_url = http.get_target_url(&mut creds).unwrap();
         assert_eq!(
             target_url,
-            "http://localhost:3000/%D1%82%D0%B5%D1%81%D1%82/%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0"
+            "https://localhost:3000/%D1%82%D0%B5%D1%81%D1%82/%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0"
         );
 
         let status = 200;
@@ -920,7 +1162,7 @@ mod tests {
         let headers = String::new();
         let body = "операция успех завершена".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
         assert_eq!(http.success_codes, vec![200]);
         assert!(
             http.is_success(&creds, status, content_type, content_length, headers, body)
@@ -945,7 +1187,7 @@ mod tests {
         let headers = String::new();
         let body = "sir login ok sir".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![666]);
 
@@ -972,7 +1214,7 @@ mod tests {
         let headers = String::new();
         let body = "sir login ok sir".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![666]);
 
@@ -1000,7 +1242,7 @@ mod tests {
         let headers = String::new();
         let body = "all good".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -1028,7 +1270,7 @@ mod tests {
         let headers = String::new();
         let body = "you sent the wrong credentials, freaking moron!".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -1057,7 +1299,7 @@ mod tests {
         let headers = String::new();
         let body = "you sent the wrong credentials, freaking moron!".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -1086,7 +1328,7 @@ mod tests {
         let headers = String::new();
         let body = "i like your credentials".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -1118,7 +1360,7 @@ mod tests {
         let headers = String::new();
         let body = "hello foo how are you doing?".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -1150,7 +1392,7 @@ mod tests {
         let headers = String::new();
         let body = "very cool p4ssw0rd buddy!".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -1182,7 +1424,7 @@ mod tests {
         let headers = String::new();
         let body = "totally not vulnerable <svg onload=alert(1)> to xss".to_owned();
 
-        assert_eq!(Ok(()), http.setup(&opts));
+        assert_eq!(Ok(()), http.setup(&opts).await);
 
         assert_eq!(http.success_codes, vec![200]);
 
@@ -1191,5 +1433,259 @@ mod tests {
                 .await
                 .is_some()
         );
+    }
+
+    // Tests for check_status_codes and related methods
+
+    #[tokio::test]
+    async fn test_check_status_codes_skips_when_no_target() {
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+        // opts.target is None by default
+
+        opts.http.http_method = "GET".to_owned();
+
+        // This should succeed because check_status_codes skips when target is None
+        assert_eq!(Ok(()), http.setup(&opts).await);
+
+        // Verify that the HTTP client was still set up correctly
+        assert_eq!(http.method, reqwest::Method::GET);
+    }
+
+    #[tokio::test]
+    async fn test_check_status_codes_normal_behavior() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+
+        let server = MockServer::start();
+
+        // 200 for /, 404 for any other path
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Home page</body></html>");
+        });
+        let _random_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
+            then.status(404)
+                .header("content-type", "text/html")
+                .body("<html><body>Not found</body></html>");
+        });
+        let _dot_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"/\\.[a-z0-9]+$").unwrap());
+            then.status(404)
+                .header("content-type", "text/html")
+                .body("<html><body>Not found</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+        opts.target = Some(server.base_url());
+        opts.http.http_method = "GET".to_owned();
+        opts.http.http_success_codes = "200".to_owned();
+        let result = http.setup(&opts).await;
+        assert_eq!(Ok(()), result);
+        // Don't assert mocks, just ensure no panic
+    }
+
+    #[tokio::test]
+    async fn test_check_false_positives_adjusts_failure_string() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+        let server = MockServer::start();
+        // 200 for /, 200 for random paths
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Home page</body></html>");
+        });
+        let _random_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Success page</body></html>");
+        });
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+        opts.target = Some(server.base_url());
+        opts.http.http_method = "GET".to_owned();
+        opts.http.http_success_codes = "200".to_owned();
+        let result = http.setup(&opts).await;
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            http.failure_string,
+            Some("<html><body>Success page</body></html>".to_owned())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_check_dot_false_positives_adjusts_failure_string() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+        let server = MockServer::start();
+        // 200 for /, 200 for dot pages, 200 for other random paths
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Home page</body></html>");
+        });
+        let _dot_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"/\.[a-z0-9]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Dot page success</body></html>");
+        });
+        let _other_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Success page</body></html>");
+        });
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+        opts.target = Some(server.base_url());
+        opts.http.http_method = "GET".to_owned();
+        opts.http.http_success_codes = "200".to_owned();
+        let result = http.setup(&opts).await;
+        assert_eq!(result, Ok(()));
+        let failure_string = http.failure_string.clone();
+        assert!(
+            failure_string == Some("<html><body>Dot page success</body></html>".to_owned())
+                || failure_string == Some("<html><body>Success page</body></html>".to_owned())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_check_false_negatives_handles_redirects() {
+        use httpmock::prelude::*;
+        let server = MockServer::start();
+        // 302 for /, 404 for others
+        let _redirect_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(302)
+                .header("Location", "https://completely.different.domain/")
+                .header("content-type", "text/html")
+                .body("<html><body>Redirecting...</body></html>");
+        });
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+        opts.target = Some(server.base_url());
+        opts.http.http_method = "GET".to_owned();
+        opts.http.http_success_codes = "200".to_owned();
+        let result = http.setup(&opts).await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("aborting due to likely false negatives")
+        );
+        assert_eq!(
+            http.real_target,
+            Some("https://completely.different.domain".to_owned())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_check_status_codes_with_success_and_failure_strings() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+        let server = MockServer::start();
+        // 200 for /, 200 for random with failure content
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Home page</body></html>");
+        });
+        let _failure_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("This is a failure page with specific content and the word failure");
+        });
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+        opts.target = Some(server.base_url());
+        opts.http.http_method = "GET".to_owned();
+        opts.http.http_success_codes = "200".to_owned();
+        opts.http.http_success_string = Some("success".to_owned());
+        opts.http.http_failure_string = Some("failure".to_owned());
+        let result = http.setup(&opts).await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("adjusted --http-failure-string")
+                || err.contains("aborting due to likely false positives")
+                || err.contains("aborting due to likely false negatives")
+        );
+        assert_eq!(http.success_string, Some("success".to_owned()));
+        let failure_string = http.failure_string.clone();
+        assert!(
+            failure_string == Some("failure".to_owned())
+                || failure_string
+                    == Some(
+                        "This is a failure page with specific content and the word failure"
+                            .to_owned()
+                    )
+        );
+    }
+
+    #[tokio::test]
+    async fn test_check_status_codes_different_strategies() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+        let strategies = vec![
+            Strategy::Request,
+            Strategy::Form,
+            Strategy::BasicAuth,
+            Strategy::Enumeration,
+            Strategy::VHostEnum,
+        ];
+        for strategy in strategies {
+            let server = MockServer::start();
+            let _home_mock = server.mock(|when, then| {
+                when.method(GET).path("/");
+                then.status(200)
+                    .header("content-type", "text/html")
+                    .body("<html><body>Home page</body></html>");
+            });
+            let _random_mock = server.mock(|when, then| {
+                when.method(GET)
+                    .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
+                then.status(404)
+                    .header("content-type", "text/html")
+                    .body("<html><body>Not found</body></html>");
+            });
+            let mut http = HTTP::new(strategy);
+            let mut opts = Options::default();
+            opts.target = Some(server.base_url());
+            opts.http.http_method = "GET".to_owned();
+            opts.http.http_success_codes = "200".to_owned();
+            let result = http.setup(&opts).await;
+            assert_eq!(Ok(()), result);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_check_status_codes_error_handling() {
+        let mut http = HTTP::new(Strategy::Request);
+        let mut opts = Options::default();
+
+        opts.target = Some("http://invalid-host-that-will-fail:9999".to_owned());
+        opts.http.http_method = "GET".to_owned();
+        opts.http.http_success_codes = "200".to_owned();
+
+        // This should fail due to connection error
+        let result = http.setup(&opts).await;
+        assert!(result.is_err());
     }
 }

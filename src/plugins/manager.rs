@@ -68,7 +68,7 @@ pub(crate) fn list() {
     }
 }
 
-pub(crate) fn setup(options: &Options) -> Result<&'static mut dyn Plugin, Error> {
+pub(crate) async fn setup(options: &Options) -> Result<&'static mut dyn Plugin, Error> {
     let Some(plugin_name) = options.plugin.as_ref() else {
         return Err("no plugin selected".to_owned());
     };
@@ -84,7 +84,7 @@ pub(crate) fn setup(options: &Options) -> Result<&'static mut dyn Plugin, Error>
         ));
     };
 
-    plugin.setup(options)?;
+    plugin.setup(options).await?;
 
     Ok(plugin)
 }

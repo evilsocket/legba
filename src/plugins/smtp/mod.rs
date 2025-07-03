@@ -36,7 +36,7 @@ impl Plugin for SMTP {
         "SMTP password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.mechanism = match opts.smtp.smtp_mechanism.as_ref() {
             "PLAIN" => authentication::Mechanism::Plain,
             "LOGIN" => authentication::Mechanism::Login,

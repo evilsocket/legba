@@ -32,7 +32,7 @@ impl Plugin for Redis {
         "Redis legacy and ACL password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.ssl = opts.redis.redis_ssl;
         Ok(())
     }

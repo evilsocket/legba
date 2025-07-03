@@ -88,7 +88,7 @@ impl Plugin for SQL {
         self.flavour.description()
     }
 
-    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 

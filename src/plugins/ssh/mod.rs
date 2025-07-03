@@ -42,7 +42,7 @@ impl Plugin for SSH {
         "SSH/SFTP password and private key authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.mode = opts.ssh.ssh_auth_mode.clone();
         self.passphrase.clone_from(&opts.ssh.ssh_key_passphrase);
         Ok(())

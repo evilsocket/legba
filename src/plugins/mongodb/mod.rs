@@ -28,7 +28,7 @@ impl Plugin for MongoDB {
         "MongoDB password authentication."
     }
 
-    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 

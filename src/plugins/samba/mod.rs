@@ -109,7 +109,7 @@ impl Plugin for SMB {
         "Samba password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.share = opts.smb.smb_share.clone();
         self.workgroup = opts.smb.smb_workgroup.clone();
         Ok(())

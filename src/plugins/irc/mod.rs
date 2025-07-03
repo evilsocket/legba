@@ -49,7 +49,7 @@ impl Plugin for IRC {
         "IRC server password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.tls = opts.irc.irc_tls;
         Ok(())
     }

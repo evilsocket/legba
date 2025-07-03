@@ -171,7 +171,7 @@ impl Plugin for DNS {
         PayloadStrategy::Single
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.opts = opts.dns.clone();
         self.resolver = Some(if let Some(resolvers) = opts.dns.dns_resolvers.as_ref() {
             let ips: Vec<IpAddr> = resolvers

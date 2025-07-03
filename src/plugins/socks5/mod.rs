@@ -36,7 +36,7 @@ impl Plugin for Socks5 {
         "SOCKS5 password authentication."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.remote_address.clone_from(&opts.socks5.socks5_address);
         self.remote_port = opts.socks5.socks5_port;
 

@@ -31,7 +31,7 @@ impl Plugin for STOMP {
         "STOMP password authentication (ActiveMQ, RabbitMQ, HornetQ and OpenMQ)."
     }
 
-    fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, _opts: &Options) -> Result<(), Error> {
         Ok(())
     }
 

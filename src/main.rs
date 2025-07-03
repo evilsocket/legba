@@ -114,11 +114,13 @@ async fn start_session(opts: Options) -> Result<(), session::Error> {
     let session = Session::new(opts.clone())?;
 
     // get selected plugin and configure it
-    let plugin = plugins::manager::setup(&session.options).inspect_err(|e| {
-        log::error!("plugin failed to load: {:?}", e);
-        // set stop signal if the plugin failed to load
-        session.set_stop();
-    })?;
+    let plugin = plugins::manager::setup(&session.options)
+        .await
+        .inspect_err(|e| {
+            log::error!("plugin failed to load: {:?}", e);
+            // set stop signal if the plugin failed to load
+            session.set_stop();
+        })?;
 
     let start = time::Instant::now();
 

@@ -135,7 +135,7 @@ impl Plugin for Kerberos {
         "Kerberos 5 (pre)authentication and users enumeration."
     }
 
-    fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
         self.realm = if let Some(realm) = &opts.kerberos.kerberos_realm {
             realm.clone()
         } else {

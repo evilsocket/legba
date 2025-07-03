@@ -43,7 +43,7 @@ pub(crate) trait Plugin: Sync + Send {
     }
 
     // configure the plugin initial state
-    fn setup(&mut self, options: &Options) -> Result<(), Error>;
+    async fn setup(&mut self, options: &Options) -> Result<(), Error>;
 
     // perform a plugin step with the given credentials and timeout
     async fn attempt(
