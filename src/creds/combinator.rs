@@ -12,6 +12,12 @@ use crate::{
 
 use super::Expression;
 
+/// Process template placeholders in password strings
+/// Currently supports {user} placeholder replacement
+fn process_password_template(password: &str, username: &str) -> String {
+    password.replace("{user}", username)
+}
+
 #[derive(ValueEnum, Serialize, Deserialize, Debug, Default, Clone)]
 pub(crate) enum IterationStrategy {
     #[default]
@@ -240,10 +246,13 @@ impl Iterator for Combinator {
 
             self.dispatched += 1;
 
+            // Process password template placeholders (e.g., {user} -> actual username)
+            let processed_password = process_password_template(&password, &username);
+
             Some(Credentials {
                 target,
                 username,
-                password,
+                password: processed_password,
             })
         } else {
             None
