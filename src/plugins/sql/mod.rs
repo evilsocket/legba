@@ -111,7 +111,6 @@ impl SQL {
                 Ok(None)
             }
             Err(_) => {
-                // 超时错误
                 Err("Connection timeout".into())
             }
         }
