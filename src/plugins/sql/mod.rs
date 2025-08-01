@@ -57,27 +57,63 @@ impl SQL {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address = utils::parse_target_address(&creds.target, self.port)?;
-        let pool = tokio::time::timeout(
+        let pool_result = tokio::time::timeout(
             timeout,
             PoolOptions::<DB>::new().connect(&format!(
                 "{}://{}:{}@{}/{}",
                 scheme, &creds.username, &creds.password, &address, db
             )),
         )
-        .await
-        .map_err(|e| e.to_string())?;
+        .await;
 
-        if pool.is_ok() {
-            Ok(Some(vec![Loot::new(
-                scheme,
-                &address,
-                [
-                    ("username".to_owned(), creds.username.to_owned()),
-                    ("password".to_owned(), creds.password.to_owned()),
-                ],
-            )]))
-        } else {
-            Ok(None)
+        match pool_result {
+            Ok(Ok(_pool)) => {
+                Ok(Some(vec![Loot::new(
+                    scheme,
+                    &address,
+                    [
+                        ("username".to_owned(), creds.username.to_owned()),
+                        ("password".to_owned(), creds.password.to_owned()),
+                    ],
+                )]))
+            }
+            Ok(Err(e)) => {
+                let error_msg = e.to_string();
+                
+                // Check if authentication succeeded but there is insufficient database permission
+                if self.flavour == Flavour::My {
+                    // MySQL: Password is correct but no database access permission
+                    if error_msg.contains("Access denied") && error_msg.contains("to database") {
+                        return Ok(Some(vec![Loot::new(
+                            scheme,
+                            &address,
+                            [
+                                ("username".to_owned(), creds.username.to_owned()),
+                                ("password".to_owned(), creds.password.to_owned()),
+                            ],
+                        )]));
+                    }
+                } else if self.flavour == Flavour::PG {
+                    // PostgreSQL: Similar permission error judgment
+                    if error_msg.contains("permission denied for database") {
+                        return Ok(Some(vec![Loot::new(
+                            scheme,
+                            &address,
+                            [
+                                ("username".to_owned(), creds.username.to_owned()),
+                                ("password".to_owned(), creds.password.to_owned()),
+                            ],
+                        )]));
+                    }
+                }
+                
+                // Other
+                Ok(None)
+            }
+            Err(_) => {
+                // 超时错误
+                Err("Connection timeout".into())
+            }
         }
     }
 }
