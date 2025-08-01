@@ -61,14 +61,8 @@ impl Plugin for Redis {
             // Use cached authentication type
             match auth_type.as_str() {
                 "none" => {
-                    return Ok(Some(vec![Loot::new(
-                        "redis",
-                        &address,
-                        [
-                            ("auth_type".to_owned(), "none".to_owned()),
-                            ("info".to_owned(), "No authentication required".to_owned()),
-                        ],
-                    )]));
+                    // Redis has no authentication, skip password attempts
+                    return Ok(None);
                 }
                 "password_only" => {
                     if creds.password.is_empty() {
