@@ -12,6 +12,7 @@ homepage = "https://github.com/evilsocket/legba"
 
 
 [dependencies]
+lazy_static = "1.4.0"
 # force vendored openssl for every dependency
 openssl = { version = "0.10.64", features = ["vendored"], optional = true }
 
