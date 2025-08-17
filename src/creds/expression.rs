@@ -5,9 +5,9 @@ use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 use serde::Serialize;
 
-const DEFAULT_PERMUTATIONS_MIN_LEN: usize = 4;
-const DEFAULT_PERMUTATIONS_MAX_LEN: usize = 8;
-const DEFAULT_PERMUTATIONS_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ !\"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~";
+const DEFAULT_PERMUTATIONS_MIN_LEN: usize = 3;
+const DEFAULT_PERMUTATIONS_MAX_LEN: usize = 5;
+const DEFAULT_PERMUTATIONS_CHARSET: &str = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 static PERMUTATIONS_PARSER: Lazy<Regex> = lazy_regex!(r"^#(\d+)-(\d+)(:.+)?$");
 static RANGE_MIN_MAX_PARSER: Lazy<Regex> = lazy_regex!(r"^\[(\d+)-(\d+)\]$");
