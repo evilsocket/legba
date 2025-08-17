@@ -1,4 +1,4 @@
-use clap::{parser::ValueSource, ArgMatches, CommandFactory as _, Parser};
+use clap::{ArgMatches, CommandFactory as _, Parser, parser::ValueSource};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -118,9 +118,6 @@ pub(crate) struct Options {
     #[cfg(feature = "telnet")]
     #[clap(flatten, next_help_heading = "TELNET")]
     pub telnet: crate::plugins::telnet::options::Options,
-    #[cfg(feature = "samba")]
-    #[clap(flatten, next_help_heading = "SAMBA (SMB)")]
-    pub smb: crate::plugins::samba::options::Options,
     #[cfg(feature = "ssh")]
     #[clap(flatten, next_help_heading = "SSH")]
     pub ssh: crate::plugins::ssh::options::Options,
@@ -159,9 +156,11 @@ pub(crate) struct Options {
     pub irc: crate::plugins::irc::options::Options,
 }
 
-
-
-fn update_field_by_name(options: &mut Options, field_name: &str, matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+fn update_field_by_name(
+    options: &mut Options,
+    field_name: &str,
+    matches: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize current options to JSON
     let mut options_value: Value = serde_json::to_value(&options)?;
 
@@ -194,12 +193,21 @@ fn update_field_by_name(options: &mut Options, field_name: &str, matches: &ArgMa
                         return Err(format!("Missing value for field: {:?}", &field_name).into());
                     }
                 }
-                _ => return Err(format!("Unknown or unsupported type for field: {:?} (current_value={:?})", &field_name, &current_value).into())
+                _ => {
+                    return Err(format!(
+                        "Unknown or unsupported type for field: {:?} (current_value={:?})",
+                        &field_name, &current_value
+                    )
+                    .into());
+                }
             }
         }
-    
     } else {
-        return Err(format!("Invalid options structure: expected JSON object for field: {:?}", &field_name).into());
+        return Err(format!(
+            "Invalid options structure: expected JSON object for field: {:?}",
+            &field_name
+        )
+        .into());
     }
 
     // Deserialize back to Options
@@ -208,18 +216,26 @@ fn update_field_by_name(options: &mut Options, field_name: &str, matches: &ArgMa
     Ok(())
 }
 
-pub(crate) fn update_selectively(options: &mut Options, argv: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn update_selectively(
+    options: &mut Options,
+    argv: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
     let cmd = Options::command();
     let matches = cmd.clone().try_get_matches_from(argv)?;
-    
+
     // Update only the fields that were explicitly provided
     for arg in cmd.get_arguments() {
         let id = arg.get_id().as_str();
-        if matches.contains_id(id) && 
-           matches.value_source(id) == Some(ValueSource::CommandLine) && id != "plugin" && id != "P" && id != "R" && id != "recipe" {
+        if matches.contains_id(id)
+            && matches.value_source(id) == Some(ValueSource::CommandLine)
+            && id != "plugin"
+            && id != "P"
+            && id != "R"
+            && id != "recipe"
+        {
             update_field_by_name(options, id, &matches)?;
         }
     }
-    
+
     Ok(())
 }

@@ -32,17 +32,21 @@ fn setup() -> Result<Options, session::Error> {
         unsafe {
             env::set_var(
                 "RUST_LOG",
-                "info,blocking=off,pavao=off,fast_socks5=off,actix_server=warn,rmcp=warn",
+                "info,blocking=off,pavao=off,fast_socks5=off,actix_server=warn,rmcp=warn,smb=warn,sspi=off",
             );
         }
     }
 
-    env_logger::builder()
-        .format_module_path(false)
-        .format_target(false)
-        .format_timestamp(None)
-        .target(Target::Stdout)
-        .init();
+    if env::var_os("RUST_LOG") == Some("debug".into()) {
+        env_logger::builder().target(Target::Stdout).init();
+    } else {
+        env_logger::builder()
+            .format_module_path(false)
+            .format_target(false)
+            .format_timestamp(None)
+            .target(Target::Stdout)
+            .init();
+    }
 
     let mut options: Options = Options::parse();
 
