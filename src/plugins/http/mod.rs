@@ -526,18 +526,14 @@ impl HTTP {
             }
         }
 
-        self.check_false_negatives(opts).await?;
-
         // check that the target is not returning 404 for a non existent page starting with a dot
         if let Err(e) = self.check_dot_false_positives(opts, true).await {
             log::warn!("{}", e);
-            self.check_dot_false_positives(opts, false).await?;
         }
 
         // check that the target is not returning 200 for a non existent page
         if let Err(e) = self.check_false_positives(opts, true).await {
             log::warn!("{}", e);
-            self.check_false_positives(opts, false).await?;
         }
 
         Ok(())

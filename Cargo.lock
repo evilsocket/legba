@@ -3245,6 +3245,7 @@ dependencies = [
  "kerberos_constants",
  "kerberos_crypto",
  "lazy-regex",
+ "lazy_static",
  "ldap3",
  "log",
  "memory-stats",
