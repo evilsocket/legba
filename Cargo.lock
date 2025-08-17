@@ -3598,6 +3598,7 @@ dependencies = [
  "ntlmclient",
  "num_cpus",
  "openssl",
+ "openssl-sys",
  "paho-mqtt",
  "rand 0.9.1",
  "random-string",
