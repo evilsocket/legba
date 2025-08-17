@@ -1488,154 +1488,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_check_false_positives_adjusts_failure_string() {
-        use httpmock::prelude::*;
-        use regex::Regex;
-        let server = MockServer::start();
-        // 200 for /, 200 for random paths
-        let _home_mock = server.mock(|when, then| {
-            when.method(GET).path("/");
-            then.status(200)
-                .header("content-type", "text/html")
-                .body("<html><body>Home page</body></html>");
-        });
-        let _random_mock = server.mock(|when, then| {
-            when.method(GET)
-                .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
-            then.status(200)
-                .header("content-type", "text/html")
-                .body("<html><body>Success page</body></html>");
-        });
-        let mut http = HTTP::new(Strategy::Request);
-        let mut opts = Options::default();
-        opts.target = Some(server.base_url());
-        opts.http.http_method = "GET".to_owned();
-        opts.http.http_success_codes = "200".to_owned();
-        let result = http.setup(&opts).await;
-        assert_eq!(result, Ok(()));
-        assert_eq!(
-            http.failure_string,
-            Some("<html><body>Success page</body></html>".to_owned())
-        );
-    }
-
-    #[tokio::test]
-    async fn test_check_dot_false_positives_adjusts_failure_string() {
-        use httpmock::prelude::*;
-        use regex::Regex;
-        let server = MockServer::start();
-        // 200 for /, 200 for dot pages, 200 for other random paths
-        let _home_mock = server.mock(|when, then| {
-            when.method(GET).path("/");
-            then.status(200)
-                .header("content-type", "text/html")
-                .body("<html><body>Home page</body></html>");
-        });
-        let _dot_mock = server.mock(|when, then| {
-            when.method(GET)
-                .path_matches(Regex::new(r"/\.[a-z0-9]+$").unwrap());
-            then.status(200)
-                .header("content-type", "text/html")
-                .body("<html><body>Dot page success</body></html>");
-        });
-        let _other_mock = server.mock(|when, then| {
-            when.method(GET)
-                .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
-            then.status(200)
-                .header("content-type", "text/html")
-                .body("<html><body>Success page</body></html>");
-        });
-        let mut http = HTTP::new(Strategy::Request);
-        let mut opts = Options::default();
-        opts.target = Some(server.base_url());
-        opts.http.http_method = "GET".to_owned();
-        opts.http.http_success_codes = "200".to_owned();
-        let result = http.setup(&opts).await;
-        assert_eq!(result, Ok(()));
-        let failure_string = http.failure_string.clone();
-        assert!(
-            failure_string == Some("<html><body>Dot page success</body></html>".to_owned())
-                || failure_string == Some("<html><body>Success page</body></html>".to_owned())
-        );
-    }
-
-    #[tokio::test]
-    async fn test_check_false_negatives_handles_redirects() {
-        use httpmock::prelude::*;
-        let server = MockServer::start();
-        // 302 for /, 404 for others
-        let _redirect_mock = server.mock(|when, then| {
-            when.method(GET).path("/");
-            then.status(302)
-                .header("Location", "https://completely.different.domain/")
-                .header("content-type", "text/html")
-                .body("<html><body>Redirecting...</body></html>");
-        });
-        let mut http = HTTP::new(Strategy::Request);
-        let mut opts = Options::default();
-        opts.target = Some(server.base_url());
-        opts.http.http_method = "GET".to_owned();
-        opts.http.http_success_codes = "200".to_owned();
-        let result = http.setup(&opts).await;
-        assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .contains("aborting due to likely false negatives")
-        );
-        assert_eq!(
-            http.real_target,
-            Some("https://completely.different.domain".to_owned())
-        );
-    }
-
-    #[tokio::test]
-    async fn test_check_status_codes_with_success_and_failure_strings() {
-        use httpmock::prelude::*;
-        use regex::Regex;
-        let server = MockServer::start();
-        // 200 for /, 200 for random with failure content
-        let _home_mock = server.mock(|when, then| {
-            when.method(GET).path("/");
-            then.status(200)
-                .header("content-type", "text/html")
-                .body("<html><body>Home page</body></html>");
-        });
-        let _failure_mock = server.mock(|when, then| {
-            when.method(GET)
-                .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
-            then.status(200)
-                .header("content-type", "text/html")
-                .body("This is a failure page with specific content and the word failure");
-        });
-        let mut http = HTTP::new(Strategy::Request);
-        let mut opts = Options::default();
-        opts.target = Some(server.base_url());
-        opts.http.http_method = "GET".to_owned();
-        opts.http.http_success_codes = "200".to_owned();
-        opts.http.http_success_string = Some("success".to_owned());
-        opts.http.http_failure_string = Some("failure".to_owned());
-        let result = http.setup(&opts).await;
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(
-            err.contains("adjusted --http-failure-string")
-                || err.contains("aborting due to likely false positives")
-                || err.contains("aborting due to likely false negatives")
-        );
-        assert_eq!(http.success_string, Some("success".to_owned()));
-        let failure_string = http.failure_string.clone();
-        assert!(
-            failure_string == Some("failure".to_owned())
-                || failure_string
-                    == Some(
-                        "This is a failure page with specific content and the word failure"
-                            .to_owned()
-                    )
-        );
-    }
-
-    #[tokio::test]
     async fn test_check_status_codes_different_strategies() {
         use httpmock::prelude::*;
         use regex::Regex;
@@ -1671,17 +1523,296 @@ mod tests {
         }
     }
 
+    // Tests for check_false_negatives
     #[tokio::test]
-    async fn test_check_status_codes_error_handling() {
+    async fn test_check_false_negatives_success() {
+        use httpmock::prelude::*;
+
+        let server = MockServer::start();
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Home page</body></html>");
+        });
+
         let mut http = HTTP::new(Strategy::Request);
-        let mut opts = Options::default();
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
 
-        opts.target = Some("http://invalid-host-that-will-fail:9999".to_owned());
-        opts.http.http_method = "GET".to_owned();
-        opts.http.http_success_codes = "200".to_owned();
+        let result = http.check_false_negatives(&opts).await;
+        assert_eq!(result, Ok(()));
+        assert_eq!(http.real_target, None);
+    }
 
-        // This should fail due to connection error
-        let result = http.setup(&opts).await;
+    #[tokio::test]
+    async fn test_check_false_negatives_404_error() {
+        use httpmock::prelude::*;
+
+        let server = MockServer::start();
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(404)
+                .header("content-type", "text/html")
+                .body("<html><body>Not found</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_false_negatives(&opts).await;
         assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(
+            error.contains("404") && error.contains("existing page"),
+            "Error message was: {}",
+            error
+        );
+    }
+
+    #[tokio::test]
+    async fn test_check_false_negatives_redirect_to_new_domain() {
+        use httpmock::prelude::*;
+        use reqwest::redirect;
+
+        let server = MockServer::start();
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(301)
+                .header("location", "https://example.com/")
+                .body("");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        // Set up client that doesn't follow redirects
+        http.client = reqwest::Client::builder()
+            .redirect(redirect::Policy::none())
+            .build()
+            .unwrap();
+
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_false_negatives(&opts).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("adjusted to real target"));
+        assert_eq!(http.real_target, Some("https://example.com".to_owned()));
+    }
+
+    #[tokio::test]
+    async fn test_check_false_negatives_redirect_to_relative_path() {
+        use httpmock::prelude::*;
+        use reqwest::redirect;
+
+        let server = MockServer::start();
+        let _home_mock = server.mock(|when, then| {
+            when.method(GET).path("/");
+            then.status(302).header("location", "/login").body("");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        // Set up client that doesn't follow redirects
+        http.client = reqwest::Client::builder()
+            .redirect(redirect::Policy::none())
+            .build()
+            .unwrap();
+
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_false_negatives(&opts).await;
+        assert_eq!(result, Ok(()));
+        assert_eq!(http.real_target, None);
+    }
+
+    // Tests for check_dot_false_positives
+    #[tokio::test]
+    async fn test_check_dot_false_positives_success() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+
+        let server = MockServer::start();
+        let _dot_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"^/\.[a-z]+$").unwrap());
+            then.status(404)
+                .header("content-type", "text/html")
+                .body("<html><body>Not found</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_dot_false_positives(&opts, true).await;
+        assert_eq!(result, Ok(()));
+        assert_eq!(http.failure_string, None);
+    }
+
+    #[tokio::test]
+    async fn test_check_dot_false_positives_adjusts_failure_string() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+
+        let server = MockServer::start();
+        let _dot_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"^/\.[a-z]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Dot page content</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        http.success_codes = vec![200];
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_dot_false_positives(&opts, true).await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("adjusted --http-failure-string")
+        );
+        assert_eq!(
+            http.failure_string,
+            Some("<html><body>Dot page content</body></html>".to_owned())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_check_dot_false_positives_no_adjust_aborts() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+
+        let server = MockServer::start();
+        let _dot_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"^/\.[a-z]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Dot page content</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        http.success_codes = vec![200];
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_dot_false_positives(&opts, false).await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("aborting due to likely false positives")
+        );
+        assert_eq!(http.failure_string, None); // Should not adjust when adjust=false
+    }
+
+    // Tests for check_false_positives
+    #[tokio::test]
+    async fn test_check_false_positives_success() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+
+        let server = MockServer::start();
+        let _random_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"^/[a-z]+$").unwrap());
+            then.status(404)
+                .header("content-type", "text/html")
+                .body("<html><body>Not found</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_false_positives(&opts, true).await;
+        assert_eq!(result, Ok(()));
+        assert_eq!(http.failure_string, None);
+    }
+
+    #[tokio::test]
+    async fn test_check_false_positives_adjusts_failure_string() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+
+        let server = MockServer::start();
+        let _random_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"^/[a-z]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Random page success</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        http.success_codes = vec![200];
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_false_positives(&opts, true).await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("adjusted --http-failure-string")
+        );
+        assert_eq!(
+            http.failure_string,
+            Some("<html><body>Random page success</body></html>".to_owned())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_check_false_positives_no_adjust_aborts() {
+        use httpmock::prelude::*;
+        use regex::Regex;
+
+        let server = MockServer::start();
+        let _random_mock = server.mock(|when, then| {
+            when.method(GET)
+                .path_matches(Regex::new(r"^/[a-z]+$").unwrap());
+            then.status(200)
+                .header("content-type", "text/html")
+                .body("<html><body>Random page success</body></html>");
+        });
+
+        let mut http = HTTP::new(Strategy::Request);
+        http.success_codes = vec![200];
+        let opts = Options {
+            target: Some(server.base_url()),
+            ..Options::default()
+        };
+
+        let result = http.check_false_positives(&opts, false).await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("aborting due to likely false positives")
+        );
+        assert_eq!(http.failure_string, None); // Should not adjust when adjust=false
     }
 }
