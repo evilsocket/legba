@@ -59,16 +59,6 @@ impl Plugin for SMB {
                     ("password".to_owned(), creds.password.to_owned()),
                 ],
             )])),
-            // correct user, wrong pass: Some(UnexpectedMessageStatus(3221225581))
-            Err(smb::Error::UnexpectedMessageStatus(_)) => Ok(Some(vec![
-                Loot::new(
-                    "smb",
-                    &address,
-                    [("username".to_owned(), creds.username.to_owned())],
-                )
-                .set_partial(),
-            ])),
-            // wrong user: Some(InvalidMessage("Message not signed or encrypted, but signing is required for the session!"))
             Err(_) => Ok(None),
         };
     }
