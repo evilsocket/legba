@@ -78,11 +78,16 @@ mod tests {
             tmpfile.flush().unwrap();
             drop(tmpfile);
 
-            expected.push(format!("{}/{}", &tmpdirname, filename));
+            expected.push(format!(
+                "{}{}{}",
+                &tmpdirname,
+                std::path::MAIN_SEPARATOR,
+                filename
+            ));
         }
 
         let iter = iterator::new(Expression::Glob {
-            pattern: format!("{}/*.txt", tmpdirname),
+            pattern: format!("{}{}*.txt", tmpdirname, std::path::MAIN_SEPARATOR),
         })
         .unwrap();
         let tot = iter.search_space_size();

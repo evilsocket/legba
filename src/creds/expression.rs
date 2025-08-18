@@ -255,11 +255,17 @@ mod tests {
 
     #[test]
     fn can_parse_filename() {
-        let res = parse_expression(Some("/etc/hosts".to_owned()).as_ref());
+        #[cfg(unix)]
+        let filename = "/etc/hosts";
+
+        #[cfg(windows)]
+        let filename = "C:\\Windows\\System32\\drivers\\etc\\hosts";
+
+        let res = parse_expression(Some(filename.to_owned()).as_ref());
         assert_eq!(
             res,
             Expression::Wordlist {
-                filename: "/etc/hosts".to_owned()
+                filename: filename.to_owned()
             }
         )
     }
