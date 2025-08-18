@@ -8,7 +8,7 @@
 [![Homebrew](https://img.shields.io/homebrew/v/legba)](https://formulae.brew.sh/formula/legba)
 [![Docker](https://img.shields.io/docker/v/evilsocket/legba?logo=docker)](https://hub.docker.com/r/evilsocket/legba)
 [![Rust Report](https://rust-reportcard.xuri.me/badge/github.com/evilsocket/legba)](https://rust-reportcard.xuri.me/report/github.com/evilsocket/legba)
-[![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/legba/test-on-linux.yml)](https://github.com/evilsocket/legba/actions/workflows/test-on-linux.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/legba/ci.yml)](https://github.com/evilsocket/legba/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square)](https://github.com/evilsocket/legba/blob/master/LICENSE.md)
 
   <small>Join the project community on our server!</small>
