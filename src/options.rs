@@ -53,6 +53,10 @@ pub(crate) struct Options {
     #[clap(short = 'I', long, value_enum, default_value_t = creds::IterationStrategy::User)]
     pub iterate_by: creds::IterationStrategy,
 
+    /// Log runtime statistics and events as JSON.
+    #[clap(short = 'J', long, default_value_t = false)]
+    pub json: bool,
+
     /// Save and restore session information to this file.
     #[clap(short = 'S', long)]
     pub session: Option<String>,

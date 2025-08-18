@@ -64,7 +64,7 @@ impl Loot {
         self.found_at.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
-    fn to_json(&self) -> Result<String, Error> {
+    pub fn to_json(&self) -> Result<String, Error> {
         serde_json::to_string(self).map_err(|e| e.to_string())
     }
 

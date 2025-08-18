@@ -8,9 +8,9 @@ use rand::Rng;
 use std::sync::Arc;
 use tokio::task;
 
+use crate::Options;
 use crate::Plugin;
 use crate::session::{Error, Session};
-use crate::{Options, report};
 
 use super::plugin::PayloadStrategy;
 
@@ -107,7 +107,7 @@ pub(crate) async fn run(
         // start statistics reporting
         let stat_sess = session.clone();
         std::thread::spawn(move || {
-            report::statistics(stat_sess);
+            stat_sess.report_runtime_statistics();
         });
     }
 

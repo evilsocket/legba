@@ -2,6 +2,8 @@ use std::fs;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use human_bytes::human_bytes;
+use memory_stats::memory_stats;
 use serde::{Deserialize, Serialize};
 
 use crate::Options;
@@ -48,6 +50,51 @@ async fn periodic_saver(session: Arc<Session>) {
         if let Err(e) = session.save() {
             log::error!("could not save session: {:?}", e);
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct RuntimeStatistics {
+    tasks: usize,
+    memory: f64,
+    targets: usize,
+    attempts: usize,
+    done: usize,
+    done_percent: f32,
+    errors: usize,
+    reqs_per_sec: usize,
+}
+
+impl RuntimeStatistics {
+    pub fn to_text(&self) -> String {
+        if self.errors > 0 {
+            format!(
+                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) errors={} speed={:.2?} reqs/s",
+                self.tasks,
+                human_bytes(self.memory),
+                self.targets,
+                self.attempts,
+                self.done,
+                self.done_percent,
+                self.errors,
+                self.reqs_per_sec,
+            )
+        } else {
+            format!(
+                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) speed={:.2?} reqs/s",
+                self.tasks,
+                human_bytes(self.memory),
+                self.targets,
+                self.attempts,
+                self.done,
+                self.done_percent,
+                self.reqs_per_sec,
+            )
+        }
+    }
+
+    pub fn to_json(&self) -> Result<String, Error> {
+        serde_json::to_string(self).map_err(|e| e.to_string())
     }
 }
 
@@ -238,7 +285,11 @@ impl Session {
                 results.push(loot.clone());
 
                 // report credentials to screen
-                log::info!("{}", &loot);
+                if self.options.json {
+                    println!("{}", loot.to_json().unwrap());
+                } else {
+                    log::info!("{}", &loot);
+                }
 
                 // check if we have to output to file
                 if let Some(path) = &self.options.output {
@@ -269,5 +320,41 @@ impl Session {
             return fs::write(path, json).map_err(|e| e.to_string());
         }
         Ok(())
+    }
+
+    pub fn report_runtime_statistics(&self) {
+        let one_sec = time::Duration::from_millis(1000);
+        while !self.is_stop() {
+            std::thread::sleep(one_sec);
+
+            let total = self.get_total();
+            let done = self.get_done();
+            let perc = (done as f32 / total as f32) * 100.0;
+            let errors = self.get_errors();
+            let speed = self.get_speed();
+            let memory = if let Some(usage) = memory_stats() {
+                usage.physical_mem
+            } else {
+                log::error!("couldn't get the current memory usage");
+                0
+            };
+
+            let stats = RuntimeStatistics {
+                tasks: self.options.concurrency,
+                memory: memory as f64,
+                targets: self.targets.len(),
+                attempts: total,
+                done,
+                done_percent: perc,
+                errors,
+                reqs_per_sec: speed,
+            };
+
+            if self.options.json {
+                println!("{}", stats.to_json().unwrap());
+            } else {
+                log::info!("{}", stats.to_text());
+            }
+        }
     }
 }

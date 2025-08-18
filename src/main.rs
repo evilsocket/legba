@@ -17,7 +17,6 @@ mod mcp;
 mod options;
 mod plugins;
 mod recipe;
-mod report;
 mod session;
 mod utils;
 
