@@ -20,7 +20,7 @@ openssl-sys = { version = "0.9.109", features = ["vendored"] }
 
 ahash = "0.8.3"
 ansi_term = "0.12.1"
-async-channel = "1.9.0"
+async-channel = "2.5.0"
 async-trait = "0.1.73"
 chrono = { version = "0.4.31", features = ["serde"] }
 clap = { version = "4.4.4", features = ["derive"] }
