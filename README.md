@@ -1,21 +1,27 @@
-<p align="center">
+<div align="center">
+
+# `legba`
+
+<i>Multiprotocol credentials bruteforcer / password sprayer and enumerator. 🥷</i>
+
+[![Documentation](https://img.shields.io/badge/documentation-blue)](https://github.com/evilsocket/legba/wiki)
+[![Release](https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square)](https://github.com/evilsocket/legba/releases/latest)
+[![Crate](https://img.shields.io/crates/v/legba.svg)](https://crates.io/crates/legba)
+[![Homebrew](https://img.shields.io/homebrew/v/legba)](https://formulae.brew.sh/formula/legba)
+[![Docker](https://img.shields.io/docker/v/evilsocket/legba?logo=docker)](https://hub.docker.com/r/evilsocket/legba)
+[![Rust Report](https://rust-reportcard.xuri.me/badge/github.com/evilsocket/legba)](https://rust-reportcard.xuri.me/report/github.com/evilsocket/legba)
+[![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/legba/test-on-linux.yml)](https://github.com/evilsocket/legba/actions/workflows/test-on-linux.yml)
+[![License](https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square)](https://github.com/evilsocket/legba/blob/master/LICENSE.md)
+
   <small>Join the project community on our server!</small>
   <br/><br/>
   <a href="https://discord.gg/btZpkp45gQ" target="_blank" title="Join our community!">
     <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/btZpkp45gQ"/>
   </a>
-</p>
-<hr/>
 
-<p align="center">
-  <a href="https://github.com/evilsocket/legba/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square"></a>
-  <a href="https://crates.io/crates/legba"><img alt="Crate" src="https://img.shields.io/crates/v/legba.svg"></a>
-  <a href="https://formulae.brew.sh/formula/legba"><img alt="Homebrew" src="https://img.shields.io/homebrew/v/legba"></a>
-  <a href="https://hub.docker.com/r/evilsocket/legba"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/legba?logo=docker"></a>
-  <a href="https://github.com/evilsocket/legba/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
-</p>
+</div>
 
-`Legba` is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve
+Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve
 better performances and stability while consuming less resources than similar tools (see the benchmark below).
 
 For the building instructions, usage and the complete list of options [check the project Wiki](https://github.com/evilsocket/legba/wiki). For a list of [recipes](https://github.com/evilsocket/legba/wiki/Recipes) you can check the [legba cookbook repository](https://github.com/evilsocket/legba-cookbook).
