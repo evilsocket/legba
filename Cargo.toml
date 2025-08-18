@@ -40,7 +40,7 @@ memory-stats = "1.1.0"
 human_bytes = "0.4.3"
 hex = "0.4.3"
 glob = "0.3.1"
-cidr-utils = "0.5.11"
+cidr-utils = "0.6.1"
 regex = { version = "1.9.5" }
 url = { version = "2.5.4", optional = true }
 reqwest = { version = "0.12.23", features = [

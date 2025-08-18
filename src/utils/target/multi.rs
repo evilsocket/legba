@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
+    str::FromStr,
 };
 
 use crate::session::Error;
@@ -71,7 +72,7 @@ fn parse_multiple_targets_atom(expression: &str) -> Result<Vec<String>, Error> {
         if let Ok(cidr) = IpCidr::from_str(cidr_part) {
             Ok(cidr
                 .iter()
-                .map(|ip| format!("{}{}", ip, port_part))
+                .map(|ip| format!("{}{}", ip.address(), port_part))
                 .collect())
         } else {
             // just return as it is
@@ -206,24 +207,24 @@ mod tests {
     #[test]
     fn can_parse_ipv6_cidr_without_port() {
         let expected = Ok(vec![
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f0".to_owned(),
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f1".to_owned(),
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f2".to_owned(),
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f3".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:0".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:1".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:2".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:3".to_owned(),
         ]);
-        let res = parse_multiple_targets("2001:4f8:3:ba:2e0:81ff:fe22:d1f1/126");
+        let res = parse_multiple_targets("2001:4f8:3:ba:2e0:81ff:fe22:0/126");
         assert_eq!(res, expected);
     }
 
     #[test]
     fn can_parse_ipv6_cidr_with_port() {
         let expected = Ok(vec![
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f0:[1234]".to_owned(),
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f1:[1234]".to_owned(),
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f2:[1234]".to_owned(),
-            "2001:4f8:3:ba:2e0:81ff:fe22:d1f3:[1234]".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:0:[1234]".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:1:[1234]".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:2:[1234]".to_owned(),
+            "2001:4f8:3:ba:2e0:81ff:fe22:3:[1234]".to_owned(),
         ]);
-        let res = parse_multiple_targets("2001:4f8:3:ba:2e0:81ff:fe22:d1f1/126:[1234]");
+        let res = parse_multiple_targets("2001:4f8:3:ba:2e0:81ff:fe22:0/126:[1234]");
         assert_eq!(res, expected);
     }
 
