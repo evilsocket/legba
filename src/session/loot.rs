@@ -51,6 +51,14 @@ impl Loot {
         &self.target
     }
 
+    pub fn get_plugin(&self) -> &str {
+        &self.plugin
+    }
+
+    pub fn get_data(&self) -> &IndexMap<String, String> {
+        &self.data
+    }
+
     pub fn is_partial(&self) -> bool {
         self.partial
     }

@@ -8,17 +8,14 @@ use std::{
 
 use actix_web::Result;
 use clap::Parser;
-use lazy_regex::{Lazy, lazy_regex};
-use regex::Regex;
 use serde::Serialize;
 use tokio::{io::AsyncBufReadExt, sync::RwLock};
 
-static STATS_PARSER: Lazy<Regex> = lazy_regex!(
-    r"(?m)^.+tasks=(\d+)\s+mem=(.+)\stargets=(\d+)\sattempts=(\d+)\sdone=(\d+)\s\((.+)%\)(\serrors=(\d+))?\sspeed=(.+) reqs/s"
-);
-static LOOT_PARSER: Lazy<Regex> = lazy_regex!(r"(?m)^.+\[(.+)\]\s\(([^)]+)\)(\s<(.+)>)?\s(.+)");
-
-use crate::{Options, session::Error, utils::parse_multiple_targets};
+use crate::{
+    Options,
+    session::{Error, Loot, Statistics},
+    utils::parse_multiple_targets,
+};
 
 pub(crate) type SharedState = Arc<RwLock<Sessions>>;
 
@@ -74,74 +71,40 @@ async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
     while let Ok(line) = lines.next_line().await {
         match line {
             Some(line) => {
-                // remove colors and other escape sequences
-                let line = strip_ansi_escapes::strip_str(&line);
-                // do not collect empty lines
-                if !line.trim().is_empty() {
-                    if let Some(caps) = STATS_PARSER.captures(&line) {
-                        // parse as statistics
-                        {
-                            let mut stats_w = stats.lock().unwrap();
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
 
-                            stats_w.tasks = caps.get(1).unwrap().as_str().parse().unwrap();
-                            stats_w.memory = caps.get(2).unwrap().as_str().to_owned();
-                            stats_w.targets = caps.get(3).unwrap().as_str().parse().unwrap();
-                            stats_w.attempts = caps.get(4).unwrap().as_str().parse().unwrap();
-                            stats_w.done = caps.get(5).unwrap().as_str().parse().unwrap();
-                            stats_w.done_percent = caps.get(6).unwrap().as_str().parse().unwrap();
-                            stats_w.errors = if let Some(errs) = caps.get(8) {
-                                errs.as_str().parse().unwrap()
-                            } else {
-                                0
-                            };
-                            stats_w.reqs_per_sec = caps.get(9).unwrap().as_str().parse().unwrap();
-                        }
-                    } else if let Some(caps) = LOOT_PARSER.captures(&line) {
+                if line.starts_with('{') {
+                    // json loot or runtime statistics
+                    if line.contains("found_at") {
                         // parse as loot
-                        let new_loot = Loot {
-                            found_at: caps.get(1).unwrap().as_str().to_owned(),
-                            plugin: caps.get(2).unwrap().as_str().to_owned(),
-                            target: caps.get(4).map(|t| t.as_str().to_owned()),
-                            data: caps.get(5).unwrap().as_str().to_owned(),
-                        };
+                        let new_loot: Loot = serde_json::from_str(&line).unwrap();
 
                         log::info!(
-                            "! plugin: {}, target: {:?}, data: {}",
-                            &new_loot.plugin,
-                            &new_loot.target,
-                            &new_loot.data
+                            "! plugin: {}, target: {:?}, data: {:?}",
+                            new_loot.get_plugin(),
+                            new_loot.get_target(),
+                            new_loot.get_data()
                         );
 
                         loot.lock().unwrap().push(new_loot);
                     } else {
-                        // add as raw output
-                        output.lock().unwrap().push(line.trim().to_owned());
+                        // parse as runtime statistics
+                        stats.lock().unwrap().update_from_json(&line).unwrap();
                     }
+                } else {
+                    // anything else
+                    // remove colors and other escape sequences
+                    let line = strip_ansi_escapes::strip_str(&line);
+                    // add as raw output
+                    output.lock().unwrap().push(line.trim().to_owned());
                 }
             }
             None => break,
         }
     }
-}
-
-#[derive(Default, Serialize, Clone, Debug)]
-pub(crate) struct Loot {
-    found_at: String,
-    plugin: String,
-    target: Option<String>,
-    data: String,
-}
-
-#[derive(Default, Serialize, Clone)]
-pub(crate) struct Statistics {
-    tasks: usize,
-    memory: String,
-    targets: usize,
-    attempts: usize,
-    errors: usize,
-    done: usize,
-    done_percent: f32,
-    reqs_per_sec: usize,
 }
 
 #[derive(Serialize)]
@@ -327,8 +290,12 @@ impl Session {
             findings: loot
                 .into_iter()
                 .map(|l| LootBrief {
-                    target: l.target,
-                    data: l.data,
+                    target: Some(l.get_target().to_owned()),
+                    data: l
+                        .get_data()
+                        .iter()
+                        .map(|(k, v)| format!("{k}={v}"))
+                        .collect(),
                 })
                 .collect(),
             completed,
@@ -365,12 +332,18 @@ impl Sessions {
     pub async fn start_new_session(
         &mut self,
         client: String,
-        argv: Vec<String>,
+        mut argv: Vec<String>,
     ) -> Result<uuid::Uuid, Error> {
         // TODO: change all errors and results to anyhow
 
         // validate argv
         let opts = Options::try_parse_from(&argv).map_err(|e| e.to_string())?;
+
+        // force json output for easy parsing
+        if !argv.contains(&"--json".to_owned()) && !argv.contains(&"-J".to_owned()) {
+            argv.push("-J".to_owned());
+        }
+
         let targets = if let Some(target) = opts.target.as_ref() {
             parse_multiple_targets(target)?
         } else {

@@ -53,8 +53,8 @@ async fn periodic_saver(session: Arc<Session>) {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct RuntimeStatistics {
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub(crate) struct Statistics {
     tasks: usize,
     memory: f64,
     targets: usize,
@@ -65,7 +65,7 @@ struct RuntimeStatistics {
     reqs_per_sec: usize,
 }
 
-impl RuntimeStatistics {
+impl Statistics {
     pub fn to_text(&self) -> String {
         if self.errors > 0 {
             format!(
@@ -95,6 +95,11 @@ impl RuntimeStatistics {
 
     pub fn to_json(&self) -> Result<String, Error> {
         serde_json::to_string(self).map_err(|e| e.to_string())
+    }
+
+    pub fn update_from_json(&mut self, json: &str) -> Result<(), Error> {
+        *self = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        Ok(())
     }
 }
 
@@ -339,7 +344,7 @@ impl Session {
                 0
             };
 
-            let stats = RuntimeStatistics {
+            let stats = Statistics {
                 tasks: self.options.concurrency,
                 memory: memory as f64,
                 targets: self.targets.len(),
