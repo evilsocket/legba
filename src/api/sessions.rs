@@ -1,10 +1,12 @@
 use std::{
     collections::HashMap,
-    os::unix::process::ExitStatusExt,
     process::Stdio,
     sync::{Arc, Mutex, atomic::AtomicU64},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+#[cfg(unix)]
+use std::os::unix::process::ExitStatusExt;
 
 use actix_web::Result;
 use clap::Parser;
@@ -206,17 +208,24 @@ impl Session {
         tokio::task::spawn(async move {
             match child.wait().await {
                 Ok(code) => {
+                    #[cfg(unix)]
                     let signal = code.signal().unwrap_or(0);
+                    #[cfg(not(unix))]
+                    let signal = 0;
+
                     // ok or terminated
                     if code.success() || signal == 15 {
                         log::info!("[{id}] child process {process_id} completed with code {code}");
                         *child_completed.lock().unwrap() =
                             Some(Completion::with_status(code.code().unwrap_or(-1)));
                     } else {
+                        #[cfg(unix)]
                         log::error!(
                             "[{id}] child process {process_id} completed with code {code} (signal {:?})",
                             code.signal()
                         );
+                        #[cfg(not(unix))]
+                        log::error!("[{id}] child process {process_id} completed with code {code}");
                         *child_completed.lock().unwrap() = Some(Completion::with_error(
                             child_out
                                 .lock()
@@ -260,11 +269,35 @@ impl Session {
 
     pub fn stop(&self) -> Result<(), Error> {
         log::info!("stopping session {}", self.id);
-        nix::sys::signal::kill(
-            nix::unistd::Pid::from_raw(self.process_id as nix::libc::pid_t),
-            nix::sys::signal::Signal::SIGTERM,
-        )
-        .map_err(|e| e.to_string())
+
+        #[cfg(unix)]
+        {
+            nix::sys::signal::kill(
+                nix::unistd::Pid::from_raw(self.process_id as nix::libc::pid_t),
+                nix::sys::signal::Signal::SIGTERM,
+            )
+            .map_err(|e| e.to_string())
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            use std::process::Command;
+
+            // On Windows, use taskkill to terminate the process
+            Command::new("taskkill")
+                .args(&["/PID", &self.process_id.to_string(), "/F"])
+                .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                .output()
+                .map_err(|e| e.to_string())
+                .and_then(|output| {
+                    if output.status.success() {
+                        Ok(())
+                    } else {
+                        Err(String::from_utf8_lossy(&output.stderr).to_string())
+                    }
+                })
+        }
     }
 
     pub fn get_listing(&self) -> SessionListing {
