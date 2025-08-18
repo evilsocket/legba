@@ -3585,7 +3585,7 @@ dependencies = [
  "async-trait",
  "async_ftp",
  "aws-lc-rs",
- "base64 0.21.7",
+ "base64 0.22.1",
  "chrono",
  "cidr-utils",
  "clap",
