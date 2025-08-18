@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
-use std::sync::{LazyLock, Mutex, RwLock};
+use std::sync::{LazyLock, Mutex};
 use std::time;
 
-use ahash::HashSet;
 use ansi_term::Style;
+use dashmap::DashSet;
 use rand::Rng;
 use std::sync::Arc;
 use tokio::task;
@@ -96,9 +96,9 @@ pub(crate) async fn run(
     let single = matches!(plugin.payload_strategy(), PayloadStrategy::Single);
     let override_payload = plugin.override_payload();
     let combinations = session.combinations(override_payload, single)?;
-    let unreachables: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::default()));
+    let unreachables: Arc<DashSet<Arc<str>>> = Arc::new(DashSet::default());
 
-    // spawn worker threads
+    // spawn worker tasks
     for _ in 0..session.options.concurrency {
         task::spawn(worker(plugin, unreachables.clone(), session.clone()));
     }
@@ -106,8 +106,8 @@ pub(crate) async fn run(
     if !session.options.quiet {
         // start statistics reporting
         let stat_sess = session.clone();
-        std::thread::spawn(move || {
-            stat_sess.report_runtime_statistics();
+        tokio::task::spawn(async move {
+            stat_sess.report_runtime_statistics().await;
         });
     }
 
@@ -125,11 +125,7 @@ pub(crate) async fn run(
     Ok(())
 }
 
-async fn worker(
-    plugin: &dyn Plugin,
-    unreachables: Arc<RwLock<HashSet<String>>>,
-    session: Arc<Session>,
-) {
+async fn worker(plugin: &dyn Plugin, unreachables: Arc<DashSet<Arc<str>>>, session: Arc<Session>) {
     log::debug!("worker started");
 
     let timeout = time::Duration::from_millis(session.options.timeout);
@@ -158,7 +154,7 @@ async fn worker(
             attempt += 1;
 
             // skip attempt if we had enough failures from this specific target
-            if !unreachables.read().unwrap().contains(&creds.target) {
+            if !unreachables.contains(creds.target.as_str()) {
                 match plugin.attempt(&creds, timeout).await {
                     Err(err) => {
                         errors += 1;
@@ -175,7 +171,7 @@ async fn worker(
                         } else {
                             // add this target to the list of unreachable in order to avoi
                             // pointless attempts
-                            unreachables.write().unwrap().insert(creds.target.clone());
+                            unreachables.insert(Arc::from(creds.target.as_str()));
 
                             log::error!(
                                 "[{}] attempt {}/{}: {}",

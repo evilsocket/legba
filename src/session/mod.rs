@@ -327,10 +327,10 @@ impl Session {
         Ok(())
     }
 
-    pub fn report_runtime_statistics(&self) {
+    pub async fn report_runtime_statistics(&self) {
         let one_sec = time::Duration::from_millis(1000);
         while !self.is_stop() {
-            std::thread::sleep(one_sec);
+            tokio::time::sleep(one_sec).await;
 
             let total = self.get_total();
             let done = self.get_done();

@@ -19,7 +19,8 @@ impl Default for Runtime {
 
 impl Runtime {
     pub(crate) fn new(concurrency: usize) -> Self {
-        let (creds_tx, creds_rx) = async_channel::bounded(concurrency);
+        // use a buffer of 100x the concurrency to avoid blocking on sending credentials
+        let (creds_tx, creds_rx) = async_channel::bounded(concurrency * 100);
         Self {
             stop: AtomicBool::new(false),
             speed: AtomicUsize::new(0),
