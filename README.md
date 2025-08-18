@@ -2,9 +2,7 @@
 
 # `legba`
 
-<i>Multiprotocol credentials bruteforcer / password sprayer and enumerator. 🥷</i>
-
-[![Documentation](https://img.shields.io/badge/documentation-blue)](https://github.com/evilsocket/legba/wiki)
+[![Documentation](https://img.shields.io/badge/docs-blue)](https://github.com/evilsocket/legba/wiki)
 [![Release](https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square)](https://github.com/evilsocket/legba/releases/latest)
 [![Crate](https://img.shields.io/crates/v/legba.svg)](https://crates.io/crates/legba)
 [![Homebrew](https://img.shields.io/homebrew/v/legba)](https://formulae.brew.sh/formula/legba)
