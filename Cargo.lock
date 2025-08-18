@@ -3471,7 +3471,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de7d1035824e174d56801872c180d2bb52b161550d5fe9e778ff3028d97ead02"
 dependencies = [
  "chrono",
- "kerberos_constants",
+ "kerberos_constants 0.0.9",
  "red_asn1",
  "red_asn1_derive",
 ]
@@ -3483,6 +3483,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eba4eb8f77e2e5727d337663bb0f38632a05620bc9abab37aead47c7f5c7a3bd"
 
 [[package]]
+name = "kerberos_constants"
+version = "0.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fbbf18561f6e14ddc68c00d9dc69b51916dbe5e4c929758f350e02934c2b593"
+
+[[package]]
 name = "kerberos_crypto"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3490,7 +3496,7 @@ checksum = "9abe983f3ea0246dc79c1d81c81d9267716911382e650a68216bcadf684be557"
 dependencies = [
  "chrono",
  "failure",
- "kerberos_constants",
+ "kerberos_constants 0.0.9",
  "md4 0.8.0",
  "num",
  "rand 0.6.5",
@@ -3650,7 +3656,7 @@ dependencies = [
  "indexmap 2.9.0",
  "itertools 0.14.0",
  "kerberos_asn1",
- "kerberos_constants",
+ "kerberos_constants 0.0.10",
  "kerberos_crypto",
  "lazy-regex",
  "lazy_static",
