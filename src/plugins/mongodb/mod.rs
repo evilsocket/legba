@@ -3,9 +3,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use mongodb::options::Credential;
 
-use crate::session::{Error, Loot};
 use crate::Plugin;
-use crate::{utils, Options};
+use crate::session::{Error, Loot};
+use crate::{Options, utils};
 
 use crate::creds::Credentials;
 
@@ -53,7 +53,7 @@ impl Plugin for MongoDB {
         opts.credential = Some(cred);
 
         let cli = mongodb::Client::with_options(opts).map_err(|e| e.to_string())?;
-        let dbs = cli.list_database_names(None, None).await;
+        let dbs = cli.list_database_names().await;
 
         if let Ok(dbs) = dbs {
             Ok(Some(vec![Loot::new(
