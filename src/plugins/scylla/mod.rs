@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
+use scylla::client::session_builder::SessionBuilder;
 
 use crate::Options;
 use crate::Plugin;
@@ -38,7 +39,7 @@ impl Plugin for Scylla {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let address: String = utils::parse_target_address(&creds.target, 9042)?;
-        let session = scylla::SessionBuilder::new()
+        let session = SessionBuilder::new()
             .known_node(&address)
             .connection_timeout(timeout)
             .user(&creds.username, &creds.password)
