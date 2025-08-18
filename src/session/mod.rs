@@ -137,8 +137,11 @@ impl Session {
         // set ctrl-c handler
         let le_session = session.clone();
         ctrlc::set_handler(move || {
-            log::info!("stopping ...");
-            le_session.set_stop();
+            // avoid triggering this if ctrl-c has been already triggered
+            if !le_session.is_stop() {
+                log::info!("stopping ...");
+                le_session.set_stop();
+            }
         })
         .expect("error setting ctrl-c handler");
 
