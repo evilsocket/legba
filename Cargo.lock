@@ -502,6 +502,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-compression"
+version = "0.4.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddb939d66e4ae03cee6091612804ba446b12878410cfa17f785f4dd67d4014e8"
+dependencies = [
+ "flate2",
+ "futures-core",
+ "memchr",
+ "pin-project-lite",
+ "tokio",
+]
+
+[[package]]
 name = "async-dnssd"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -551,19 +564,20 @@ dependencies = [
 
 [[package]]
 name = "async-imap"
-version = "0.9.7"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98892ebee4c05fc66757e600a7466f0d9bfcde338f645d64add323789f26cb36"
+checksum = "8da885da5980f3934831e6370445c0e0e44ef251d7792308b39e908915a41d09"
 dependencies = [
  "async-channel 2.5.0",
- "base64 0.21.7",
+ "async-compression",
+ "base64 0.22.1",
  "bytes",
  "chrono",
  "futures",
  "imap-proto",
  "log",
  "nom 7.1.3",
- "once_cell",
+ "pin-project",
  "pin-utils",
  "self_cell",
  "stop-token",
