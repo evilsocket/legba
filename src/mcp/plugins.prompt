@@ -1,7 +1,0 @@
-## Available plugins identifiers
-
-##LIST##
-
-Use the plugin_info tool with the plugin identifier, as it is in this list, as it is to get information about a plugin, its options and how to use it.
-However, when starting a session with the plugin, always use the lowercase identifier you will find in the plugin information.
-Some plugin identifiers (like HTTP) actually group multiple plugins, make sure to use the right one by using the examples as a reference.

@@ -1,48 +1,14 @@
-This server provides an interface to Legba, a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve better performances and stability while consuming less resources than similar tools.
+This server provides an interface to Legba, a multiprotocol credentials bruteforcer / password sprayer and enumerator.
 
-## Supported Protocols and Features
+## Available Plugins
 
-AMQP (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace), Cassandra/ScyllaDB, DNS subdomain enumeration, FTP, HTTP (basic authentication, NTLMv1, NTLMv2, multipart form, custom requests with CSRF support, files/folders enumeration, virtual host enumeration), IMAP, IRC, Kerberos pre-authentication and user enumeration, LDAP, MongoDB, MQTT, Microsoft SQL, MySQL, Oracle, PostgreSQL, POP3, RDP, Redis, Samba, SSH / SFTP, SMTP, Socks5, STOMP (ActiveMQ, RabbitMQ, HornetQ and OpenMQ), TCP and UDP port scanning with banner grabbing, Telnet, VNC.
+##PLUGIN_LIST##
 
-Use the list_plugins tool for a complete list of all the plugins and their options, start a new session with the start_session tool, for example:
-
-{
-  `argv`: [
-    `http.enum`,
-    `--target`,
-    `http://example.com`,
-    `--payloads`,
-    `/path/to/SecLists/Discovery/Web-Content/quickhits.txt`,
-    `--http-success-codes`,
-    `200,301,302,401,403`,
-    `--concurrency`,
-    `10`
-  ]
-}
-
-Each session you start will use up the amount of workers you specify in --concurrency and free them once concluded. 
-Use the get_available_workers tool to determine how many workers are available for use and wait if none is free.
-
-## Starting a Session
-
-Start a new session with the start_session tool, for example:
-
-{
-  `argv`: [
-    `http.enum`,
-    `--target`,
-    `http://example.com`,
-    `--payloads`,
-    `/path/to/SecLists/Discovery/Web-Content/quickhits.txt`,
-    `--http-success-codes`,
-    `200,301,302,401,403`,
-    `--concurrency`,
-    `10`
-  ]
-}
-
-Each session you start will use up the amount of workers you specify in --concurrency and free them once concluded. 
-Use the get_available_workers tool to determine how many workers are available for use and wait if none is free.
+- Use the plugin_info tool with the plugin identifier, as it is in this list, as it is to get information about a plugin, its options and how to use it.
+- Some plugin identifiers (like HTTP) actually group multiple plugins, make sure to use the right one by using the examples as a reference.
+- Start a new session with the start_session tool.
+- Each session you start will use up the amount of workers you specify in --concurrency and free them once concluded. 
+- Use the get_available_workers tool to determine how many workers are available for use and wait if none is free.
 
 ## Arguments
 
@@ -73,17 +39,7 @@ The `--username`/`--payloads` and `--password`/`--key` arguments all support the
 * If the value provided is in the form of `[<NUMBER>, <NUMBER>, <NUMBER>]`, it'll be used as comma separated list of integers.
 * Anything else will be considered as a constant string.
 
-For instance:
-
-* `legba <plugin name> --username admin --password data/passwords.txt` will always use `admin` as username while loading the passwords from a wordlist.
-* `legba <plugin name> --username data/users.txt --password data/passwords.txt` will load both from wordlists and use all combinations.
-* `legba <plugin name> --username admin` will always use `admin` as username and attempt all permutations of the default printable ASCII charset between 4 and 8 characters (this is the default behaviour when a value is not passed).
-* `legba <plugin name> --username data/users.txt --password '@/some/path/*.key'` will load users from a wordlist while testing all key files inside `/some/path`.
-* `legba <plugin name> --username data/users.txt --password '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
-* `legba <plugin name> --username data/users.txt --password '[10-999]'` will load users from a wordlist while testing all numbers from 10 to 999.
-* `legba <plugin name> --username data/users.txt --password '[1, 2, 3, 4]'` will load users from a wordlist while testing the numbers 1, 2, 3 and 4.
-
-Other options:
+## Other Options
 
 | Option | Default | Description |
 | ------ | ------- | ----------- |
@@ -95,4 +51,4 @@ Other options:
 | `--rate-limit <LIMIT>` | `0` | Limit the number of requests per second. |
 | `-W, --wait <WAIT>` | `0` | Wait time in milliseconds per login attempt. |
 | `--jitter-min <VALUE>` | `0` | Minimum number of milliseconds for random request jittering. |
-| `--jitter-max <VALUE>` | `0` | Maximum number of milliseconds for random request jittering. |
+| `--jitter-max <VALUE>` | `0` | Maximum number of milliseconds for random request jittering. |>
