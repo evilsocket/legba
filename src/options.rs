@@ -32,7 +32,7 @@ pub(crate) struct Options {
     #[clap(long, default_value = "127.0.0.1")]
     pub api_allowed_origin: String,
 
-    /// Enable the MCP server and bind it to the specified address:port.
+    /// Enable the MCP server and bind it to the specified address:port. Use stdio to use standard input/output instead of SSE.
     #[clap(long)]
     pub mcp: Option<String>,
 

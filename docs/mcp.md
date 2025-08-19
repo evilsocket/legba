@@ -4,26 +4,30 @@ Legba's Model Context Protocol integration allows any LLMs to use any of its plu
 
 To start Legba MCP server (an high level of concurrency is recommended in order to allow the AI to spawn multiple plugins concurrently):
 
+## SSE Mode
+
 ```sh
-sudo legba --mcp 127.0.0.1:3001 --concurrency 256
+legba --mcp 127.0.0.1:3001 --concurrency 256
+```
+
+## STDIO Mode
+
+```sh
+legba --mcp stdio --concurrency 256
 ```
 
 ## Claude
 
-Once it's running, you can use it with Claude via the `supergateway` package (Claude still doesn't support SSE but only STDIO, so we'll need this for the time being). 
-
-Edit your `claude_desktop_config.json` file and add:
+Edit your `claude_desktop_config.json` file and add (using STDIO mode in this example):
 
 ```json
 {
   "mcpServers": {
     "Legba": {
-      "command": "npx",
+      "command": "/path/to/legba",
       "args": [
-        "-y",
-        "supergateway",
-        "--sse",
-        "http://127.0.01:3001/sse"
+        "--mcp",
+        "stdio"
       ]
     }
   }
@@ -34,7 +38,7 @@ You should now be able to [ask the AI to perform tasks with Legba for you](https
 
 ## Cline
 
-Edit your `cline_mcp_settings.json` file and add:
+Edit your `cline_mcp_settings.json` file and add (using SSE mode in this example):
 
 ```json
 {

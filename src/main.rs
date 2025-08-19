@@ -36,18 +36,25 @@ fn setup() -> Result<Options, session::Error> {
         }
     }
 
+    let mut options: Options = Options::parse();
+
+    let log_target = if let Some("stdio") = options.mcp.as_deref() {
+        // we need to log to stderr since stdout is used for the mcp server
+        Target::Stderr
+    } else {
+        Target::Stdout
+    };
+
     if env::var_os("RUST_LOG") == Some("debug".into()) {
-        env_logger::builder().target(Target::Stdout).init();
+        env_logger::builder().target(log_target).init();
     } else {
         env_logger::builder()
             .format_module_path(false)
             .format_target(false)
             .format_timestamp(None)
-            .target(Target::Stdout)
+            .target(log_target)
             .init();
     }
-
-    let mut options: Options = Options::parse();
 
     // generate shell completions and exit
     if let Some(shell) = options.generate_completions {
