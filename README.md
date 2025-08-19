@@ -2,7 +2,7 @@
 
 # `legba`
 
-[![Documentation](https://img.shields.io/badge/docs-blue)](https://github.com/evilsocket/legba/wiki)
+[![Documentation](https://img.shields.io/badge/docs-blue)](https://github.com/evilsocket/legba/blob/main/docs/index.md)
 [![Release](https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square)](https://github.com/evilsocket/legba/releases/latest)
 [![Crate](https://img.shields.io/crates/v/legba.svg)](https://crates.io/crates/legba)
 [![Homebrew](https://img.shields.io/homebrew/v/legba)](https://formulae.brew.sh/formula/legba)
@@ -20,34 +20,35 @@
 </div>
 
 Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve
-better performances and stability while consuming less resources than similar tools (see the benchmark below).
+[better performances and stability](https://github.com/evilsocket/legba/blob/main/docs/benchmark.md) while consuming less resources than similar tools.
 
-For the building instructions, usage and the complete list of options [check the project Wiki](https://github.com/evilsocket/legba/wiki). For a list of [recipes](https://github.com/evilsocket/legba/wiki/Recipes) you can check the [legba cookbook repository](https://github.com/evilsocket/legba-cookbook).
+## Key Features
 
-## Supported Protocols/Features:
+- **100% Rust** - Legba is entirely written in Rust, does not have native dependencies and can be easily compiled for all operating systems and architectures. 🦀
+- **Multi Protocol** - Support for HTTP, DNS, SSH, FTP, SMTP, RDP, VNC, SQL databases, NoSQL, LDAP, Kerberos, SAMBA, STOMP, MQTT [and more](https://github.com/evilsocket/legba/blob/main/docs/index.md).
+- **High Performance** - Async/concurrent architecture with customizable workers for [maximum speed](https://github.com/evilsocket/legba/blob/main/docs/benchmark.md).
+- **Flexible Credentials** - [Multiple input formats](https://github.com/evilsocket/legba/blob/main/docs/usage.md) including wordlist files, ranges, permutations, and expression generators.
+- **Smart Session Management** - Save and restore session state to resume interrupted scans.
+- **Advanced Rate Control** - Rate limiting, delays, jittering, and retry mechanisms for stealth and stability.
+- **Extensible Architecture** - [REST API](https://github.com/evilsocket/legba/blob/main/docs/rest.md), [Model Context Protocol (MCP)](https://github.com/evilsocket/legba/blob/main/docs/mcp.md) server, and custom binary plugin support.
+- **Recipe System** - [YAML-based configuration](https://github.com/evilsocket/legba/blob/main/docs/recipes.md) for complex authentication scenarios.
+- **Multiple Output Formats** - Export results in various formats for easy integration with other tools.
 
-AMQP (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace), Cassandra/ScyllaDB, DNS subdomain enumeration, FTP, HTTP (basic authentication, NTLMv1, NTLMv2, multipart form, custom requests with CSRF support, files/folders enumeration, virtual host enumeration), IMAP, IRC, Kerberos pre-authentication and user enumeration, LDAP, MongoDB, MQTT, Microsoft SQL, MySQL, Oracle, PostgreSQL, POP3, RDP, Redis, Samba, SSH / SFTP, SMTP, Socks5, STOMP (ActiveMQ, RabbitMQ, HornetQ and OpenMQ), TCP and UDP port scanning with banner grabbing, Telnet, VNC.
+## Quick Start
 
-## AI Integration
+```bash
+# 🖥️ install the project with:
+brew install legba
+# or
+cargo install legba
+# or
+docker run -it evilsocket/legba:latest -h
 
-As of version 0.11.0, Legba supports being used by an AI as an **MCP server**, refer to [the documentation on how to configure it](https://github.com/evilsocket/legba/wiki/MCP).
+# 🚀 go!
+legba smb --target domain.local --username administrator --password wordlist.txt
+```
 
-## Benchmark
-
-Here's a benchmark of `legba` versus `thc-hydra` running some common plugins, both targeting the same test servers on localhost. The benchmark has been executed on a macOS laptop with an M1 Max CPU, using a wordlist of 1000 passwords with the correct one being on the last line. Legba was compiled in release mode, Hydra compiled and installed via [brew formula](https://formulae.brew.sh/formula/hydra).
-
-Far from being an exhaustive benchmark (some legba features are simply not supported by hydra, such as CSRF token grabbing), this table still gives a clear idea of how using an asynchronous runtime can drastically improve performances.
-
-| Test Name | Hydra Tasks | Hydra Time | Legba Tasks | Legba Time |
-| --------- | ----------- | ---------- | ----------- | ---------- |
-| HTTP basic auth | 16 | 7.100s | 10 | 1.560s **(🚀 4.5x faster)** |
-| HTTP POST login (wordpress) | 16 | 14.854s | 10 | 5.045s **(🚀 2.9x faster)** |
-| SSH | 16 | 7m29.85s * | 10 | 8.150s **(🚀 55.1x faster)** |
-| MySQL | 4 ** | 9.819s | 4 ** | 2.542s **(🚀 3.8x faster)** |
-| Microsoft SQL | 16 | 7.609s | 10 | 4.789s **(🚀 1.5x faster)** |
-
-<sup>* While this result would suggest a default delay between connection attempts used by Hydra. I've tried to study the source code to find such delay but to my knowledge there's none. For some reason it's simply very slow.</sup><br/>
-<sup>** For MySQL hydra automatically reduces the amount of tasks to 4, therefore legba's concurrency level has been adjusted to 4 as well.</sup>
+For the building instructions, usage and the complete list of options [check the project documentation](https://github.com/evilsocket/legba/blob/main/docs/index.md).
 
 ## Contributors
 
@@ -58,7 +59,6 @@ Far from being an exhaustive benchmark (some legba features are simply not suppo
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=evilsocket/legba&type=Timeline)](https://www.star-history.com/#evilsocket/legba&Timeline)
-
 
 ## License
 

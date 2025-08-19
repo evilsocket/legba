@@ -58,7 +58,7 @@ impl Service {
         }
 
         let url = format!(
-            "https://raw.githubusercontent.com/wiki/evilsocket/legba/{}.md",
+            "https://raw.githubusercontent.com/evilsocket/legba/main/docs/plugins/{}.md",
             plugin_id
         );
 
