@@ -328,7 +328,8 @@ impl Session {
                         .get_data()
                         .iter()
                         .map(|(k, v)| format!("{k}={v}"))
-                        .collect(),
+                        .collect::<Vec<_>>()
+                        .join(", "),
                 })
                 .collect(),
             completed,
