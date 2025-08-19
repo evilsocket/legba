@@ -95,7 +95,7 @@ strip-ansi-escapes = "0.2.0"
 actix-cors = "0.7.0"
 x509-parser = "0.17.0"
 lazy-regex = "3.2.0"
-rmcp = { version = "0.5.0", features = ["server", "transport-sse-server", "transport-io"] }
+rmcp = { version = "0.6.0", features = ["server", "transport-sse-server", "transport-io"] }
 random-string = "1.1.0"
 aws-lc-rs = { version = "1.13.3", features = ["bindgen"] }
 dashmap = "6.1.0"
