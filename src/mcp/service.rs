@@ -1,11 +1,13 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use include_dir::{Dir, include_dir};
 use rmcp::handler::server::tool::{Parameters, ToolRouter};
 use rmcp::model::{ServerCapabilities, ServerInfo};
 use rmcp::{Json, ServerHandler, schemars, tool, tool_handler, tool_router};
 use tokio::sync::RwLock;
+
+const PLUGINS_DOCS_DIR: Dir = include_dir!("docs/plugins");
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 struct SleepRequest {
@@ -53,7 +55,6 @@ struct StartSessionRequest {
 
 #[derive(Clone)]
 pub struct Service {
-    cache: Arc<RwLock<HashMap<String, String>>>,
     sessions: Arc<RwLock<crate::api::Sessions>>,
     tool_router: ToolRouter<Self>,
 }
@@ -63,7 +64,6 @@ impl Service {
     #[allow(dead_code)]
     pub fn new(concurrency: usize) -> Self {
         Self {
-            cache: Arc::new(RwLock::new(HashMap::new())),
             sessions: Arc::new(RwLock::new(crate::api::Sessions::new(concurrency))),
             tool_router: Self::tool_router(),
         }
@@ -81,7 +81,20 @@ impl Service {
 
     #[tool(description = "List all available plugins.")]
     async fn list_plugins(&self) -> String {
-        include_str!("plugins.prompt").to_string()
+        let mut plugins = Vec::new();
+        for plugin in PLUGINS_DOCS_DIR.files() {
+            plugins.push(
+                plugin
+                    .path()
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+                    .replace(".md", ""),
+            );
+        }
+        let mut prompt = include_str!("plugins.prompt").to_string();
+        prompt = prompt.replace("##LIST##", &plugins.join("\n"));
+        prompt
     }
 
     #[tool(description = "Get information about a plugin.")]
@@ -89,33 +102,10 @@ impl Service {
         &self,
         Parameters(PluginInfoRequest { plugin_id }): Parameters<PluginInfoRequest>,
     ) -> String {
-        let plugin_id = plugin_id.to_lowercase();
-
-        if let Some(info) = self.cache.read().await.get(&plugin_id) {
-            return info.clone();
+        match PLUGINS_DOCS_DIR.get_file(&format!("{}.md", plugin_id.to_lowercase())) {
+            Some(plugin_info) => plugin_info.contents_utf8().unwrap().to_string(),
+            None => format!("Plugin {} not found.", plugin_id),
         }
-
-        // TODO: include markdown files directly
-        let url = format!(
-            "https://raw.githubusercontent.com/evilsocket/legba/main/docs/plugins/{}.md",
-            plugin_id
-        );
-
-        log::info!("fetching plugin info from {} ...", url);
-
-        let response = match reqwest::get(url).await {
-            Ok(response) => response,
-            Err(e) => return format!("Failed to fetch plugin info: {}", e),
-        };
-
-        let info = match response.text().await {
-            Ok(info) => info,
-            Err(e) => return format!("Failed to fetch plugin info: {}", e),
-        };
-
-        self.cache.write().await.insert(plugin_id, info.clone());
-
-        info
     }
 
     #[tool(description = "Get the number of currently available workers.")]
