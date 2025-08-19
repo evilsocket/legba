@@ -118,7 +118,13 @@ pub(crate) async fn run(
             log::debug!("exiting loop");
             return Ok(());
         } else if let Err(e) = session.send_credentials(creds).await {
-            log::error!("{}", e);
+            if session.is_stop() {
+                log::debug!("{}", e);
+                return Ok(());
+            } else {
+                log::error!("{}", e);
+                return Err(e);
+            }
         }
     }
 
@@ -205,3 +211,7 @@ async fn worker(plugin: &dyn Plugin, unreachables: Arc<DashSet<Arc<str>>>, sessi
 
     log::debug!("worker exit");
 }
+
+#[cfg(test)]
+#[path = "manager_test.rs"]
+mod manager_test;

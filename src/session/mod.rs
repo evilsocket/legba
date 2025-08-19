@@ -202,6 +202,21 @@ impl Session {
         Ok(session)
     }
 
+    #[cfg(test)]
+    pub fn new_for_tests(options: Options) -> Result<Arc<Self>, Error> {
+        // if a session file has been specified
+        let session = if let Some(path) = options.session.as_ref() {
+            // load from disk if file exists, or from options and save to disk
+            Self::from_disk(path, options.clone())?
+        } else {
+            // create new without persistency
+            Self::from_options(options)?
+        };
+
+        // Don't set ctrl-c handler in tests and don't spawn periodic saver
+        Ok(session)
+    }
+
     pub fn is_stop(&self) -> bool {
         self.runtime.is_stop()
     }

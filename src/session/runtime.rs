@@ -35,6 +35,8 @@ impl Runtime {
 
     pub fn set_stop(&self) {
         self.stop.store(true, Ordering::SeqCst);
+        // Close the channel to unblock any waiting receivers
+        self.creds_tx.close();
     }
 
     pub fn set_speed(&self, rps: usize) {
