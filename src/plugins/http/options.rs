@@ -4,18 +4,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Parser, Debug, Serialize, Deserialize, Clone, Default)]
 #[group(skip)]
 pub(crate) struct Options {
-    #[clap(long, default_value = "200")]
-    /// Comma separated status codes to consider as successful authentication attempts for HTTP based plugins.
-    pub http_success_codes: String,
     #[clap(long)]
     /// Set a User-Agent. If none is specified, it'll be picked randomly for each request.
     pub http_ua: Option<String>,
-    #[clap(long)]
-    /// Check for the presence of this string in the response in order to recognize a succesful attempt.
-    pub http_success_string: Option<String>,
-    #[clap(long)]
-    /// Check for the presence of this string in the response in order to recognize a failed attempt.
-    pub http_failure_string: Option<String>,
+
+    #[clap(long, default_value = "status == 200")]
+    /// Boolean expression to use to determine if a request is successful.
+    pub http_success: String,
+
     #[clap(long, default_value_t = false)]
     /// Follow HTTP redirects.
     pub http_follow_redirects: bool,
@@ -50,6 +46,8 @@ pub(crate) struct Options {
     #[clap(long, default_value = "CLIENT")]
     /// Workstation name for NTLM authentication over HTTP.
     pub http_ntlm_workstation: String,
+
+    // TODO: implement rotation over multiple proxies
     #[clap(long)]
     /// Proxy URL.
     pub proxy: Option<String>,

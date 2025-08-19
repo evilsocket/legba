@@ -14,10 +14,8 @@ A set of plugins supporting http basic authentication, NTLMv1, NTLMv2, multipart
 
 | Name | Description |
 | ---- | ----------- | 
-| `--http-success-codes <HTTP_SUCCESS_CODES>` | Comma separated status codes to consider as successful authentication attempts for HTTP based plugins [default: "200, 301, 302"] |
+| `--http-success <EXPRESSION>` | Boolean expression to evaluate in order to recognize a succesful attempt [default: "status == 200"] |
 | `--http-random-ua` | Randomize requests User-Agent |
-| `--http-success-string <HTTP_SUCCESS_STRING>` | Check for the presence of this string in the response in order to recognize a succesful attempt |
-| `--http-failure-string <HTTP_FAILURE_STRING>` | Check for the presence of this string in the response in order to recognize a failed attempt |
 | `--http-follow-redirects` | Follow HTTP redirects |
 | `--http-method <HTTP_METHOD>` | Request method for HTTP based plugins [default: `GET`] |
 | `--http-headers <HTTP_HEADERS>...` | Request headers for HTTP based plugins |
@@ -31,7 +29,78 @@ A set of plugins supporting http basic authentication, NTLMv1, NTLMv2, multipart
 | `--proxy <PROXY>` | Proxy URL |
 | `--proxy-auth <PROXY_AUTH>` | Proxy authentication as username:password |
 
-## Examples
+## Success Expression
+
+The `--http-success` parameter accepts a boolean expression that is evaluated to determine if an HTTP response indicates a successful authentication/enumeration attempt. The expression has access to various response properties and supports multiple operators and functions.
+
+### Available Variables
+
+- **`status`** - HTTP response status code (e.g., 200, 302, 404)
+- **`body`** - Response body content as a string
+- **`size`** - Response body size in bytes
+- **headers** - Any response header converted to lowercase with hyphens replaced by underscores (e.g., `X-Auth-Token` becomes `x_auth_token`)
+
+### Supported Operations
+
+#### Basic Comparisons
+- `status == 200` - Check for specific status code
+- `size > 1000` - Compare body size
+- `set_cookie != ""` - Check if cookie is set
+- `content_type == "application/json"` - Check header values
+
+#### String Functions
+- `contains(body, "success")` - Check if body contains text
+- `contains(set_cookie, "session_id")` - Check if cookie contains text
+- `str::regex_matches(body, "user[0-9]+")` - Match body against regex pattern
+- `str::regex_matches(body, "(?i)success")` - Case-insensitive regex match
+
+#### Logical Operators
+- `&&` - Logical AND
+- `||` - Logical OR  
+- `!` - Logical NOT
+- Parentheses for grouping: `(status == 200 || status == 201) && contains(body, "ok")`
+
+### Variable Interpolation
+
+The following placeholders can be used in expressions and will be replaced with the current credential values:
+- `{$username}` - Current username being tested
+- `{$password}` - Current password being tested
+- `{$payload}` - Current payload/username for enumeration plugins
+
+For a list of all the operators and builtin functions [refer to this documentation](https://docs.rs/evalexpr/latest/evalexpr/index.html).
+
+### Expression Examples
+
+```sh
+# Simple status check
+--http-success "status == 200"
+
+# Redirect with cookie (common for successful login)
+--http-success 'status == 302 && set_cookie != ""'
+
+# Check for specific text in response
+--http-success 'status == 200 && contains(body, "dashboard")'
+
+# Exclude error messages
+--http-success 'status == 200 && !contains(body, "invalid credentials")'
+
+# Multiple acceptable status codes
+--http-success "status == 200 || status == 201"
+
+# Complex expression with regex
+--http-success 'status == 200 && str::regex_matches(body, "\"token\":\\s*\"[a-z0-9]{32}\"")'
+
+# Check response size
+--http-success "status == 200 && size > 0 && size != 2045"
+
+# Verify API response
+--http-success 'status == 200 && content_type == "application/json" && contains(body, "\"authenticated\": true")'
+
+# Use interpolation to check for username in response
+--http-success 'status == 200 && contains(body, "{$username}")'
+```
+
+## Plugin Usage Examples
 
 ### Basic Authentication
 
@@ -76,7 +145,7 @@ legba http.ntlm2 \
     --username jeff \
     --password wordlists/passwords.txt \
     -T "https://exchange-server/ews" \
-    --http-success-codes "200, 500"
+    --http-success "status == 200 || status == 500"
 ```
 
 ### Enumeration
@@ -87,8 +156,7 @@ HTTP Pages Enumeration:
 legba http.enum \
     --payloads data/pages.txt \
     --target http://localhost:8888/ \
-    --http-enum-ext php \ # php is the default value for file extensions
-    --http-success-codes 200 
+    --http-enum-ext php # php is the default value for file extensions
 ```
 
 Wordpress plugin discovery using interpolation syntax:
@@ -96,8 +164,7 @@ Wordpress plugin discovery using interpolation syntax:
 ```sh
 legba http.enum \
     --payloads data/wordpress-plugins.txt \
-    --target http://localhost:8888/wp-content/plugins/{PAYLOAD}/readme.txt \
-    --http-success-codes 200 
+    --target http://localhost:8888/wp-content/plugins/{PAYLOAD}/readme.txt
 ```
 
 LFI vulnerability fuzzing:
@@ -106,7 +173,7 @@ LFI vulnerability fuzzing:
 legba http.enum \
     --payloads data/lfi.txt \
     --target http://localhost:8888/ \
-    --http-success-string "root:"
+    --http-success 'contains(body, "root:")'
 ```
 
 The `data/lfi.txt` would be something like:
@@ -125,7 +192,7 @@ Google Suite / GMail valid accounts enumeration:
 legba http.enum \
     --payloads data/employees-names.txt \
     --http-success-string "COMPASS" \
-    --http-success-codes 204 \
+    --http-success "status == 204" \
     --quiet \
     --target "https://mail.google.com/mail/gxlu?email={PAYLOAD}@broadcom.com" 
 ```
@@ -140,7 +207,7 @@ legba http \
     --password wordlists/passwords.txt \
     --target http://localhost:8888/wp-login.php \
     --http-method POST \
-    --http-success-codes 302 \ # wordpress redirects on successful login
+    --http-success "status == 302" \ # wordpress redirects on successful login
     --http-payload 'log={USERNAME}&pwd={PASSWORD}'
 ```
 
@@ -153,7 +220,7 @@ legba http \
     --target http://localhost:8888/xmlrpc.php \
     --http-method POST \
     --http-payload '<?xml version="1.0" encoding="iso-8859-1"?><methodCall><methodName>wp.getUsersBlogs</methodName><params><param><value><string>{USERNAME}</string></value></param><param><value><string>{PASSWORD}</string></value></param></params></methodCall>' \
-    --http-success-string 'isAdmin' # what string successful response will contain
+    --http-success 'contains(body, "isAdmin")' # what string successful response will contain
 ```
 
 Or using the @ syntax to load the payload from a file:
@@ -165,7 +232,7 @@ legba http \
     --target http://localhost:8888/xmlrpc.php \
     --http-method POST \
     --http-payload @xmlrpc-payload.xml \
-    --http-success-string 'isAdmin'
+    --http-success 'contains(body, "isAdmin")'
 ```
 
 HTTP Post Request with CSRF Token grabbing:
@@ -190,6 +257,5 @@ legba http \
     --password wordlists/passwords.txt \
     --http-method POST \
     --http-payload 'destination=https://exchange-server/&flags=4&username={USERNAME}&password={PASSWORD}' \
-    --http-success-codes 302 \
-    --http-success-string 'set-cookie'
+    --http-success 'status == 302 && set_cookie != ""'
 ```
