@@ -70,7 +70,7 @@ pub(crate) struct Options {
     #[clap(long, default_value_t = 10000)]
     pub timeout: u64,
     /// Number of attempts if a request fails.
-    #[clap(long, default_value_t = 5)]
+    #[clap(long, default_value_t = 3)]
     pub retries: usize,
     /// Delay in milliseconds to wait before a retry.
     #[clap(long, default_value_t = 1000)]
