@@ -15,6 +15,7 @@ better performances and stability while consuming less resources than similar to
   * [FTP](plugins/ftp.md)
   * [HTTP (basic auth, pages and virtual hosts enumeration, login forms with CSRF, NTLMv1 and NTLMv2 authentication)](plugins/http.md)
   * [IMAP](plugins/imap.md)
+  * [IRC](plugins/irc.md)
   * [Kerberos](plugins/kerberos.md)
   * [LDAP](plugins/ldap.md)
   * [MongoDB](plugins/mongodb.md)

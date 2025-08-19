@@ -102,7 +102,7 @@ Another option is using the `-C, --combinations <FILENAME>` argument, this will 
 | `-I, --iterate-by <ITERATE_BY>` | `user` | Whether to iterate by user or by password [possible values: `user`, `password`] |
 | `-S, --session <FILENAME>` | | Save and restore session information from this file. |
 | `-O, --output <OUTPUT>` | | Save results to this file. |
-| `--output-format <FORMAT>` | `text` | Output file format [possible values: text, jsonl] |
+| `--output-format <FORMAT>` | `text` | Output file format [possible values: text, csv, jsonl] |
 | `--timeout <TIMEOUT>` | `10000` | Connection timeout in milliseconds. |
 | `--retries <RETRIES>` | `5` | Number of attempts if a request fails. |
 | `--retry-time <TIME>` | `1000` | Delay in milliseconds to wait before a retry. |
@@ -119,3 +119,125 @@ Another option is using the `-C, --combinations <FILENAME>` argument, this will 
 | `-V, --version` | | Print version. |
 
 For the full list of arguments including plugin specific ones run `legba --help`.
+
+## Session Management
+
+The `--session` option allows saving and restoring session state, which is useful for resuming interrupted scans. When a session file is specified, legba will:
+
+* Save the current progress to the file every second during execution
+* Automatically restore from the file if it exists when starting
+* Preserve the position in the credential space, allowing you to continue exactly where you left off
+* Save all discovered credentials to the session file
+
+### Session File Format
+
+Session files are stored in JSON format and contain:
+* Original command options
+* List of targets
+* Progress counters (total attempts, completed attempts, errors)
+* All discovered credentials
+
+### Examples
+
+Starting a new session with persistence:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.0/24 \
+    --session my-scan.session
+```
+
+If the scan is interrupted (Ctrl+C, network issue, etc.), you can resume it:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.0/24 \
+    --session my-scan.session
+```
+
+Legba will automatically detect the existing session file and continue from where it stopped.
+
+## Output Formats
+
+Legba supports three output formats via the `--output-format` option: `text` (default), `csv`, and `jsonl`. All formats include timestamps, target information, and discovered credentials.
+
+### Text Format
+
+Human-readable format with timestamps and key-value pairs:
+
+```
+[2024-01-15 14:23:45] (ssh) <192.168.1.1:22> username=admin password=secret123
+[2024-01-15 14:24:12] (http) <192.168.1.10:80> username=root password=toor
+```
+
+### CSV Format
+
+Comma-separated values with headers, suitable for spreadsheet applications:
+
+```csv
+found_at,plugin,target,data
+2024-01-15 14:23:45,ssh,192.168.1.1:22,username=admin;password=secret123
+2024-01-15 14:24:12,http,192.168.1.10:80,username=root;password=toor
+```
+
+Note: Multiple data fields are separated by semicolons within the data column.
+
+### JSONL Format
+
+JSON Lines format with one JSON object per line, ideal for programmatic parsing:
+
+```json
+{"found_at":"2024-01-15T14:23:45.123456","target":"192.168.1.1:22","plugin":"ssh","data":{"username":"admin","password":"secret123"},"partial":false}
+{"found_at":"2024-01-15T14:24:12.456789","target":"192.168.1.10:80","plugin":"http","data":{"username":"root","password":"toor"},"partial":false}
+```
+
+### Examples
+
+Save results as text (default):
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.1 \
+    --output results.txt
+```
+
+Save results as CSV:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.1 \
+    --output results.csv \
+    --output-format csv
+```
+
+Save results as JSONL for processing with jq or other tools:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.1 \
+    --output results.jsonl \
+    --output-format jsonl
+```
+
+Process JSONL output with jq:
+
+```sh
+# Extract all passwords found
+cat results.jsonl | jq -r '.data.password'
+
+# Filter results by plugin type
+cat results.jsonl | jq 'select(.plugin == "ssh")'
+
+# Get results for specific target
+cat results.jsonl | jq 'select(.target | startswith("192.168.1."))'
+```
