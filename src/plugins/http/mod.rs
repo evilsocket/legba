@@ -645,21 +645,6 @@ impl HTTP {
             )
         };
 
-        // HACK: since crates.io removes the patch.crates-io sections from the Cargo file:
-        //
-        //  https://stackoverflow.com/questions/69235287/can-i-publish-a-crate-that-uses-a-patch
-        //  https://github.com/rust-lang/cargo/issues/10440
-        //
-        // using our version of the URL crate won't compile with "cargo publish". Therefore
-        // we need to wrap this in an optional feature that's not included by default.
-
-        #[cfg(feature = "http_relative_paths")]
-        let url = Url::options()
-            .leave_relative(true)
-            .parse(&url_raw)
-            .map_err(|e| format!("could not parse url '{}': {:?}", url_raw, e))?;
-
-        #[cfg(not(feature = "http_relative_paths"))]
         let url = Url::options()
             .parse(&url_raw)
             .map_err(|e| format!("could not parse url '{}': {:?}", url_raw, e))?;

@@ -138,7 +138,6 @@ default = [
     "socks5",
 ]
 http = ["dep:url", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
-http_relative_paths = []
 dns = ["dep:trust-dns-resolver", "dep:dns-lookup"]
 ssh = ["dep:async-ssh2-tokio", "dep:russh"]
 sql = ["dep:sqlx"]
@@ -167,12 +166,6 @@ scylla = ["dep:scylla"]
 port_scanner = ["dep:reqwest"]
 samba = ["dep:smb"]
 socks5 = ["dep:fast-socks5"]
-
-[patch.crates-io]
-url = { path = "./crates/rust-url/url" }
-form_urlencoded = { path = "./crates/rust-url/form_urlencoded" }
-idna = { path = "./crates/rust-url/idna" }
-percent-encoding = { path = "./crates/rust-url/percent_encoding" }
 
 [profile.release]
 lto = true        # Enable link-time optimization
