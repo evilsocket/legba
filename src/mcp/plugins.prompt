@@ -12,20 +12,20 @@
 * MSSQL
 * MySQL
 * Oracle
-* Port-Scanner
+* Port_Scanner
 * PostgreSQL
 * POP3
 * RDP
 * Redis
 * Samba
 * Scylla
-* SSH-and-SFTP
+* SSH_and_SFTP
 * SMTP
 * SOCKS5
 * STOMP
 * Telnet
 * VNC
-* Custom-Binary
+* Custom_Binary
 
 Use the plugin_info tool with the plugin identifier, as it is in this list, as it is to get information about a plugin, its options and how to use it.
 However, when starting a session with the plugin, always use the lowercase identifier you will find in the plugin information.
