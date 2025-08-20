@@ -1,5 +1,9 @@
 # Installation
 
+### Binaries
+
+Download one of the precompiled binaries from the [project latest release page](https://github.com/evilsocket/legba/releases/latest).
+
 ### Cargo
 
 Legba is published as a binary crate on [crates.io](https://crates.io/crates/legba), if you have [Cargo installed](https://rustup.rs/) you can:
