@@ -31,6 +31,8 @@ Test common community strings against an SNMPv1 device:
 ```sh
 legba snmp1 \
     --payload wordlists/snmp-communities.txt \
+    # a short 50ms timeout is recommended for LAN targets
+    --timeout 50 \
     --target 192.168.1.1
 ```
 
@@ -39,6 +41,7 @@ Same but against a whole subnet:
 ```sh
 legba snmp1 \
     --payload wordlists/snmp-communities.txt \
+    --timeout 50 \
     --target 192.168.1.0/24
 ```
 
@@ -49,6 +52,7 @@ Test community strings against an SNMPv2 device:
 ```sh
 legba snmp2 \
     --payload public,private,manager \
+    --timeout 50 \
     --target 192.168.1.1:161
 ```
 
@@ -60,6 +64,7 @@ Test username/password combinations with automatic protocol detection:
 legba snmp3 \
     --username admin \
     --password wordlists/passwords.txt \
+    --timeout 50 \
     --target 10.0.0.1
 ```
 
@@ -69,5 +74,6 @@ Test multiple users and passwords:
 legba snmp3 \
     --username admin,snmpuser,monitor \
     --password wordlists/top-passwords.txt \
+    --timeout 50 \
     --target snmp.example.com
 ```
