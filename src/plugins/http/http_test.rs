@@ -735,6 +735,7 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
+        http.success_expression = "status == 200".to_owned();
         let opts = Options {
             target: Some(server.base_url()),
             ..Options::default()
@@ -744,7 +745,7 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(
-            error.contains("404") && error.contains("existing page"),
+            error.contains("success condition did not validate") && error.contains("existing page"),
             "Error message was: {}",
             error
         );

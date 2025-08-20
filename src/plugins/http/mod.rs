@@ -440,13 +440,13 @@ impl HTTP {
                 };
                 if adjust {
                     return Err(format!(
-                        "{} returned status code {} for a non existent page",
-                        target, success.status
+                        "{} validates success condition for a non existent page, likely false positives: {:?}",
+                        target, success
                     ));
                 } else {
                     return Err(format!(
-                        "{} returned again a status code {} for a non existent page, aborting due to likely false positives",
-                        target, success.status
+                        "aborting due to likely false positives for {}: validates success condition for a non existent page: {:?}",
+                        target, success
                     ));
                 }
             }
@@ -479,13 +479,13 @@ impl HTTP {
                 if adjust {
                     // log::debug!("success={:?}", &success);
                     return Err(format!(
-                        "{} returned status code {} for a non existent page starting with a dot",
-                        target, success.status
+                        "{} validates success condition for a non existent page starting with a dot, likely false positives: {:?}",
+                        target, success
                     ));
                 } else {
                     return Err(format!(
-                        "{} returned again a status code {} for a non existent page starting with a dot, aborting due to likely false positives",
-                        target, success.status
+                        "aborting due to likely false positives for {}: validates success condition for a non existent page starting with a dot: {:?}",
+                        target, success
                     ));
                 }
             }
@@ -498,6 +498,7 @@ impl HTTP {
         let page = "/".to_string();
         log::debug!("check_false_negatives: page={}", &page);
         let result = self.do_request(opts, &page).await;
+        log::debug!("result: {:?}", result);
         if let Ok((creds, res)) = result {
             let status = res.status();
             let headers = res.headers().clone();
@@ -513,22 +514,19 @@ impl HTTP {
                     }
                     self.real_target = Some(relocation.clone());
                     return Err(format!(
-                        "{} returned status code {} for an existing page, adjusted to real target {}",
+                        "{} returned a non success response for an existing page, adjusted to real target {}",
                         opts.target.as_ref().unwrap(),
-                        status,
                         relocation
                     ));
                 } else {
-                    return Err(format!(
-                        "{} returned status code {} for an existing page, aborting due to likely false negatives",
-                        opts.target.as_ref().unwrap(),
-                        status,
-                    ));
+                    return Err(
+                        "success condition did not validate for for an existing page, likely false negatives".into()
+                    );
                 }
             }
         } else {
             return Err(format!(
-                "{} returned an error for an existing page, aborting due to likely false negatives: {}",
+                "{} returned an error for an existing page, likely false negatives: {}",
                 opts.target.as_ref().unwrap(),
                 result.err().unwrap()
             ));
@@ -543,16 +541,24 @@ impl HTTP {
             return Ok(());
         }
 
-        log::info!("validating canary status codes ...");
+        log::info!(
+            "validating http success condition: {}",
+            self.success_expression
+        );
 
         // check that the target is not returning 404 for an existing page
         // attempt this a few times since there might be multiple redirects
         // for instance:
         //    domain.com -> http://www.domain.com -> https://www.domain.com
-        for _ in 0..10 {
+        for _ in 0..5 {
             if let Err(e) = self.check_false_negatives(opts).await {
                 log::warn!("{}", e);
             } else {
+                break;
+            }
+
+            // if we are following redirects, we can stop
+            if opts.http.http_follow_redirects {
                 break;
             }
         }
