@@ -50,7 +50,7 @@ impl Transport for UDP {
         }
 
         // read response
-        let mut raw_response = vec![0; resp_size as usize];
+        let mut raw_response = vec![0; resp_size];
         sd.recv(&mut raw_response)?;
 
         Ok(raw_response)
