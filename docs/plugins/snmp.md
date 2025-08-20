@@ -34,6 +34,14 @@ legba snmp1 \
     --target 192.168.1.1
 ```
 
+Same but against a whole subnet:
+
+```sh
+legba snmp1 \
+    --payload wordlists/snmp-communities.txt \
+    --target 192.168.1.0/24
+```
+
 ### SNMPv2 Community Enumeration
 
 Test community strings against an SNMPv2 device:
