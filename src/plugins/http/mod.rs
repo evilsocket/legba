@@ -406,16 +406,22 @@ impl HTTP {
             .request(self.method.clone(), url)
             .headers(headers);
 
-        request.send().await.map_err(|e| e.to_string()).map(|res| {
-            (
+        match request.send().await {
+            Ok(res) => Ok((
                 Credentials {
                     target,
                     username: page.to_string(),
                     password: "".to_string(),
                 },
                 res,
-            )
-        })
+            )),
+            Err(e) => {
+                // some errors are not entirely shown when using e.to_string(), for instance:
+                // hyper_util::client::legacy::Error(Connect, Error { code: -9836, message: "bad protocol version" }) })
+                // just becomes "error sending request"
+                Err(format!("{:?}", e))
+            }
+        }
     }
 
     async fn check_false_positives(&mut self, opts: &Options, adjust: bool) -> Result<(), Error> {
@@ -859,6 +865,8 @@ impl Plugin for HTTP {
             reqwest::Client::builder()
                 .proxy(proxy) // sets auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
                 .danger_accept_invalid_certs(true)
+                // https://github.com/seanmonstar/reqwest/discussions/2428
+                .use_rustls_tls()
                 .redirect(redirect_policy)
                 .build()
                 .map_err(|e| e.to_string())?
@@ -867,6 +875,8 @@ impl Plugin for HTTP {
             reqwest::Client::builder()
                 .no_proxy() // used to set auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
                 .danger_accept_invalid_certs(true)
+                // https://github.com/seanmonstar/reqwest/discussions/2428
+                .use_rustls_tls()
                 .redirect(redirect_policy)
                 .build()
                 .map_err(|e| e.to_string())?
