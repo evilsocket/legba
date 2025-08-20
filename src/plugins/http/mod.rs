@@ -255,8 +255,7 @@ impl HTTP {
             #[cfg(test)]
             println!(
                 "adding header '{}' to context as '{}'",
-                key.to_string(),
-                header_var_name
+                key, header_var_name
             );
 
             if header_var_name == "content_type" {
@@ -441,24 +440,24 @@ impl HTTP {
             adjust,
             &random_page
         );
-        if let Ok((creds, res)) = self.do_request(opts, &random_page).await {
-            if let Some(success) = self.is_success_response(&creds, res).await {
-                let target = if let Some(real_target) = self.real_target.as_ref() {
-                    real_target.to_owned()
-                } else {
-                    opts.target.as_ref().unwrap().to_owned()
-                };
-                if adjust {
-                    return Err(format!(
-                        "{} validates success condition for a non existent page, likely false positives: {:?}",
-                        target, success
-                    ));
-                } else {
-                    return Err(format!(
-                        "aborting due to likely false positives for {}: validates success condition for a non existent page: {:?}",
-                        target, success
-                    ));
-                }
+        if let Ok((creds, res)) = self.do_request(opts, &random_page).await
+            && let Some(success) = self.is_success_response(&creds, res).await
+        {
+            let target = if let Some(real_target) = self.real_target.as_ref() {
+                real_target.to_owned()
+            } else {
+                opts.target.as_ref().unwrap().to_owned()
+            };
+            if adjust {
+                return Err(format!(
+                    "{} validates success condition for a non existent page, likely false positives: {:?}",
+                    target, success
+                ));
+            } else {
+                return Err(format!(
+                    "aborting due to likely false positives for {}: validates success condition for a non existent page: {:?}",
+                    target, success
+                ));
             }
         }
 
@@ -479,25 +478,25 @@ impl HTTP {
             adjust,
             &random_page
         );
-        if let Ok((creds, res)) = self.do_request(opts, &random_page).await {
-            if let Some(success) = self.is_success_response(&creds, res).await {
-                let target = if let Some(real_target) = self.real_target.as_ref() {
-                    real_target.to_owned()
-                } else {
-                    opts.target.as_ref().unwrap().to_owned()
-                };
-                if adjust {
-                    // log::debug!("success={:?}", &success);
-                    return Err(format!(
-                        "{} validates success condition for a non existent page starting with a dot, likely false positives: {:?}",
-                        target, success
-                    ));
-                } else {
-                    return Err(format!(
-                        "aborting due to likely false positives for {}: validates success condition for a non existent page starting with a dot: {:?}",
-                        target, success
-                    ));
-                }
+        if let Ok((creds, res)) = self.do_request(opts, &random_page).await
+            && let Some(success) = self.is_success_response(&creds, res).await
+        {
+            let target = if let Some(real_target) = self.real_target.as_ref() {
+                real_target.to_owned()
+            } else {
+                opts.target.as_ref().unwrap().to_owned()
+            };
+            if adjust {
+                // log::debug!("success={:?}", &success);
+                return Err(format!(
+                    "{} validates success condition for a non existent page starting with a dot, likely false positives: {:?}",
+                    target, success
+                ));
+            } else {
+                return Err(format!(
+                    "aborting due to likely false positives for {}: validates success condition for a non existent page starting with a dot: {:?}",
+                    target, success
+                ));
             }
         }
 
@@ -514,8 +513,10 @@ impl HTTP {
             let headers = res.headers().clone();
             if self.is_success_response(&creds, res).await.is_none() {
                 let relocation = headers.get("location");
-                if status.is_redirection() && relocation.is_some() {
-                    let mut relocation = relocation.unwrap().to_str().unwrap().to_owned();
+                if status.is_redirection()
+                    && let Some(relocation) = relocation
+                {
+                    let mut relocation = relocation.to_str().unwrap().to_owned();
                     // redirect to a page
                     if relocation.starts_with("/") || relocation.contains(&creds.target) {
                         return Ok(());

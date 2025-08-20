@@ -84,7 +84,7 @@ impl Service {
         &self,
         Parameters(PluginInfoRequest { plugin_id }): Parameters<PluginInfoRequest>,
     ) -> String {
-        match PLUGINS_DOCS_DIR.get_file(&format!("{}.md", plugin_id.to_lowercase())) {
+        match PLUGINS_DOCS_DIR.get_file(format!("{}.md", plugin_id.to_lowercase())) {
             Some(plugin_info) => plugin_info.contents_utf8().unwrap().to_string(),
             None => format!("Plugin {} not found.", plugin_id),
         }
@@ -103,8 +103,8 @@ impl Service {
         let guard = &*self.sessions.read().await;
         let sessions = guard
             .get_sessions()
-            .iter()
-            .map(|(_, session)| session.get_listing())
+            .values()
+            .map(|session| session.get_listing())
             .collect::<Vec<_>>();
         serde_json::to_string(&sessions).unwrap()
     }
@@ -122,7 +122,7 @@ impl Service {
     }
 
     async fn did_session_complete_internal(&self, session_id: &str) -> Result<bool, String> {
-        let session_id = match uuid::Uuid::parse_str(&session_id) {
+        let session_id = match uuid::Uuid::parse_str(session_id) {
             Ok(uuid) => uuid,
             Err(_) => return Err("Session id not valid.".to_string()),
         };

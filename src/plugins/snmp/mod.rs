@@ -156,7 +156,7 @@ impl Plugin for SNMPv3 {
                 // In case if engine_id is not provided in security parameters, it is necessary
                 // to call init() method to send a blank unauthenticated request to the target
                 // to get the engine_id.
-                if let Ok(_) = tokio::time::timeout(timeout, sess.init()).await {
+                if tokio::time::timeout(timeout, sess.init()).await.is_ok() {
                     return reader::read_from_session(
                         &mut sess,
                         address,

@@ -680,10 +680,15 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
-        let mut opts = Options::default();
-        opts.target = Some(server.base_url());
-        opts.http.http_method = "GET".to_owned();
-        opts.http.http_success = "status == 200".to_owned();
+        let opts = Options {
+            target: Some(server.base_url()),
+            http: crate::plugins::http::options::Options {
+                http_method: "GET".to_owned(),
+                http_success: "status == 200".to_owned(),
+                ..Default::default()
+            },
+            ..Options::default()
+        };
         let result = http.setup(&opts).await;
         assert_eq!(Ok(()), result);
         // Don't assert mocks, just ensure no panic
@@ -700,6 +705,7 @@ mod tests {
             Strategy::Enumeration,
             Strategy::VHostEnum,
         ];
+        let r = Regex::new(r"/[a-z0-9]+$").unwrap();
         for strategy in strategies {
             let server = MockServer::start();
             let _home_mock = server.mock(|when, then| {
@@ -709,17 +715,21 @@ mod tests {
                     .body("<html><body>Home page</body></html>");
             });
             let _random_mock = server.mock(|when, then| {
-                when.method(GET)
-                    .path_matches(Regex::new(r"/[a-z0-9]+$").unwrap());
+                when.method(GET).path_matches(r.clone());
                 then.status(404)
                     .header("content-type", "text/html")
                     .body("<html><body>Not found</body></html>");
             });
             let mut http = HTTP::new(strategy);
-            let mut opts = Options::default();
-            opts.target = Some(server.base_url());
-            opts.http.http_method = "GET".to_owned();
-            opts.http.http_success = "status == 200".to_owned();
+            let opts = Options {
+                target: Some(server.base_url()),
+                http: crate::plugins::http::options::Options {
+                    http_method: "GET".to_owned(),
+                    http_success: "status == 200".to_owned(),
+                    ..Default::default()
+                },
+                ..Options::default()
+            };
             let result = http.setup(&opts).await;
             assert_eq!(Ok(()), result);
         }

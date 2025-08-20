@@ -216,16 +216,16 @@ impl Plugin for PortScanner {
     ) -> Result<Option<Vec<Loot>>, Error> {
         let mut loot = vec![];
 
-        if !self.opts.port_scanner_no_udp {
-            if let Ok(Some(udp_loot)) = self.udp_attempt(creds, timeout).await {
-                loot.push(udp_loot);
-            }
+        if !self.opts.port_scanner_no_udp
+            && let Ok(Some(udp_loot)) = self.udp_attempt(creds, timeout).await
+        {
+            loot.push(udp_loot);
         }
 
-        if !self.opts.port_scanner_no_tcp {
-            if let Ok(Some(tcp_loot)) = self.tcp_attempt(creds, timeout).await {
-                loot.push(tcp_loot);
-            }
+        if !self.opts.port_scanner_no_tcp
+            && let Ok(Some(tcp_loot)) = self.tcp_attempt(creds, timeout).await
+        {
+            loot.push(tcp_loot);
         }
 
         Ok(if loot.is_empty() { None } else { Some(loot) })

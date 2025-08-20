@@ -109,10 +109,10 @@ mod tests {
                 tokio::time::sleep(delay).await;
             }
 
-            if let Some(fail_after) = self.fail_after {
-                if count > fail_after {
-                    return Err("Failed after specified attempts".to_string());
-                }
+            if let Some(fail_after) = self.fail_after
+                && count > fail_after
+            {
+                return Err("Failed after specified attempts".to_string());
             }
 
             if let Some(error) = &self.attempt_error {
@@ -136,17 +136,18 @@ mod tests {
 
     // Helper function to create test options
     fn create_test_options(plugin_name: Option<String>) -> Options {
-        let mut options = Options::default();
-        options.plugin = plugin_name;
-        options.target = Some("127.0.0.1:80".to_string());
-        options.username = Some("admin".to_string());
-        options.password = Some("password".to_string());
-        options.concurrency = 2;
-        options.timeout = 1000;
-        options.retry_time = 100;
-        options.retries = 3;
-        options.quiet = true;
-        options
+        Options {
+            plugin: plugin_name,
+            target: Some("127.0.0.1:80".to_string()),
+            username: Some("admin".to_string()),
+            password: Some("password".to_string()),
+            concurrency: 2,
+            timeout: 1000,
+            retry_time: 100,
+            retries: 3,
+            quiet: true,
+            ..Options::default()
+        }
     }
 
     fn create_inventory_with_plugin(plugin_name: &'static str, plugin: MockPlugin) -> Inventory {
@@ -193,8 +194,7 @@ mod tests {
         match result {
             Ok(plugin_ref) => assert_eq!(plugin_ref.description(), "Mock plugin for testing"),
             Err(e) => {
-                println!("error: {}", e);
-                assert!(false);
+                panic!("error: {}", e);
             }
         }
     }

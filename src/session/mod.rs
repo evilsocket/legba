@@ -38,18 +38,14 @@ async fn periodic_saver(session: Arc<Session>) {
 
         session.set_speed(speed);
 
-        if persistent {
-            if let Err(e) = session.save() {
-                log::error!("could not save session: {:?}", e);
-            }
+        if persistent && let Err(e) = session.save() {
+            log::error!("could not save session: {:?}", e);
         }
     }
 
-    if persistent {
-        // update and save to the last state before exiting
-        if let Err(e) = session.save() {
-            log::error!("could not save session: {:?}", e);
-        }
+    // update and save to the last state before exiting
+    if persistent && let Err(e) = session.save() {
+        log::error!("could not save session: {:?}", e);
     }
 }
 
@@ -312,10 +308,10 @@ impl Session {
                 }
 
                 // check if we have to output to file
-                if let Some(path) = &self.options.output {
-                    if let Err(e) = loot.append_to_file(path, &self.options.output_format) {
-                        log::error!("could not write to {}: {:?}", &path, e);
-                    }
+                if let Some(path) = &self.options.output
+                    && let Err(e) = loot.append_to_file(path, &self.options.output_format)
+                {
+                    log::error!("could not write to {}: {:?}", &path, e);
                 }
 
                 // if we only need one match, stop

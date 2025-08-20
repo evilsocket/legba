@@ -9,6 +9,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+# Make sure CI fails on all warnings, including Clippy lints
+  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   test:
@@ -21,6 +23,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Lint
+        run: cargo clippy --all-targets --all-features
       
       - name: Build
         run: cargo build

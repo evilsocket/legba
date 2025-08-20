@@ -82,7 +82,7 @@ async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
                     // json loot or runtime statistics
                     if line.contains("found_at") {
                         // parse as loot
-                        let new_loot: Loot = serde_json::from_str(&line).unwrap();
+                        let new_loot: Loot = serde_json::from_str(line).unwrap();
 
                         log::info!(
                             "! plugin: {}, target: {:?}, data: {:?}",
@@ -94,12 +94,12 @@ async fn pipe_reader_to_writer<R: AsyncBufReadExt + Unpin>(
                         loot.lock().unwrap().push(new_loot);
                     } else {
                         // parse as runtime statistics
-                        stats.lock().unwrap().update_from_json(&line).unwrap();
+                        stats.lock().unwrap().update_from_json(line).unwrap();
                     }
                 } else {
                     // anything else
                     // remove colors and other escape sequences
-                    let line = strip_ansi_escapes::strip_str(&line);
+                    let line = strip_ansi_escapes::strip_str(line);
                     // add as raw output
                     output.lock().unwrap().push(line.trim().to_owned());
                 }

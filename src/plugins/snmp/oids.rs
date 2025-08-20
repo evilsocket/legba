@@ -264,7 +264,7 @@ lazy_static! {
 
 pub(crate) fn get_oid_name(oid: &Oid) -> String {
     let oid_str = oid.to_string();
-    if let Some(desc) = OID_MAP.get(&oid) {
+    if let Some(desc) = OID_MAP.get(oid) {
         return desc.to_string();
     } else {
         // lookup parent oid
@@ -272,13 +272,13 @@ pub(crate) fn get_oid_name(oid: &Oid) -> String {
         if parts.len() > 1 {
             let mut trimmed_parts = parts;
             trimmed_parts.pop();
-            if let Ok(parent_oid) = Oid::from(&trimmed_parts) {
-                if let Some(desc) = OID_MAP.get(&parent_oid) {
-                    return desc.to_string();
-                }
+            if let Ok(parent_oid) = Oid::from(&trimmed_parts)
+                && let Some(desc) = OID_MAP.get(&parent_oid)
+            {
+                return desc.to_string();
             }
         }
     }
 
-    return oid_str;
+    oid_str
 }

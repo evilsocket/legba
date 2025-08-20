@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use lazy_regex::{bytes_lazy_regex, Lazy};
+use lazy_regex::{Lazy, bytes_lazy_regex};
 use tokio::io::AsyncReadExt;
 
 use super::Banner;
@@ -26,14 +26,14 @@ pub(crate) async fn tcp_grabber(
     banner.insert("protocol".to_owned(), "mysql".to_owned());
 
     let mut buf = [0u8; 80];
-    if let Ok(Ok(read)) = tokio::time::timeout(timeout, stream.read(&mut buf)).await {
-        if read > 0 {
-            for cap in BANNER_PARSER.captures_iter(&buf[0..read]) {
-                banner.insert(
-                    "mysql.version".to_owned(),
-                    String::from_utf8_lossy(cap.get(1).unwrap().as_bytes()).to_string(),
-                );
-            }
+    if let Ok(Ok(read)) = tokio::time::timeout(timeout, stream.read(&mut buf)).await
+        && read > 0
+    {
+        for cap in BANNER_PARSER.captures_iter(&buf[0..read]) {
+            banner.insert(
+                "mysql.version".to_owned(),
+                String::from_utf8_lossy(cap.get(1).unwrap().as_bytes()).to_string(),
+            );
         }
     }
 

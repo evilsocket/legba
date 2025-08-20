@@ -19,52 +19,48 @@ pub(crate) async fn read_from_session(
 ) -> Result<Option<Vec<Loot>>, Error> {
     // request everything we can
     let seed_oid = Oid::from(&[0, 0]).unwrap();
-    loop {
-        if let Ok(res) =
-            tokio::time::timeout(timeout, session.getbulk(&[&seed_oid], 0, 0xffff)).await
-        {
-            match res {
-                Ok(response) => {
-                    let mut data: Vec<(String, String)> = match auth {
-                        None => vec![("community".to_owned(), creds.username.to_owned())],
-                        Some(proto) => vec![
-                            ("auth_proto".to_owned(), format!("{:?}", proto)),
-                            ("username".to_owned(), creds.username.to_owned()),
-                            ("password".to_owned(), creds.password.to_owned()),
-                        ],
-                    };
 
-                    for (oid, val) in response.varbinds {
-                        let name = oids::get_oid_name(&oid);
+    while let Ok(res) =
+        tokio::time::timeout(timeout, session.getbulk(&[&seed_oid], 0, 0xffff)).await
+    {
+        match res {
+            Ok(response) => {
+                let mut data: Vec<(String, String)> = match auth {
+                    None => vec![("community".to_owned(), creds.username.to_owned())],
+                    Some(proto) => vec![
+                        ("auth_proto".to_owned(), format!("{:?}", proto)),
+                        ("username".to_owned(), creds.username.to_owned()),
+                        ("password".to_owned(), creds.password.to_owned()),
+                    ],
+                };
 
-                        // remove the type from the output
-                        let mut value = format!("{:?}", val);
-                        if let Some((_type, v)) = value.split_once(':') {
-                            value = v.trim().to_owned();
-                        }
+                for (oid, val) in response.varbinds {
+                    let name = oids::get_oid_name(&oid);
 
-                        data.push((name, value));
+                    // remove the type from the output
+                    let mut value = format!("{:?}", val);
+                    if let Some((_type, v)) = value.split_once(':') {
+                        value = v.trim().to_owned();
                     }
 
-                    return Ok(Some(vec![Loot::new("snmp", &address, data)]));
+                    data.push((name, value));
                 }
-                // In case if the engine boot / time counters are not set in the security parameters or
-                // they have been changed on the target, e.g. after a reboot, the session returns
-                // an error with the AuthUpdated code. In this case, security parameters are automatically
-                // updated and the request should be repeated.
-                Err(snmp2::Error::AuthUpdated) => continue,
-                // session read failure
-                Err(e) => {
-                    if auth.is_none() {
-                        // this should not happen for snmp1 and snmp2
-                        log::error!("error: {:?}", e);
-                    }
-                    break;
-                }
+
+                return Ok(Some(vec![Loot::new("snmp", &address, data)]));
             }
-        } else {
-            // timeout
-            break;
+            // In case if the engine boot / time counters are not set in the security parameters or
+            // they have been changed on the target, e.g. after a reboot, the session returns
+            // an error with the AuthUpdated code. In this case, security parameters are automatically
+            // updated and the request should be repeated.
+            Err(snmp2::Error::AuthUpdated) => continue,
+            // session read failure
+            Err(e) => {
+                if auth.is_none() {
+                    // this should not happen for snmp1 and snmp2
+                    log::error!("error: {:?}", e);
+                }
+                break;
+            }
         }
     }
 

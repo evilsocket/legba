@@ -3,11 +3,11 @@ use std::time::Duration;
 use async_trait::async_trait;
 use sibyl as oracle;
 
+use crate::Options;
+use crate::Plugin;
 use crate::creds::Credentials;
 use crate::session::{Error, Loot};
 use crate::utils;
-use crate::Options;
-use crate::Plugin;
 
 pub(crate) mod options;
 
@@ -56,7 +56,7 @@ impl Plugin for Oracle {
         if op.is_err() {
             // timeout
             Err("timed out".to_owned())
-        } else if let Ok(_) = op.unwrap() {
+        } else if op.unwrap().is_ok() {
             Ok(Some(vec![Loot::new(
                 "oracle",
                 &address,
