@@ -126,6 +126,34 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_get_target_url_interpolates_hostname() {
+        let mut creds = Credentials {
+            target: "{PAYLOAD}.test.com:3000/".to_owned(),
+            username: "something".to_owned(),
+            password: String::new(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "https://something.test.com:3000/",
+            http.get_target_url(&mut creds).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_get_target_url_interpolates_hostname_and_query() {
+        let mut creds = Credentials {
+            target: "{PAYLOAD}.test.com:3000/?p={PASSWORD}".to_owned(),
+            username: "something".to_owned(),
+            password: "f00b4r".to_owned(),
+        };
+        let http = HTTP::new(Strategy::Request);
+        assert_eq!(
+            "https://something.test.com:3000/?p=f00b4r",
+            http.get_target_url(&mut creds).unwrap()
+        );
+    }
+
     #[tokio::test]
     async fn test_plugin_adds_default_content_type_if_post() {
         let mut http = HTTP::new(Strategy::Request);

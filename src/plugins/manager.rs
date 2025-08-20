@@ -175,17 +175,21 @@ async fn worker(plugin: &dyn Plugin, unreachables: Arc<DashSet<Arc<str>>>, sessi
                             tokio::time::sleep(retry_time).await;
                             continue;
                         } else {
-                            // add this target to the list of unreachable in order to avoi
-                            // pointless attempts
-                            unreachables.insert(Arc::from(creds.target.as_str()));
+                            // if the target contains a placeholder that's going to be interpolated
+                            // we can't add it to the list of unreachable
+                            if !creds.target.contains("{") && !creds.target.contains("}") {
+                                // add this target to the list of unreachable in order to avoi
+                                // pointless attempts
+                                unreachables.insert(Arc::from(creds.target.as_str()));
 
-                            log::error!(
-                                "[{}] attempt {}/{}: {}",
-                                &creds.target,
-                                attempt,
-                                session.options.retries,
-                                err
-                            );
+                                log::error!(
+                                    "[{}] attempt {}/{}: {}",
+                                    &creds.target,
+                                    attempt,
+                                    session.options.retries,
+                                    err
+                                );
+                            }
                         }
                     }
                     Ok(loot) => {

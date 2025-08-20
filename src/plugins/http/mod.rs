@@ -31,6 +31,9 @@ const HTTP_USERNAME_VAR: &str = "{$username}";
 const HTTP_PASSWORD_VAR: &str = "{$password}";
 const HTTP_PAYLOAD_VAR: &str = "{$payload}";
 
+const HTTP_LOWERCASE_PLACEHOLDERS: &[&str] = &["{payload}", "{username}", "{password}"];
+const HTTP_UPPERCASE_PLACEHOLDERS: &[&str] = &["{PAYLOAD}", "{USERNAME}", "{PASSWORD}"];
+
 super::manager::register_plugin! {
     "http" => HTTP::new(Strategy::Request),
     "http.form" => HTTP::new(Strategy::Form),
@@ -129,7 +132,7 @@ impl HTTP {
         // parse as url
         let target_url = Url::parse(&target).map_err(|e| e.to_string())?;
         // more logic
-        let target_url = if self.strategy == Strategy::Enumeration {
+        let mut target_url = if self.strategy == Strategy::Enumeration {
             let port_part = if let Some(port) = target_url.port() {
                 format!(":{}", port)
             } else {
@@ -154,6 +157,13 @@ impl HTTP {
         } else {
             target_url.to_string()
         };
+
+        // the Url::parse() call in get_target_url will make the placeholders lowercase
+        // if they are in the hostname, we need to re-uppercase them in order for the
+        // next part of the logic to work
+        for placeholder in HTTP_LOWERCASE_PLACEHOLDERS {
+            target_url = target_url.replace(placeholder, &placeholder.to_uppercase());
+        }
 
         Ok(placeholders::interpolate(&target_url, creds))
     }
@@ -535,10 +545,18 @@ impl HTTP {
         Ok(())
     }
 
-    async fn check_status_codes(&mut self, opts: &Options) -> Result<(), Error> {
+    async fn validate_success_condition(&mut self, opts: &Options) -> Result<(), Error> {
         if opts.target.is_none() {
             log::warn!("target not set, skipping status code check (TEST MODE?)");
             return Ok(());
+        }
+
+        let t = opts.target.as_ref().unwrap();
+        for placeholder in HTTP_UPPERCASE_PLACEHOLDERS {
+            if t.contains(placeholder) {
+                log::info!("target contains a placeholder, skipping success condition check");
+                return Ok(());
+            }
         }
 
         log::info!(
@@ -666,13 +684,23 @@ impl HTTP {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         let mut creds = creds.clone();
+        let mut had_placeholder = false;
+        for placeholder in HTTP_UPPERCASE_PLACEHOLDERS {
+            if creds.target.contains(placeholder) {
+                had_placeholder = true;
+                break;
+            }
+        }
+
         let target = self.get_target_url(&mut creds)?;
         let headers = self.setup_headers();
-        let url_raw = if target.contains("{PAYLOAD}") {
-            // by interpolation
-            placeholders::interpolate(&target, &creds)
+
+        // if the target itself contained a placeholder, the payload
+        // has already been interpolated by get_target_url, so we don't need to do it again
+        let url_raw = if had_placeholder {
+            target.to_owned()
         } else {
-            // by appending
+            // otherwise, we need to append it
             format!(
                 "{}{}",
                 &target,
@@ -888,7 +916,7 @@ impl Plugin for HTTP {
                 .map_err(|e| e.to_string())?
         };
 
-        self.check_status_codes(opts).await
+        self.validate_success_condition(opts).await
     }
 
     async fn attempt(
