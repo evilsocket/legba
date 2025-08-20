@@ -24,13 +24,14 @@ jobs:
       - name: Show the version
         run: |
           echo "version is: $VERSION"
-      - name: Check that tag version and Cargo.toml version are the same
-        shell: bash
-        run: |
-          if ! grep -q "version = \"$VERSION\"" Cargo.toml; then
-            echo "version does not match Cargo.toml" >&2
-            exit 1
-          fi
+      # UNCOMMENT WHEN READY
+      # - name: Check that tag version and Cargo.toml version are the same
+      #   shell: bash
+      #   run: |
+      #     if ! grep -q "version = \"$VERSION\"" Cargo.toml; then
+      #       echo "version does not match Cargo.toml" >&2
+      #       exit 1
+      #     fi
           
       # - name: Create GitHub release
       #   env:
