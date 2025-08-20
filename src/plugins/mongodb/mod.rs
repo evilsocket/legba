@@ -40,30 +40,42 @@ impl Plugin for MongoDB {
         let (host, port) = utils::parse_target(&creds.target, 27017)?;
 
         let mut opts = mongodb::options::ClientOptions::default();
-        let mut cred = Credential::default();
-
-        cred.username = Some(creds.username.to_owned());
-        cred.password = Some(creds.password.to_owned());
-
         opts.hosts = vec![mongodb::options::ServerAddress::Tcp {
             host: host.to_owned(),
             port: Some(port),
         }];
         opts.connect_timeout = Some(timeout);
-        opts.credential = Some(cred);
+        
+        if creds.username.is_empty() && creds.password.is_empty() {
+            opts.credential = None;
+        } else {
+            let mut cred = Credential::default();
+            cred.username = Some(creds.username.to_owned());
+            cred.password = Some(creds.password.to_owned());
+            opts.credential = Some(cred);
+        }
 
         let cli = mongodb::Client::with_options(opts).map_err(|e| e.to_string())?;
         let dbs = cli.list_database_names().await;
 
         if let Ok(dbs) = dbs {
-            Ok(Some(vec![Loot::new(
-                "mongodb",
-                &host,
-                [
+            let loot_data = if creds.username.is_empty() && creds.password.is_empty() {
+                vec![
+                    ("auth_type".to_owned(), "no_auth".to_owned()),
+                    ("databases".to_owned(), dbs.join(", ")),
+                ]
+            } else {
+                vec![
                     ("username".to_owned(), creds.username.to_owned()),
                     ("password".to_owned(), creds.password.to_owned()),
                     ("databases".to_owned(), dbs.join(", ")),
-                ],
+                ]
+            };
+            
+            Ok(Some(vec![Loot::new(
+                "mongodb",
+                &host,
+                loot_data,
             )]))
         } else {
             Ok(None)
