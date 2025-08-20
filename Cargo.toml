@@ -102,6 +102,7 @@ aws-lc-rs = { version = "1.13.3", features = ["bindgen"] }
 dashmap = "6.1.0"
 include_dir = "0.7.4"
 evalexpr = { version = "12.0.2", features = ["regex"] }
+snmp2 = { version = "0.4.8", features = ["tokio", "v3"], optional = true }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29.0", features = ["signal"] }
@@ -138,6 +139,7 @@ default = [
     "port_scanner",
     "samba",
     "socks5",
+    "snmp",
 ]
 http = ["dep:url", "dep:reqwest", "dep:base64", "dep:ntlmclient"]
 dns = ["dep:trust-dns-resolver", "dep:dns-lookup"]
@@ -168,6 +170,7 @@ scylla = ["dep:scylla"]
 port_scanner = ["dep:reqwest"]
 samba = ["dep:smb"]
 socks5 = ["dep:fast-socks5"]
+snmp = ["dep:snmp2"]
 
 [profile.release]
 lto = true        # Enable link-time optimization

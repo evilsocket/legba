@@ -4,8 +4,6 @@ mod plugin;
 
 pub(crate) use plugin::Plugin;
 
-// TODO: AFP
-// TODO: SNMP
 // TODO: network discovery
 
 macro_rules! plug {
@@ -64,6 +62,8 @@ plug! {
     pub(crate) scylla;
     #[cfg(feature = "smtp")]
     pub(crate) smtp;
+    #[cfg(feature = "snmp")]
+    pub(crate) snmp;
     #[cfg(feature = "socks5")]
     pub(crate) socks5;
     #[cfg(feature = "sql")]

@@ -32,6 +32,7 @@ better performances and stability while consuming less resources than similar to
   * [ScyllaDB / Cassandra](plugins/scylla.md)
   * [SSH / SFTP](plugins/ssh_and_sftp.md)
   * [SMTP](plugins/smtp.md)
+  * [SNMP v1/v2/v3](plugins/snmp.md)
   * [SOCKS5](plugins/socks5.md)
   * [STOMP](plugins/stomp.md) (ActiveMQ, RabbitMQ, HornetQ and OpenMQ)
   * [Telnet](plugins/telnet.md)

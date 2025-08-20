@@ -18,7 +18,7 @@ type Inventory = BTreeMap<&'static str, Box<dyn Plugin>>;
 
 macro_rules! register_plugin {
     ($($name:literal => $instance:expr),+) => {
-        pub(super) fn register(registrar: &mut impl $crate::plugins::manager::PluginRegistrar) {
+        pub(crate) fn register(registrar: &mut impl $crate::plugins::manager::PluginRegistrar) {
             $(
                 registrar.register($name, $instance);
             )*
