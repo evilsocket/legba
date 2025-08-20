@@ -12,7 +12,7 @@ pub(crate) struct Options {
     /// Boolean expression to use to determine if a request is successful.
     pub http_success: String,
 
-    #[clap(long, default_value_t = false)]
+    #[clap(long, default_value_t = true)]
     /// Follow HTTP redirects.
     pub http_follow_redirects: bool,
     #[clap(long, default_value = "GET")]
