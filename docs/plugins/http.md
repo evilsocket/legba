@@ -150,13 +150,37 @@ legba http.ntlm2 \
 
 ### Enumeration
 
-HTTP Pages Enumeration:
+Basic HTTP directories and pages enumeration:
  
 ```sh
 legba http.enum \
     --payloads data/pages.txt \
     --target http://localhost:8888/ \
     --http-enum-ext php # php is the default value for file extensions
+```
+
+Enumerate Microsoft Azure management URLs:
+
+```sh
+legba http.enum \
+    --payloads data/names.txt \
+    --target 'https://{PAYLOAD}.scm.azurewebsites.net'
+```
+
+Enumerate Firebase apps URLs:
+
+```sh
+legba http.enum \
+    --payloads data/names.txt \
+    --target 'https://{PAYLOAD}.firebaseapp.com'
+```
+
+Enumerate AWS apps URLs:
+
+```sh
+legba http.enum \
+    --payloads data/names.txt \
+    --target 'https://{PAYLOAD}.awsapps.com'
 ```
 
 Wordpress plugin discovery using interpolation syntax:
