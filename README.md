@@ -25,7 +25,7 @@ Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerat
 ## Key Features
 
 - **100% Rust** - Legba is entirely written in Rust, does not have native dependencies and can be easily compiled for all operating systems and architectures. 🦀
-- **Multi Protocol** - Support for HTTP, DNS, SSH, FTP, SMTP, RDP, VNC, SQL databases, NoSQL, LDAP, Kerberos, SAMBA, STOMP, MQTT [and more](https://github.com/evilsocket/legba/blob/main/docs/index.md).
+- **Multi Protocol** - Support for HTTP, DNS, SSH, FTP, SMTP, RDP, VNC, SQL databases, NoSQL, LDAP, Kerberos, SAMBA, SNMP, STOMP, MQTT [and more](https://github.com/evilsocket/legba/blob/main/docs/index.md).
 - **High Performance** - Async/concurrent architecture with customizable workers for [maximum speed](https://github.com/evilsocket/legba/blob/main/docs/benchmark.md).
 - **Flexible Credentials** - [Multiple input formats](https://github.com/evilsocket/legba/blob/main/docs/usage.md) including wordlist files, ranges, permutations, and expression generators.
 - **Smart Session Management** - Save and restore session state to resume interrupted scans.
