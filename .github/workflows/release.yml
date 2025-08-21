@@ -56,21 +56,6 @@ jobs:
             bin_name: legba
             target: ''
 
-          - name: linux-arm
-            os: ubuntu-latest
-            bin_name: legba
-            target: arm-unknown-linux-gnueabi
-
-          - name: linux-armv7
-            os: ubuntu-latest
-            bin_name: legba
-            target: armv7-unknown-linux-gnueabi
-
-          - name: linux-aarch64
-            os: ubuntu-latest
-            bin_name: legba
-            target: aarch64-unknown-linux-gnu
-
           - name: apple-darwin-arm64
             os: macos-latest
             bin_name: legba
@@ -85,12 +70,6 @@ jobs:
             os: ubuntu-latest
             bin_name: legba
             target: aarch64-linux-android
-
-          # fails due to missing AtomicU64 for crate seize-0.3.3
-          #- name: android-arm
-          #  os: ubuntu-latest
-          #  bin_name: legba
-          #  target: arm-linux-androideabi
 
           - name: android-armv7
             os: ubuntu-latest
@@ -175,6 +154,12 @@ jobs:
         version="${{ needs.create-release.outputs.version }}"
         echo gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
 
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ASSET }}
+        path: ${{ env.ASSET }}
+        compression-level: 0 # no compression    
+
   build-release-deb:
     name: build-release-deb
     needs: ['create-release']
@@ -228,3 +213,9 @@ jobs:
         cd "$DEB_DIR"
         version="${{ needs.create-release.outputs.version }}"
         echo gh release upload "$version" "$DEB_NAME" "$SUM"
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.DEB_NAME }}
+        path: ${{ env.DEB_DIR }}/${{ env.DEB_NAME }}
+        compression-level: 0 # no compression    
