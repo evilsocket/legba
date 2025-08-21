@@ -20,17 +20,17 @@ jobs:
         if: env.VERSION == ''
         # UNCOMMENT WHEN READY
         # run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-        run: echo "VERSION=v0.0.1" >> $GITHUB_ENV
+        run: echo "VERSION=0.11.0" >> $GITHUB_ENV
       - name: Show the version
         run: |
           echo "version is: $VERSION"
-      # UNCOMMENT WHEN READY
-      # - name: Check that tag version and Cargo.toml version are the same
-      #   run: |
-      #     if ! grep -q "version = \"$VERSION\"" Cargo.toml; then
-      #       echo "version does not match Cargo.toml" >&2
-      #       exit 1
-      #     fi
+      
+      - name: Check that tag version and Cargo.toml version are the same
+        run: |
+          if ! grep -q "version = \"$VERSION\"" Cargo.toml; then
+            echo "version does not match Cargo.toml" >&2
+            exit 1
+          fi
           
       # - name: Create GitHub release
       #   env:
@@ -45,6 +45,8 @@ jobs:
     name: build-release
     needs: ['create-release']
     runs-on: ${{ matrix.os }}
+    env:
+      CROSS_VERSION: v0.2.5
 
     strategy:
       matrix:
@@ -52,14 +54,22 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             bin_name: legba
+            target: ''
 
           - name: apple-darwin-arm64
             os: macos-latest
             bin_name: legba
+            target: ''
 
           - name: windows-x86_64
             os: windows-latest
             bin_name: legba.exe
+            target: ''
+
+          - name: android-aarch64
+            os: ubuntu-latest
+            bin_name: legba
+            target: aarch64-linux-android
 
       fail-fast: false
 
@@ -67,13 +77,26 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Build release binary
+    - name: Setup cache
+      uses: Swatinem/rust-cache@v2
+
+    - name: Build release binary (native)
+      if: matrix.target == ''
       run: |
         cargo build --verbose --release
-
-    - name: Set binary name
-      run: |
         echo "BIN=target/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
+
+    - name: Build release binary (cross)
+      if: matrix.os == 'ubuntu-latest' && matrix.target != ''
+      run: |
+        dir="$RUNNER_TEMP/cross-download"
+        mkdir "$dir"
+        echo "$dir" >> $GITHUB_PATH
+        cd "$dir"
+        curl -LO "https://github.com/cross-rs/cross/releases/download/$CROSS_VERSION/cross-x86_64-unknown-linux-musl.tar.gz"
+        tar xf cross-x86_64-unknown-linux-musl.tar.gz
+        cross build --verbose --release --target "${{ matrix.target }}"
+        echo "BIN=target/release/${{ matrix.target }}/${{ matrix.bin_name }}" >> $GITHUB_ENV
 
     - name: Determine archive name
       shell: bash
