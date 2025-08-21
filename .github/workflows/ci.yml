@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Lint
         # somehow on windows this errors with:
@@ -40,18 +40,26 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
-  # TODO: find a way to fix this https://github.com/evilsocket/legba/actions/runs/17064881715/job/48379641330
-  # 
-  # test-android:
-  #   name: Test on Android (aarch64)
-  #   runs-on: ubuntu-latest
+  test-android:
+    name: Test on Android (aarch64)
+    runs-on: ubuntu-latest
+    env:
+      CROSS_VERSION: v0.2.5
 
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     
-  #     - name: Build binary
-  #       uses: houseabsolute/actions-rust-cross@v1
-  #       with:
-  #         command: test
-  #         target: aarch64-linux-android
-  #         args: --verbose
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Install cross
+        run: |
+          cargo install cross --git https://github.com/cross-rs/cross --rev "$CROSS_VERSION" --force
+
+      - name: Build
+        run: |
+          cross build --verbose --target aarch64-linux-android
+
+      - name: Run tests
+        run: |
+          cross test --verbose --target aarch64-linux-android
