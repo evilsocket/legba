@@ -101,8 +101,8 @@ evalexpr = { version = "12.0.2", features = ["regex"] }
 snmp2 = { version = "0.4.8", features = ["tokio", "v3"], optional = true }
 
 # force vendored openssl for every dependency
-openssl = { version = '*', features = ["vendored"] }
-openssl-sys = { version = '*', features = ["vendored"] }
+openssl = { version = '0.10', features = ["vendored"] }
+openssl-sys = { version = '0.9', features = ["vendored"] }
 
 # https://github.com/cross-rs/cross/issues/400#issuecomment-2487764365
 [build-dependencies]
