@@ -4,7 +4,8 @@ on:
   push:
     tags:
     - "[0-9]+.[0-9]+.[0-9]+"
-  # REMOVE THIS WHEN READY
+
+  # allows to run this manually, for testing
   workflow_dispatch:
 
 permissions:
@@ -18,10 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Get the release version from the tag
         if: env.VERSION == ''
-        # UNCOMMENT WHEN READY
-        # run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-        run: |
-          echo "VERSION=0.11.0" >> $GITHUB_ENV
+        run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
 
       - name: Show the version
         run: |
@@ -34,10 +32,10 @@ jobs:
             exit 1
           fi
           
-      - name: Create GitHub release (mock)
+      - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo gh release create $VERSION --draft --verify-tag --title $VERSION
+        run: gh release create $VERSION --draft --verify-tag --title $VERSION
 
     outputs:
       version: ${{ env.VERSION }}
@@ -162,13 +160,13 @@ jobs:
         echo "ASSET=$ARCHIVE.tar.gz" >> $GITHUB_ENV
         echo "ASSET_SUM=$ARCHIVE.tar.gz.sha256" >> $GITHUB_ENV
 
-    - name: Upload release archive (mock)
+    - name: Upload release archive
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
         version="${{ needs.create-release.outputs.version }}"
-        echo gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
+        gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
 
   build-release-deb:
     name: build-release-deb
@@ -210,13 +208,7 @@ jobs:
         shasum -a 256 "$DEB_NAME" > "$sum"
         echo "SUM=$sum" >> $GITHUB_ENV
 
-    - name: Upload mock
-      run: |
-        cd "$DEB_DIR"
-        version="${{ needs.create-release.outputs.version }}"
-        echo gh release upload "$version" "$DEB_NAME" "$SUM"
-
-    - name: Upload release archive (mock)
+    - name: Upload release archive
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
