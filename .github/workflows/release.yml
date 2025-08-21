@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+    - "[0-9]+.[0-9]+.[0-9]+"
   # REMOVE THIS WHEN READY
   workflow_dispatch:
 
@@ -20,7 +20,8 @@ jobs:
         if: env.VERSION == ''
         # UNCOMMENT WHEN READY
         # run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
-        run: echo "VERSION=0.11.0" >> $GITHUB_ENV
+        run: |
+          echo "VERSION=0.11.0" >> $GITHUB_ENV
       - name: Show the version
         run: |
           echo "version is: $VERSION"
@@ -32,12 +33,11 @@ jobs:
             exit 1
           fi
           
-      # - name: Create GitHub release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: gh release create $VERSION --draft --verify-tag --title $VERSION
-      - name: Create GitHub release mock
+      - name: Create GitHub release (mock)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: echo gh release create $VERSION --draft --verify-tag --title $VERSION
+
     outputs:
       version: ${{ env.VERSION }}
 
@@ -91,7 +91,7 @@ jobs:
       run: |
         cargo install cross --git https://github.com/cross-rs/cross --rev "$CROSS_VERSION" --force
         cross build --verbose --release --target "${{ matrix.target }}"
-        echo "BIN=target/release/${{ matrix.target }}/${{ matrix.bin_name }}" >> $GITHUB_ENV
+        echo "BIN=target/${{ matrix.target }}/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
 
     - name: Determine archive name
       shell: bash
@@ -105,6 +105,7 @@ jobs:
         file "$BIN"
 
     - name: Creating directory for archive
+      shell: bash
       run: |
         mkdir -p "$ARCHIVE"
         cp "$BIN" "$ARCHIVE"/
@@ -126,18 +127,12 @@ jobs:
         echo "ASSET=$ARCHIVE.tar.gz" >> $GITHUB_ENV
         echo "ASSET_SUM=$ARCHIVE.tar.gz.sha256" >> $GITHUB_ENV
 
-    - name: Upload mock
+    - name: Upload release archive (mock)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         version="${{ needs.create-release.outputs.version }}"
         echo gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
-
-    # UNCOMMENT WHEN READY
-    # - name: Upload release archive
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   run: |
-    #     version="${{ needs.create-release.outputs.version }}"
-    #     gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
 
   build-release-deb:
     name: build-release-deb
@@ -185,11 +180,10 @@ jobs:
         version="${{ needs.create-release.outputs.version }}"
         echo gh release upload "$version" "$DEB_NAME" "$SUM"
 
-    # UNCOMMENT WHEN READY
-    # - name: Upload release archive
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   run: |
-    #     cd "$DEB_DIR"
-    #     version="${{ needs.create-release.outputs.version }}"
-    #     gh release upload "$version" "$DEB_NAME" "$SUM"
+    - name: Upload release archive (mock)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cd "$DEB_DIR"
+        version="${{ needs.create-release.outputs.version }}"
+        echo gh release upload "$version" "$DEB_NAME" "$SUM"

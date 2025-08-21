@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import subprocess
 import re
+import subprocess
 
 # print changelog
 current_tag = subprocess.run(
@@ -39,8 +39,8 @@ with open('Cargo.toml', 'w+t') as fp:
 print("git add Cargo.*")
 print("git commit -m 'releasing version %s'" % next_ver)
 print("git push")
-print("git tag -a v%s -m 'releasing v%s'" % (next_ver, next_ver))
-print("git push origin v%s" % next_ver)
+print("git tag -a %s -m 'releasing v%s'" % (next_ver, next_ver))
+print("git push origin %s" % next_ver)
 
 print()
 # publish on crates.io
