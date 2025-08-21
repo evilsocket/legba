@@ -44,152 +44,32 @@ jobs:
     name: build-release
     needs: ['create-release']
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO: cargo
-      TARGET_FLAGS:
-      TARGET_DIR: ./target
-      CROSS_VERSION: v0.2.5
-      RUST_BACKTRACE: 1
+
     strategy:
-      fail-fast: false
       matrix:
-        include:
-        - build: linux
-          os: ubuntu-latest
-          rust: nightly
-          target: x86_64-unknown-linux-musl
-          strip: x86_64-linux-musl-strip
-        - build: stable-x86
-          os: ubuntu-latest
-          rust: stable
-          target: i686-unknown-linux-gnu
-          strip: x86_64-linux-gnu-strip
-          qemu: i386
-        - build: stable-aarch64
-          os: ubuntu-latest
-          rust: stable
-          target: aarch64-unknown-linux-gnu
-          strip: aarch64-linux-gnu-strip
-          qemu: qemu-aarch64
-        - build: stable-arm-gnueabihf
-          os: ubuntu-latest
-          rust: stable
-          target: armv7-unknown-linux-gnueabihf
-          strip: arm-linux-gnueabihf-strip
-          qemu: qemu-arm
-        - build: stable-arm-musleabihf
-          os: ubuntu-latest
-          rust: stable
-          target: armv7-unknown-linux-musleabihf
-          strip: arm-linux-musleabihf-strip
-          qemu: qemu-arm
-        - build: stable-arm-musleabi
-          os: ubuntu-latest
-          rust: stable
-          target: armv7-unknown-linux-musleabi
-          strip: arm-linux-musleabi-strip
-          qemu: qemu-arm
-        - build: stable-powerpc64
-          os: ubuntu-latest
-          rust: stable
-          target: powerpc64-unknown-linux-gnu
-          strip: powerpc64-linux-gnu-strip
-          qemu: qemu-ppc64
-        - build: stable-s390x
-          os: ubuntu-latest
-          rust: stable
-          target: s390x-unknown-linux-gnu
-          strip: s390x-linux-gnu-strip
-          qemu: qemu-s390x
-        - build: macos
-          os: macos-latest
-          rust: nightly
-          target: x86_64-apple-darwin
-        - build: win-msvc
-          os: windows-latest
-          rust: nightly
-          target: x86_64-pc-windows-msvc
-        - build: win-gnu
-          os: windows-latest
-          rust: nightly-x86_64-gnu
-          target: x86_64-pc-windows-gnu
-        - build: win32-msvc
-          os: windows-latest
-          rust: nightly
-          target: i686-pc-windows-msvc
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install packages (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: |
-        .github/workflows/ubuntu-install-packages
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-        target: ${{ matrix.target }}
-
-    - name: Use Cross
-      if: matrix.os == 'ubuntu-latest' && matrix.target != ''
-      shell: bash
-      run: |
-        dir="$RUNNER_TEMP/cross-download"
-        mkdir "$dir"
-        echo "$dir" >> $GITHUB_PATH
-        cd "$dir"
-        curl -LO "https://github.com/cross-rs/cross/releases/download/$CROSS_VERSION/cross-x86_64-unknown-linux-musl.tar.gz"
-        tar xf cross-x86_64-unknown-linux-musl.tar.gz
-        echo "CARGO=cross" >> $GITHUB_ENV
-
-    - name: Set target variables
-      shell: bash
-      run: |
-        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
-        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
-
-    - name: Show command used for Cargo
-      shell: bash
-      run: |
-        echo "cargo command is: ${{ env.CARGO }}"
-        echo "target flag is: ${{ env.TARGET_FLAGS }}"
-        echo "target dir is: ${{ env.TARGET_DIR }}"
-
     - name: Build release binary
       shell: bash
       run: |
-        ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
+        cargo build --verbose --release
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          bin="target/${{ matrix.target }}/release/legba.exe"
+          bin="target/release/legba.exe"
         else
-          bin="target/${{ matrix.target }}/release/legba"
+          bin="target/release/legba"
         fi
         echo "BIN=$bin" >> $GITHUB_ENV
-
-    - name: Strip release binary (macos)
-      if: matrix.os == 'macos-latest'
-      shell: bash
-      run: strip "$BIN"
-
-    - name: Strip release binary (cross)
-      if: env.CARGO == 'cross'
-      shell: bash
-      run: |
-        docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          "ghcr.io/cross-rs/${{ matrix.target }}:main" \
-          "${{ matrix.strip }}" \
-          "/$BIN"
 
     - name: Determine archive name
       shell: bash
       run: |
         version="${{ needs.create-release.outputs.version }}"
-        echo "ARCHIVE=legba-$version-${{ matrix.target }}" >> $GITHUB_ENV
+        echo "ARCHIVE=legba-$version-x86_64" >> $GITHUB_ENV
 
     - name: Creating directory for archive
       shell: bash
@@ -230,7 +110,6 @@ jobs:
     needs: ['create-release']
     runs-on: ubuntu-latest
     env:
-      TARGET: x86_64-unknown-linux-musl
       RUST_BACKTRACE: 1
 
     steps:
@@ -241,12 +120,6 @@ jobs:
       shell: bash
       run: |
         .github/workflows/ubuntu-install-packages
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: nightly
-        target: ${{ env.TARGET }}
 
     - name: Install cargo-deb
       shell: bash
@@ -263,9 +136,9 @@ jobs:
     - name: Build release binary
       shell: bash
       run: |
-        cargo deb --profile deb --target ${{ env.TARGET }}
+        cargo deb --profile deb
         version="${{ needs.create-release.outputs.version }}"
-        echo "DEB_DIR=target/${{ env.TARGET }}/debian" >> $GITHUB_ENV
+        echo "DEB_DIR=target/debian" >> $GITHUB_ENV
         echo "DEB_NAME=legba_$version-1_amd64.deb" >> $GITHUB_ENV
 
     - name: Create sha256 sum of deb file
