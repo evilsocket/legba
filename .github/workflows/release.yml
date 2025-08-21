@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -48,7 +48,18 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        - name: linux-x86_64
+          os: ubuntu-latest
+          bin_name: legba
+
+        - name: apple-darwin-arm64
+          os: macos-latest
+          bin_name: legba
+
+        - name: windows-x86_64
+          os: windows-latest
+          bin_name: legba.exe
+
       fail-fast: false
 
     steps:
@@ -59,25 +70,15 @@ jobs:
       run: |
         cargo build --verbose --release
 
-    - name: Set binary name (Unix)
-      if: matrix.os != 'windows-latest'
+    - name: Set binary name
       run: |
-        echo "BIN=target/release/legba" >> $GITHUB_ENV
-
-    - name: Set binary name (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        echo "BIN=target/release/legba.exe" >> $GITHUB_ENV
+        echo "BIN=target/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
 
     - name: Determine archive name
       shell: bash
       run: |
         version="${{ needs.create-release.outputs.version }}"
-        if [ "${{ matrix.os }}" = "macos-latest" ]; then
-          echo "ARCHIVE=legba-$version-aarch64" >> $GITHUB_ENV
-        else
-          echo "ARCHIVE=legba-$version-x86_64" >> $GITHUB_ENV
-        fi
+        echo "ARCHIVE=legba-$version-${{ matrix.name }}" >> $GITHUB_ENV
 
     - name: Show binary info
       shell: bash
@@ -153,6 +154,7 @@ jobs:
 
     - name: Create sha256 sum of deb file
       run: |
+        ls -la "$DEB_DIR"
         cd "$DEB_DIR"
         sum="$DEB_NAME.sha256"
         shasum -a 256 "$DEB_NAME" > "$sum"
