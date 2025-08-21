@@ -286,7 +286,7 @@ impl Session {
 
             // On Windows, use taskkill to terminate the process
             Command::new("taskkill")
-                .args(&["/PID", &self.process_id.to_string(), "/F"])
+                .args(["/PID", &self.process_id.to_string(), "/F"])
                 .creation_flags(0x08000000) // CREATE_NO_WINDOW
                 .output()
                 .map_err(|e| e.to_string())
