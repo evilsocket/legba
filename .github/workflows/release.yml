@@ -109,7 +109,8 @@ jobs:
       run: |
         mkdir -p "$ARCHIVE"
         cp "$BIN" "$ARCHIVE"/
-        cp -rf {README.md,LICENSE,docs} "$ARCHIVE"/
+        cp -rf README.md LICENSE docs "$ARCHIVE"/
+        ls -la "$ARCHIVE"
 
     - name: Build archive (Windows)
       if: matrix.os == 'windows-latest'
