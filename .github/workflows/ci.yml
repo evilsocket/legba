@@ -26,14 +26,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Lint
-        # somehow on windows this errors with:
-        # error: failed to run custom build command for `sibyl v0.6.19`
-        # Caused by:
-        #   process didn't exit successfully: `D:\a\legba\legba\target\debug\build\sibyl-8bb2dd83cace707f\build-script-build` (exit code: 1)
-        #   --- stderr
-        #   OCI_LIB_DIR must be specified for "msvc" targets
-        if: matrix.os != 'windows-latest'
-        run: cargo clippy --all-targets --all-features
+        run: cargo clippy --all-targets
 
       - name: Build
         run: cargo build
