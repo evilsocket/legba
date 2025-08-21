@@ -6,6 +6,7 @@ MQTT password authentication.
 | ---- | ----------- | 
 | `--mqtt-client-id <MQTT_CLIENT_ID>` | MQTT client identifier [default: `legba`] |
 | `--mqtt-v5` | Use MQTT v5 |
+| `--mqtt-ssl` | Use SSL/TLS connection (mqtts://) with certificate verification disabled. |
 
 ## Examples
 
