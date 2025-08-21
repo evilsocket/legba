@@ -22,6 +22,7 @@ jobs:
         # run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
         run: |
           echo "VERSION=0.11.0" >> $GITHUB_ENV
+          
       - name: Show the version
         run: |
           echo "version is: $VERSION"

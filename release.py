@@ -35,6 +35,8 @@ result = re.sub(version_match_re, 'version = "%s"' %
 with open('Cargo.toml', 'w+t') as fp:
     fp.write(result)
 
+# make sure Cargo.lock is up to date
+print("cargo update -p legba")
 # commit, push and create new tag
 print("git add Cargo.*")
 print("git commit -m 'releasing version %s'" % next_ver)
@@ -43,5 +45,6 @@ print("git tag -a %s -m 'releasing v%s'" % (next_ver, next_ver))
 print("git push origin %s" % next_ver)
 
 print()
+
 # publish on crates.io
 print("cargo publish")
