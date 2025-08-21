@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -48,17 +48,18 @@ jobs:
 
     strategy:
       matrix:
-        - name: linux-x86_64
-          os: ubuntu-latest
-          bin_name: legba
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            bin_name: legba
 
-        - name: apple-darwin-arm64
-          os: macos-latest
-          bin_name: legba
+          - name: apple-darwin-arm64
+            os: macos-latest
+            bin_name: legba
 
-        - name: windows-x86_64
-          os: windows-latest
-          bin_name: legba.exe
+          - name: windows-x86_64
+            os: windows-latest
+            bin_name: legba.exe
 
       fail-fast: false
 
