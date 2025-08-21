@@ -54,7 +54,42 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             bin_name: legba
-            target: ''
+            target: x86_64-unknown-linux-musl
+
+          - name: linux-aarch64
+            os: ubuntu-latest
+            bin_name: legba
+            target: aarch64-unknown-linux-musl
+
+          - name: linux-armv7
+            os: ubuntu-latest
+            bin_name: legba
+            target: armv7-unknown-linux-musleabi
+
+          - name: linux-armv7hf
+            os: ubuntu-latest
+            bin_name: legba
+            target: armv7-unknown-linux-musleabihf
+
+          - name: linux-mips
+            os: ubuntu-latest
+            bin_name: legba
+            target: mips-unknown-linux-musl
+
+          - name: linux-mips64
+            os: ubuntu-latest
+            bin_name: legba
+            target: mips64-unknown-linux-muslabi64
+          
+          - name: freebsd-x86_64
+            os: ubuntu-latest
+            bin_name: legba
+            target: x86_64-unknown-freebsd
+
+          - name: netbsd-x86_64
+            os: ubuntu-latest
+            bin_name: legba
+            target: x86_64-unknown-netbsd
 
           - name: apple-darwin-arm64
             os: macos-latest
@@ -66,20 +101,25 @@ jobs:
             bin_name: legba.exe
             target: ''
 
+          - name: android-x86_64
+            os: ubuntu-latest
+            bin_name: legba
+            target: x86_64-linux-android
+
           - name: android-aarch64
             os: ubuntu-latest
             bin_name: legba
             target: aarch64-linux-android
 
+          - name: android-arm
+            os: ubuntu-latest
+            bin_name: legba
+            target: arm-linux-androideabi
+
           - name: android-armv7
             os: ubuntu-latest
             bin_name: legba
             target: armv7-linux-androideabi
-
-          - name: android-x86_64
-            os: ubuntu-latest
-            bin_name: legba
-            target: x86_64-linux-android
 
       fail-fast: false
 
@@ -154,12 +194,6 @@ jobs:
         version="${{ needs.create-release.outputs.version }}"
         echo gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.ASSET }}
-        path: ${{ env.ASSET }}
-        compression-level: 0 # no compression    
-
   build-release-deb:
     name: build-release-deb
     needs: ['create-release']
@@ -213,9 +247,3 @@ jobs:
         cd "$DEB_DIR"
         version="${{ needs.create-release.outputs.version }}"
         echo gh release upload "$version" "$DEB_NAME" "$SUM"
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.DEB_NAME }}
-        path: ${{ env.DEB_DIR }}/${{ env.DEB_NAME }}
-        compression-level: 0 # no compression    
