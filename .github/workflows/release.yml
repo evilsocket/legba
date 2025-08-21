@@ -58,14 +58,19 @@ jobs:
     - name: Build release binary
       run: |
         cargo build --verbose --release
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          bin="target/release/legba.exe"
-        else
-          bin="target/release/legba"
-        fi
-        echo "BIN=$bin" >> $GITHUB_ENV
+
+    - name: Set binary name (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        echo "BIN=target/release/legba" >> $GITHUB_ENV
+
+    - name: Set binary name (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        echo "BIN=target/release/legba.exe" >> $GITHUB_ENV
 
     - name: Determine archive name
+      shell: bash
       run: |
         version="${{ needs.create-release.outputs.version }}"
         if [ "${{ matrix.os }}" = "macos-latest" ]; then
