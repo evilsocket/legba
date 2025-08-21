@@ -86,10 +86,11 @@ jobs:
             bin_name: legba
             target: aarch64-linux-android
 
-          - name: android-arm
-            os: ubuntu-latest
-            bin_name: legba
-            target: arm-linux-androideabi
+          # fails due to missing AtomicU64 for crate seize-0.3.3
+          #- name: android-arm
+          #  os: ubuntu-latest
+          #  bin_name: legba
+          #  target: arm-linux-androideabi
 
           - name: android-armv7
             os: ubuntu-latest
