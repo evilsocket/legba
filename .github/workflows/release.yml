@@ -56,40 +56,20 @@ jobs:
             bin_name: legba
             target: x86_64-unknown-linux-musl
 
-          - name: linux-aarch64
+          - name: linux-arm64
             os: ubuntu-latest
             bin_name: legba
             target: aarch64-unknown-linux-musl
-
-          - name: linux-armv7
-            os: ubuntu-latest
-            bin_name: legba
-            target: armv7-unknown-linux-musleabi
 
           - name: linux-armv7hf
             os: ubuntu-latest
             bin_name: legba
             target: armv7-unknown-linux-musleabihf
 
-          - name: linux-mips
+          - name: linux-armv7
             os: ubuntu-latest
             bin_name: legba
-            target: mips-unknown-linux-musl
-
-          - name: linux-mips64
-            os: ubuntu-latest
-            bin_name: legba
-            target: mips64-unknown-linux-muslabi64
-          
-          - name: freebsd-x86_64
-            os: ubuntu-latest
-            bin_name: legba
-            target: x86_64-unknown-freebsd
-
-          - name: netbsd-x86_64
-            os: ubuntu-latest
-            bin_name: legba
-            target: x86_64-unknown-netbsd
+            target: armv7-unknown-linux-musleabi
 
           - name: apple-darwin-arm64
             os: macos-latest
@@ -106,20 +86,20 @@ jobs:
             bin_name: legba
             target: x86_64-linux-android
 
-          - name: android-aarch64
+          - name: android-arm64
             os: ubuntu-latest
             bin_name: legba
             target: aarch64-linux-android
-
-          - name: android-arm
-            os: ubuntu-latest
-            bin_name: legba
-            target: arm-linux-androideabi
 
           - name: android-armv7
             os: ubuntu-latest
             bin_name: legba
             target: armv7-linux-androideabi
+            
+          - name: android-arm
+            os: ubuntu-latest
+            bin_name: legba
+            target: arm-linux-androideabi
 
       fail-fast: false
 
