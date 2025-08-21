@@ -9,13 +9,14 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-# Make sure CI fails on all warnings, including Clippy lints
-  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   test:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      # Make sure CI fails on all warnings, including Clippy lints
+      RUSTFLAGS: "-Dwarnings"
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
