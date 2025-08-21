@@ -214,4 +214,4 @@ jobs:
       run: |
         cd "$DEB_DIR"
         version="${{ needs.create-release.outputs.version }}"
-        echo gh release upload "$version" "$DEB_NAME" "$SUM"
+        gh release upload "$version" "$DEB_NAME" "$SUM"
