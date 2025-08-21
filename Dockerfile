@@ -1,6 +1,6 @@
 FROM rust:bullseye AS builder
 
-RUN apt-get update && apt-get install -y cmake git libclang-dev
+RUN apt-get update && apt-get install -y cmake libclang-dev
 
 WORKDIR /app
 ADD . /app

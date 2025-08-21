@@ -114,25 +114,34 @@ jobs:
       if: matrix.target == ''
       run: |
         cargo build --verbose --release
-        echo "BIN=target/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
 
     - name: Build release binary (cross)
       if: matrix.os == 'ubuntu-latest' && matrix.target != ''
       run: |
         cargo install cross --git https://github.com/cross-rs/cross --rev "$CROSS_VERSION" --force
         cross build --verbose --release --target "${{ matrix.target }}"
-        ls -la target/${{ matrix.target }}/release/
-        echo "BIN=target/${{ matrix.target }}/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
 
-    - name: Determine archive name
+    - name: Set binary and archive name (native)
+      if: matrix.target == ''
+      shell: bash
       run: |
+        echo "BIN=target/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
+        echo "ARCHIVE=legba-${{ needs.create-release.outputs.version }}-${{ matrix.name }}" >> $GITHUB_ENV
+
+    - name: Set binary and archive name (cross)
+      if: matrix.target != ''
+      shell: bash
+      run: |
+        echo "BIN=target/${{ matrix.target }}/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
         echo "ARCHIVE=legba-${{ needs.create-release.outputs.version }}-${{ matrix.name }}" >> $GITHUB_ENV
 
     - name: Show binary info
+      shell: bash
       run: |
         file "$BIN"
 
     - name: Creating directory for archive
+      shell: bash
       run: |
         mkdir -p "$ARCHIVE"
         cp "$BIN" "$ARCHIVE"/
@@ -141,6 +150,7 @@ jobs:
 
     - name: Build archive (Windows)
       if: matrix.os == 'windows-latest'
+      shell: bash
       run: |
         7z a "$ARCHIVE.zip" "$ARCHIVE"
         certutil -hashfile "$ARCHIVE.zip" SHA256 > "$ARCHIVE.zip.sha256"
@@ -149,6 +159,7 @@ jobs:
 
     - name: Build archive (Unix)
       if: matrix.os != 'windows-latest'
+      shell: bash
       run: |
         tar czf "$ARCHIVE.tar.gz" "$ARCHIVE"
         shasum -a 256 "$ARCHIVE.tar.gz" > "$ARCHIVE.tar.gz.sha256"
@@ -158,6 +169,7 @@ jobs:
     - name: Upload release archive (mock)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
       run: |
         version="${{ needs.create-release.outputs.version }}"
         echo gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}

@@ -14,10 +14,6 @@ homepage = "https://github.com/evilsocket/legba"
 [dependencies]
 lazy_static = "1.4.0"
 
-# force vendored openssl for every dependency
-openssl = { version = "0.10.64", features = ["vendored"] }
-openssl-sys = { version = "0.9.109", features = ["vendored"] }
-
 ahash = "0.8.3"
 ansi_term = "0.12.1"
 async-channel = "2.5.0"
@@ -103,6 +99,14 @@ dashmap = "6.1.0"
 include_dir = "0.7.4"
 evalexpr = { version = "12.0.2", features = ["regex"] }
 snmp2 = { version = "0.4.8", features = ["tokio", "v3"], optional = true }
+
+# force vendored openssl for every dependency
+openssl = { version = '*', features = ["vendored"] }
+openssl-sys = { version = '*', features = ["vendored"] }
+# https://github.com/cross-rs/cross/issues/400#issuecomment-2487764365
+[build-dependencies]
+openssl = { version = '*', features = ["vendored"] }
+openssl-sys = { version = '*', features = ["vendored"] }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29.0", features = ["signal"] }

@@ -1,5 +1,4 @@
 [build]
 pre-build = [
-    "dpkg --add-architecture $CROSS_DEB_ARCH",
-    "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install tzdata pkg-config cmake libssl-dev:$CROSS_DEB_ARCH"
+    "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install tzdata pkg-config build-essential cmake"
 ]
