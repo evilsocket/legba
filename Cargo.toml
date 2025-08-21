@@ -106,8 +106,8 @@ openssl-sys = { version = '0.9', features = ["vendored"] }
 
 # https://github.com/cross-rs/cross/issues/400#issuecomment-2487764365
 [build-dependencies]
-openssl = { version = '*', features = ["vendored"] }
-openssl-sys = { version = '*', features = ["vendored"] }
+openssl = { version = '0.10', features = ["vendored"] }
+openssl-sys = { version = '0.9', features = ["vendored"] }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29.0", features = ["signal"] }
