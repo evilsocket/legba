@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
+import os
 import re
-import subprocess
 
-# print changelog
-current_tag = subprocess.run(
-    ['git', 'describe', '--tags', '--abbrev=0'], capture_output=True, text=True).stdout.strip()
-if current_tag == "":
-    # os.system("git log HEAD --oneline")
-    interval = 'HEAD'
-else:
-    print("current tag: %s" % current_tag)
-    interval = '%s..HEAD' % current_tag
-
-print("CHANGELOG:\n\n%s\n" % subprocess.run(
-    ['git', 'log', interval, '--oneline'], capture_output=True, text=True).stdout.strip())
+if os.system("nerve run changelog -q") != 0:
+    print("failed to generate changelog")
+    quit()
 
 version_match_re = r'^version\s*=\s*"([^"]+)"$'
-
 with open('Cargo.toml', 'rt') as fp:
     manifest = fp.read()
 
@@ -37,6 +27,7 @@ with open('Cargo.toml', 'w+t') as fp:
 
 # make sure Cargo.lock is up to date
 print("cargo update -p legba")
+
 # commit, push and create new tag
 print("git add Cargo.*")
 print("git commit -m 'releasing version %s'" % next_ver)

@@ -22,7 +22,7 @@ jobs:
         # run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
         run: |
           echo "VERSION=0.11.0" >> $GITHUB_ENV
-          
+
       - name: Show the version
         run: |
           echo "version is: $VERSION"
@@ -96,11 +96,6 @@ jobs:
             os: ubuntu-latest
             bin_name: legba
             target: armv7-linux-androideabi
-            
-          - name: android-arm
-            os: ubuntu-latest
-            bin_name: legba
-            target: arm-linux-androideabi
 
       fail-fast: false
 
