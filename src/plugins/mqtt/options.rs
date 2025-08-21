@@ -8,6 +8,10 @@ pub(crate) struct Options {
     /// MQTT client id.
     pub mqtt_client_id: String,
     #[clap(long, default_value_t = false)]
-    /// use v5 of the MQTT protocol.
+    /// Use v5 of the MQTT protocol.
     pub mqtt_v5: bool,
+    
+    #[clap(long, default_value_t = false)]
+    /// Use SSL/TLS connection (mqtts://) with certificate verification disabled.
+    pub mqtt_ssl: bool,
 }
