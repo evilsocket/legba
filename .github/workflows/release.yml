@@ -89,13 +89,8 @@ jobs:
     - name: Build release binary (cross)
       if: matrix.os == 'ubuntu-latest' && matrix.target != ''
       run: |
-        dir="$RUNNER_TEMP/cross-download"
-        mkdir "$dir"
-        echo "$dir" >> $GITHUB_PATH
-        cd "$dir"
-        curl -LO "https://github.com/cross-rs/cross/releases/download/$CROSS_VERSION/cross-x86_64-unknown-linux-musl.tar.gz"
-        tar xf cross-x86_64-unknown-linux-musl.tar.gz
-        ./cross build --verbose --release --target "${{ matrix.target }}"
+        cargo install cross --git https://github.com/cross-rs/cross --rev "$CROSS_VERSION" --force
+        cross build --verbose --release --target "${{ matrix.target }}"
         echo "BIN=target/release/${{ matrix.target }}/${{ matrix.bin_name }}" >> $GITHUB_ENV
 
     - name: Determine archive name
