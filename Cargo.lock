@@ -1653,15 +1653,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam-channel"
-version = "0.5.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
 name = "crossbeam-queue"
 version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2658,12 +2649,6 @@ name = "futures-task"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f90f7dce0722e95104fcb095585910c0977252f286e354b5e3bd38902cd99988"
-
-[[package]]
-name = "futures-timer"
-version = "3.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f288b0a4f20f9a56b5d1da57e2227c661b7b16168e2f72365f57b63326e29b24"
 
 [[package]]
 name = "futures-util"
@@ -3758,7 +3743,6 @@ dependencies = [
  "num_cpus",
  "openssl",
  "openssl-sys",
- "paho-mqtt",
  "rand 0.9.1",
  "random-string",
  "rdp-rs",
@@ -3766,6 +3750,7 @@ dependencies = [
  "reqwest",
  "rlimit",
  "rmcp",
+ "rumqttc",
  "russh",
  "scylla",
  "serde",
@@ -4177,7 +4162,7 @@ dependencies = [
  "rand 0.8.5",
  "rustc_version_runtime",
  "rustls 0.21.12",
- "rustls-pemfile",
+ "rustls-pemfile 1.0.4",
  "serde",
  "serde_bytes",
  "serde_with",
@@ -4621,32 +4606,6 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "windows 0.58.0",
-]
-
-[[package]]
-name = "paho-mqtt"
-version = "0.13.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2a9dc54c16b2e290ab3045b214a2a4effb61a42cf920cc83aa250367a4cceed"
-dependencies = [
- "async-channel 1.9.0",
- "crossbeam-channel",
- "futures",
- "futures-timer",
- "libc",
- "log",
- "paho-mqtt-sys",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "paho-mqtt-sys"
-version = "0.10.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d3094e35ab92c9ffa90775d8faad0e8ecac0a0ed4c409c3e683cbf84f784287"
-dependencies = [
- "cmake",
- "openssl-sys",
 ]
 
 [[package]]
@@ -5709,6 +5668,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rumqttc"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1568e15fab2d546f940ed3a21f48bbbd1c494c90c99c4481339364a497f94a9"
+dependencies = [
+ "bytes",
+ "flume",
+ "futures-util",
+ "log",
+ "rustls-native-certs 0.7.3",
+ "rustls-pemfile 2.2.0",
+ "rustls-webpki 0.102.8",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-rustls 0.25.0",
+]
+
+[[package]]
 name = "russh"
 version = "0.51.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5939,6 +5916,20 @@ dependencies = [
 
 [[package]]
 name = "rustls"
+version = "0.22.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf4ef73721ac7bcd79b2b315da7779d8fc09718c6b3d2d1b2d94850eb8c18432"
+dependencies = [
+ "log",
+ "ring",
+ "rustls-pki-types",
+ "rustls-webpki 0.102.8",
+ "subtle 2.6.1",
+ "zeroize",
+]
+
+[[package]]
+name = "rustls"
 version = "0.23.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0ebcbd2f03de0fc1122ad9bb24b127a5a6cd51d72604a3f3c50ac459762b6cc"
@@ -5951,6 +5942,19 @@ dependencies = [
  "rustls-webpki 0.103.4",
  "subtle 2.6.1",
  "zeroize",
+]
+
+[[package]]
+name = "rustls-native-certs"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5bfb394eeed242e909609f56089eecfe5fda225042e8b171791b9c95f5931e5"
+dependencies = [
+ "openssl-probe",
+ "rustls-pemfile 2.2.0",
+ "rustls-pki-types",
+ "schannel",
+ "security-framework 2.11.1",
 ]
 
 [[package]]
@@ -5975,6 +5979,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustls-pemfile"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dce314e5fee3f39953d46bb63bb8a46d40c2f8fb7cc5a3b6cab2bde9721d6e50"
+dependencies = [
+ "rustls-pki-types",
+]
+
+[[package]]
 name = "rustls-pki-types"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5996,7 +6009,7 @@ dependencies = [
  "log",
  "once_cell",
  "rustls 0.23.31",
- "rustls-native-certs",
+ "rustls-native-certs 0.8.1",
  "rustls-platform-verifier-android",
  "rustls-webpki 0.103.4",
  "security-framework 3.3.0",
@@ -6018,6 +6031,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765"
 dependencies = [
  "ring",
+ "untrusted 0.9.0",
+]
+
+[[package]]
+name = "rustls-webpki"
+version = "0.102.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64ca1bc8749bd4cf37b5ce386cc146580777b4e8572c7b97baf22c83f444bee9"
+dependencies = [
+ "ring",
+ "rustls-pki-types",
  "untrusted 0.9.0",
 ]
 
@@ -6848,7 +6872,7 @@ dependencies = [
  "reqwest",
  "rsa",
  "rustls 0.23.31",
- "rustls-native-certs",
+ "rustls-native-certs 0.8.1",
  "serde",
  "serde_derive",
  "sha1",
@@ -7222,6 +7246,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c28327cf380ac148141087fbfb9de9d7bd4e84ab5d2c28fbc911d753de8a7081"
 dependencies = [
  "rustls 0.21.12",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-rustls"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "775e0c0f0adb3a2f22a00c4745d728b479985fc15ee7ca6a2608388c5569860f"
+dependencies = [
+ "rustls 0.22.4",
+ "rustls-pki-types",
  "tokio",
 ]
 

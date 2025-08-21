@@ -1,6 +1,7 @@
-use paho_mqtt as mqtt;
 use std::time::Duration;
+use tokio_rustls::rustls::ClientConfig;
 use rand::{distr::Alphanumeric, Rng, rng};
+
 
 use async_trait::async_trait;
 
@@ -16,20 +17,25 @@ super::manager::register_plugin! {
     "mqtt" => Mqtt::new()
 }
 
+trait Client {
+
+}
+
 #[derive(Clone)]
 pub(crate) struct Mqtt {
-    client_id: String,
-    use_v5: bool,
-    use_ssl: bool,
+    opts: options::Options,
 }
 
 impl Mqtt {
     pub fn new() -> Self {
         Mqtt {
-            client_id: "legba".to_string(),
-            use_v5: false,
-            use_ssl: false,
+            opts: options::Options::default(),
         }
+    }
+
+    fn create_client(&self) -> Result<Box<dyn Client>, Error> {
+        use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, Transport};
+
     }
 }
 
@@ -40,9 +46,7 @@ impl Plugin for Mqtt {
     }
 
     async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.client_id = opts.mqtt.mqtt_client_id.clone();
-        self.use_v5 = opts.mqtt.mqtt_v5;
-        self.use_ssl = opts.mqtt.mqtt_ssl;
+        self.opts = opts.mqtt.clone();
         Ok(())
     }
 
@@ -52,23 +56,18 @@ impl Plugin for Mqtt {
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
         // Select default port based on SSL usage
-        let default_port = if self.use_ssl { 8883 } else { 1883 };
+        let default_port = if self.opts.mqtt_ssl { 8883 } else { 1883 };
         let address = utils::parse_target_address(&creds.target, default_port)?;
-
-        // Use "ssl://" for TLS connections (instead of "mqtts://")
-        // This is required as the underlying Paho C client recognizes "ssl://" not "mqtts://"
-        let protocol = if self.use_ssl { "ssl" } else { "tcp" };
-        let uri = format!("{}://{}", protocol, address);
-
-        // Generate a random suffix for the Client ID to avoid duplicate ID issues on connects
-        let random_suffix: String = rng()
+        // generate a random  Client ID to avoid duplicate ID issues on connects
+        let random_id: String = rng()
             .sample_iter(&Alphanumeric)
             .take(6)
             .map(char::from)
             .collect();
 
-        let dynamic_client_id = format!("{}-{}", self.client_id, random_suffix);
+        Ok(None)
 
+        /*
         // Create async MQTT client
         let create_opts = mqtt::CreateOptionsBuilder::new()
             .server_uri(uri)
@@ -128,5 +127,6 @@ impl Plugin for Mqtt {
                 ],
             )]))
         }
+        */
     }
 }
