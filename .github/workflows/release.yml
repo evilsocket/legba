@@ -84,7 +84,6 @@ jobs:
       if: matrix.target == ''
       run: |
         cargo build --verbose --release
-        ls -la target/release/
         echo "BIN=target/release/${{ matrix.bin_name }}" >> $GITHUB_ENV
 
     - name: Build release binary (cross)
