@@ -56,6 +56,21 @@ jobs:
             bin_name: legba
             target: ''
 
+          - name: linux-arm
+            os: ubuntu-latest
+            bin_name: legba
+            target: arm-unknown-linux-gnueabi
+
+          - name: linux-armv7
+            os: ubuntu-latest
+            bin_name: legba
+            target: armv7-unknown-linux-gnueabi
+
+          - name: linux-aarch64
+            os: ubuntu-latest
+            bin_name: legba
+            target: aarch64-unknown-linux-gnu
+
           - name: apple-darwin-arm64
             os: macos-latest
             bin_name: legba
@@ -70,6 +85,21 @@ jobs:
             os: ubuntu-latest
             bin_name: legba
             target: aarch64-linux-android
+
+          - name: android-arm
+            os: ubuntu-latest
+            bin_name: legba
+            target: arm-linux-androideabi
+
+          - name: android-armv7
+            os: ubuntu-latest
+            bin_name: legba
+            target: armv7-linux-androideabi
+
+          - name: android-x86_64
+            os: ubuntu-latest
+            bin_name: legba
+            target: x86_64-linux-android
 
       fail-fast: false
 
@@ -96,8 +126,7 @@ jobs:
 
     - name: Determine archive name
       run: |
-        version="${{ needs.create-release.outputs.version }}"
-        echo "ARCHIVE=legba-$version-${{ matrix.name }}" >> $GITHUB_ENV
+        echo "ARCHIVE=legba-${{ needs.create-release.outputs.version }}-${{ matrix.name }}" >> $GITHUB_ENV
 
     - name: Show binary info
       run: |
