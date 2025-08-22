@@ -19,8 +19,8 @@ This will compile its sources and install the binary in `$HOME/.cargo/bin/legba`
 If you're a **Homebrew** user, you can install Legba with a custom tap:
 
 ```bash
-brew tap evilsocket/legba https://github.com/evilsocket/legba.git
-brew install legba/legba/legba
+brew tap evilsocket/legba https://github.com/evilsocket/legba
+brew install evilsocket/legba/legba
 ```
 
 ### Docker
