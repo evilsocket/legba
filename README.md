@@ -36,15 +36,20 @@ Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerat
 
 ## Quick Start
 
-Download one of the precompiled binaries from the [project latest release page](https://github.com/evilsocket/legba/releases/latest).
+Download one of the precompiled binaries from the [project latest release page](https://github.com/evilsocket/legba/releases/latest), or if you're a **Homebrew** user, you can install it with a custom tap:
 
-🚀 Go!
+```bash
+brew tap evilsocket/legba https://github.com/evilsocket/legba.git
+brew install legba/legba/legba
+```
+
+You are now ready to go! 🚀
 
 ```bash
 legba smb --target domain.local --username administrator --password wordlist.txt
 ```
 
-For the building instructions, usage and the complete list of options [check the project documentation](https://github.com/evilsocket/legba/blob/main/docs/index.md).
+For the usage and the complete list of options [check the project documentation](https://github.com/evilsocket/legba/blob/main/docs/index.md).
 
 ## Contributors
 
