@@ -128,6 +128,9 @@ pub(crate) struct Options {
     #[cfg(feature = "smtp")]
     #[clap(flatten, next_help_heading = "SMTP")]
     pub smtp: crate::plugins::smtp::options::Options,
+    #[cfg(feature = "snmp")]
+    #[clap(flatten, next_help_heading = "SNMP")]
+    pub snmp: crate::plugins::snmp::options::Options,
     #[cfg(feature = "socks5")]
     #[clap(flatten, next_help_heading = "SOCKS5")]
     pub socks5: crate::plugins::socks5::options::Options,

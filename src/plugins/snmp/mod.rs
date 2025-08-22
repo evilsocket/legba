@@ -13,6 +13,7 @@ use crate::creds::Credentials;
 use crate::plugins::plugin::PayloadStrategy;
 
 pub(crate) mod oids;
+pub(crate) mod options;
 pub(crate) mod reader;
 
 // v1 and v2 have no authentication, so only the community names are enumerated
@@ -24,11 +25,15 @@ crate::plugins::manager::register_plugin! {
 }
 
 #[derive(Clone)]
-pub(crate) struct SNMPv1 {}
+pub(crate) struct SNMPv1 {
+    options: options::Options,
+}
 
 impl SNMPv1 {
     pub fn new() -> Self {
-        SNMPv1 {}
+        SNMPv1 {
+            options: options::Options::default(),
+        }
     }
 }
 
@@ -42,7 +47,8 @@ impl Plugin for SNMPv1 {
         PayloadStrategy::Single
     }
 
-    async fn setup(&mut self, _: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, options: &Options) -> Result<(), Error> {
+        self.options = options.snmp.clone();
         Ok(())
     }
 
@@ -58,7 +64,15 @@ impl Plugin for SNMPv1 {
         )
         .await
         {
-            return reader::read_from_session(&mut sess, address, creds, timeout, None).await;
+            return reader::read_from_session(
+                &self.options,
+                &mut sess,
+                address,
+                creds,
+                timeout,
+                None,
+            )
+            .await;
         }
 
         Ok(None)
@@ -66,11 +80,15 @@ impl Plugin for SNMPv1 {
 }
 
 #[derive(Clone)]
-pub(crate) struct SNMPv2 {}
+pub(crate) struct SNMPv2 {
+    options: options::Options,
+}
 
 impl SNMPv2 {
     pub fn new() -> Self {
-        SNMPv2 {}
+        SNMPv2 {
+            options: options::Options::default(),
+        }
     }
 }
 
@@ -84,7 +102,8 @@ impl Plugin for SNMPv2 {
         PayloadStrategy::Single
     }
 
-    async fn setup(&mut self, _: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, options: &Options) -> Result<(), Error> {
+        self.options = options.snmp.clone();
         Ok(())
     }
 
@@ -100,7 +119,15 @@ impl Plugin for SNMPv2 {
         )
         .await
         {
-            return reader::read_from_session(&mut sess, address, creds, timeout, None).await;
+            return reader::read_from_session(
+                &self.options,
+                &mut sess,
+                address,
+                creds,
+                timeout,
+                None,
+            )
+            .await;
         }
 
         Ok(None)
@@ -108,11 +135,15 @@ impl Plugin for SNMPv2 {
 }
 
 #[derive(Clone)]
-pub(crate) struct SNMPv3 {}
+pub(crate) struct SNMPv3 {
+    options: options::Options,
+}
 
 impl SNMPv3 {
     pub fn new() -> Self {
-        SNMPv3 {}
+        SNMPv3 {
+            options: options::Options::default(),
+        }
     }
 }
 
@@ -126,7 +157,8 @@ impl Plugin for SNMPv3 {
         PayloadStrategy::UsernamePassword
     }
 
-    async fn setup(&mut self, _: &Options) -> Result<(), Error> {
+    async fn setup(&mut self, options: &Options) -> Result<(), Error> {
+        self.options = options.snmp.clone();
         Ok(())
     }
 
@@ -158,6 +190,7 @@ impl Plugin for SNMPv3 {
                 // to get the engine_id.
                 if tokio::time::timeout(timeout, sess.init()).await.is_ok() {
                     return reader::read_from_session(
+                        &self.options,
                         &mut sess,
                         address,
                         creds,
