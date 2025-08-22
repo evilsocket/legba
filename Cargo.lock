@@ -3694,7 +3694,7 @@ dependencies = [
 
 [[package]]
 name = "legba"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "actix-cors",
  "actix-web",

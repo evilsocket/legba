@@ -1,3 +1,19 @@
+## Version 1.1.1 (2025-08-22)
+
+### New Features 🚀
+- Improved SNMP plugin with full SNMP tree walking capabilities
+- Added project as a Homebrew tap for easier installation on macOS
+- Enhanced release script and deployment process
+- Added insecure TLS configuration option for MQTT
+
+### Fixes 🐛
+- Fixed Debian package generation to build with MUSL
+- Resolved crates.io publishing issue
+
+### Other
+- Improved Debian package metadata
+- Various small fixes and general refactoring improvements
+
 ## Version 1.1.0 (2025-08-21)
 
 ### New Features 🚀
