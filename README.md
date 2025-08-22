@@ -4,9 +4,6 @@
 
 [![Documentation](https://img.shields.io/badge/docs-blue)](https://github.com/evilsocket/legba/blob/main/docs/index.md)
 [![Release](https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square)](https://github.com/evilsocket/legba/releases/latest)
-[![Crate](https://img.shields.io/crates/v/legba.svg)](https://crates.io/crates/legba)
-[![Homebrew](https://img.shields.io/homebrew/v/legba)](https://formulae.brew.sh/formula/legba)
-[![Docker](https://img.shields.io/docker/v/evilsocket/legba?logo=docker)](https://hub.docker.com/r/evilsocket/legba)
 [![Rust Report](https://rust-reportcard.xuri.me/badge/github.com/evilsocket/legba)](https://rust-reportcard.xuri.me/report/github.com/evilsocket/legba)
 [![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/legba/ci.yml)](https://github.com/evilsocket/legba/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square)](https://github.com/evilsocket/legba/blob/master/LICENSE.md)
