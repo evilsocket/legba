@@ -1,6 +1,6 @@
 # SNMP
 
-SNMP (Simple Network Management Protocol) community and credential enumeration with OID discovery.
+SNMP (Simple Network Management Protocol) community and credential enumeration with OID tree discovery.
 
 Legba supports three SNMP protocol versions:
 - **SNMPv1/v2**: Community string enumeration
@@ -24,8 +24,6 @@ When a valid credential is found, the plugin will enumerate all accessible OIDs 
 
 ## Examples
 
-### SNMPv1 Community Enumeration
-
 Test common community strings against an SNMPv1 device:
 
 ```sh
@@ -45,7 +43,28 @@ legba snmp1 \
     --target 192.168.1.0/24
 ```
 
-### SNMPv2 Community Enumeration
+Walk the entire SNMP tree:
+
+```sh
+legba snmp1 \
+    --payload wordlists/snmp-communities.txt \
+    # a short 50ms timeout is recommended for LAN targets
+    --timeout 50 \
+    # removes the default limit
+    --snmp-max 0 \
+    --target 192.168.1.1
+```
+
+Read a single OID instead of walking the entire tree:
+
+```sh
+legba snmp1 \
+    --payload wordlists/snmp-communities.txt \
+    # a short 50ms timeout is recommended for LAN targets
+    --timeout 50 \
+    --snmp-oid '1.3.6.1.2.1.1' \
+    --target 192.168.1.1
+```
 
 Test community strings against an SNMPv2 device:
 
@@ -55,8 +74,6 @@ legba snmp2 \
     --timeout 50 \
     --target 192.168.1.1:161
 ```
-
-### SNMPv3 Authentication
 
 Test username/password combinations with automatic protocol detection:
 
