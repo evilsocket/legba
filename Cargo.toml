@@ -188,7 +188,10 @@ inherits = "release"
 debug = false
 
 [package.metadata.deb]
-section = "utils"
+maintainer = "Simone Margaritelli <evilsocket@gmail.com>"
+license-file = ["LICENSE", "0"]
+section = "net"
+priority = "optional"
 assets = [
   ["target/release/legba", "usr/bin/", "755"],
   ["LICENSE", "usr/share/doc/legba/", "644"],
