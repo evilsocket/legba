@@ -1,15 +1,15 @@
 
 class Legba < Formula
-    version '1.1.0'
+    version '1.1.1'
     desc "Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator."
     homepage "https://github.com/evilsocket/legba"
   
     if OS.mac?
         url "https://github.com/evilsocket/legba/releases/download/#{version}/legba-#{version}-apple-darwin-arm64.tar.gz"
-        sha256 "298f917ab44358274d46e003dad1b479d6e1e34024743840538182893b1c9bca"
+        sha256 "f8df9c40ae853113a0bab81e80486d221881d01b0014ed0aa72fe72c7b75e52f"
     elsif OS.linux?
         url "https://github.com/evilsocket/legba/releases/download/#{version}/legba-#{version}-linux-x86_64.tar.gz"
-        sha256 "bc8776c80765512840e13b2913c2fb2655d642c4a51ed4dddb74e3f8f7e95d7f"
+        sha256 "7a01c975e5329e8f819ca552b9b734102ffbd30f1b6f7739b1cf1108a22eb096"
     end
   
     conflicts_with "legba"
