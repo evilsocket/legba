@@ -7,6 +7,9 @@
 [![Rust Report](https://rust-reportcard.xuri.me/badge/github.com/evilsocket/legba)](https://rust-reportcard.xuri.me/report/github.com/evilsocket/legba)
 [![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/legba/ci.yml)](https://github.com/evilsocket/legba/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square)](https://github.com/evilsocket/legba/blob/master/LICENSE.md)
+<br/>
+
+<img src="https://www.evilsocket.net/images/human-coded.png" height="30px" alt="This project is 100% made by humans."/>
 
   <small>Join the project community on our server!</small>
   <br/><br/>
