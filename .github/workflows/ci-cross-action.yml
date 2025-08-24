@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-linux:
+    name: Test on Linux (x86_64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: test
+          target: x86_64-unknown-linux-musl
+          args: --verbose
+
+  test-linux-aarch64:
+    name: Test on Linux (aarch64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: test
+          target: aarch64-unknown-linux-musl
+          args: --verbose
+
+  test-android:
+    name: Test on Android (aarch64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: test
+          target: aarch64-linux-android
+          args: --verbose
