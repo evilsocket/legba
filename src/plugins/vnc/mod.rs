@@ -65,13 +65,11 @@ impl Plugin for VNC {
         .map_err(|e| e.to_string())?;
 
         if vnc.is_ok() && vnc.unwrap().finish().is_ok() {
+            // single payload, the username field is used as the password
             return Ok(Some(vec![Loot::new(
                 "vnc",
                 &address,
-                [
-                    ("username".to_owned(), creds.username.to_owned()),
-                    ("password".to_owned(), creds.password.to_owned()),
-                ],
+                [("password".to_owned(), creds.username.to_owned())],
             )]));
         }
 

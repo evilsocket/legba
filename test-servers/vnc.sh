@@ -1,4 +1,4 @@
 # vncpassword
 docker run \
-    -p 5901:5901 \
+    -p 5900:5901 \
     consol/debian-xfce-vnc

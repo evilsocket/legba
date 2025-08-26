@@ -31,7 +31,7 @@ fn setup() -> Result<Options, session::Error> {
         unsafe {
             env::set_var(
                 "RUST_LOG",
-                "info,blocking=off,pavao=off,fast_socks5=off,actix_server=warn,rmcp=warn,smb=warn,sspi=off,tracing=warn",
+                "info,blocking=off,pavao=off,fast_socks5=off,actix_server=warn,rmcp=warn,smb=warn,sspi=off,tracing=warn,vnc=warn",
             );
         }
     }
