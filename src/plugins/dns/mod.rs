@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use tokio::sync::Mutex;
+use dashmap::DashMap;
+use dashmap::DashSet;
 use trust_dns_resolver::{AsyncResolver, TokioAsyncResolver, config::*};
 use x509_parser::prelude::{FromDer, GeneralName, X509Certificate};
 
@@ -27,8 +27,8 @@ super::manager::register_plugin! {
 pub(crate) struct DNS {
     resolver: Option<TokioAsyncResolver>,
     opts: options::Options,
-    hits: Arc<Mutex<HashMap<IpAddr, usize>>>,
-    domains: Arc<Mutex<HashMap<String, u8>>>,
+    hits: Arc<DashMap<IpAddr, usize>>,
+    domains: Arc<DashSet<String>>,
 }
 
 impl DNS {
@@ -36,8 +36,8 @@ impl DNS {
         DNS {
             resolver: None,
             opts: options::Options::default(),
-            hits: Arc::new(Mutex::new(HashMap::default())),
-            domains: Arc::new(Mutex::new(HashMap::default())),
+            hits: Arc::new(DashMap::new()),
+            domains: Arc::new(DashSet::new()),
         }
     }
 
@@ -46,14 +46,13 @@ impl DNS {
         // this filtering in order too many positives for an address and work around this behaviour.
         let mut filtered = vec![];
         for ip in &addresses {
-            let mut hits = self.hits.lock().await;
-            let curr_hits = if let Some(ip_hits) = hits.get_mut(ip) {
+            let curr_hits = if let Some(mut ip_hits) = self.hits.get_mut(ip) {
                 // this ip already has a counter, increment it
                 *ip_hits += 1;
                 *ip_hits
             } else {
                 // first time we see this ip, create the counter for it
-                hits.insert(ip.to_owned(), 1);
+                self.hits.insert(ip.to_owned(), 1);
                 1
             };
 
@@ -121,7 +120,7 @@ impl DNS {
             // skip wildcard names and other domains
             if !tls_domain.contains('*') && tls_domain.ends_with(&check) {
                 // skip domains that have already been processed
-                if !self.domains.lock().await.contains_key(&tls_domain) {
+                if !self.domains.contains(&tls_domain) {
                     // try to resolve to ip
                     if let Ok(response) =
                         self.resolver.as_ref().unwrap().lookup_ip(&tls_domain).await
@@ -213,7 +212,7 @@ impl Plugin for DNS {
     ) -> Result<Option<Vec<Loot>>, Error> {
         let subdomain = format!("{}.{}", creds.single(), &creds.target).to_lowercase();
         // skip domains that have already been processed
-        if self.domains.lock().await.contains_key(&subdomain) {
+        if self.domains.contains(&subdomain) {
             return Ok(None);
         }
 
@@ -254,7 +253,7 @@ impl Plugin for DNS {
                 let mut loot = vec![Loot::new("dns", &subdomain, loot_data)];
 
                 // keep track of domains we processed already
-                self.domains.lock().await.insert(subdomain.to_owned(), 1);
+                self.domains.insert(subdomain.to_owned());
 
                 if !self.opts.dns_no_https {
                     let more_loot = self
@@ -263,10 +262,7 @@ impl Plugin for DNS {
 
                     // keep track of domains we processed already
                     for item in more_loot.iter() {
-                        self.domains
-                            .lock()
-                            .await
-                            .insert(item.get_target().to_string(), 1);
+                        self.domains.insert(item.get_target().to_string());
                     }
 
                     loot.extend(more_loot);
