@@ -75,6 +75,7 @@ impl DNS {
         &self,
         target: &str,
         subdomain: &str,
+        resolver: &TokioAsyncResolver,
         timeout: Duration,
     ) -> Vec<Loot> {
         let mut loot = vec![];
@@ -122,9 +123,7 @@ impl DNS {
                 // skip domains that have already been processed
                 if !self.domains.contains(&tls_domain) {
                     // try to resolve to ip
-                    if let Ok(response) =
-                        self.resolver.as_ref().unwrap().lookup_ip(&tls_domain).await
-                    {
+                    if let Ok(response) = resolver.lookup_ip(&tls_domain).await {
                         // collect valid IPs
                         let addresses: Vec<IpAddr> =
                             response.iter().filter(|ip| !ip.is_loopback()).collect();
@@ -224,8 +223,11 @@ impl Plugin for DNS {
             return Ok(None);
         }
 
+        // each worker will use its own resolver object instance
+        let resolver = self.resolver.as_ref().unwrap().clone();
+
         // attempt resolving this subdomain to a one or more IP addresses
-        if let Ok(response) = self.resolver.as_ref().unwrap().lookup_ip(&subdomain).await {
+        if let Ok(response) = resolver.lookup_ip(&subdomain).await {
             // collect valid IPs
             let addresses: Vec<IpAddr> = response.iter().filter(|ip| !ip.is_loopback()).collect();
             // Some domains are configured to resolve any subdomain, whatever it is, to the same IP. We do
@@ -265,7 +267,7 @@ impl Plugin for DNS {
 
                 if !self.opts.dns_no_https {
                     let more_loot = self
-                        .get_additional_tls_loot(&creds.target, &subdomain, timeout)
+                        .get_additional_tls_loot(&target_host, &subdomain, &resolver, timeout)
                         .await;
 
                     // keep track of domains we processed already
