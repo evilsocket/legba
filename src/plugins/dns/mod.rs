@@ -210,7 +210,15 @@ impl Plugin for DNS {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
-        let subdomain = format!("{}.{}", creds.single(), &creds.target).to_lowercase();
+        // make sure we only extract the host from the target
+        let target_host = if let Ok(url) = url::Url::parse(&creds.target) {
+            url.host_str().unwrap_or(&creds.target).to_string()
+        } else {
+            // If not a valid URL, treat as hostname directly
+            creds.target.clone()
+        };
+
+        let subdomain = format!("{}.{}", creds.single(), &target_host).to_lowercase();
         // skip domains that have already been processed
         if self.domains.contains(&subdomain) {
             return Ok(None);
