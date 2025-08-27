@@ -24,19 +24,19 @@ use std::time;
 pub(crate) type Error = String;
 
 async fn periodic_saver(session: Arc<Session>) {
-    let one_sec = time::Duration::from_millis(1000);
+    let report_interval = time::Duration::from_millis(session.options.report_time);
     let mut last_done: usize = 0;
     let persistent = session.options.session.is_some();
 
     while !session.is_stop() {
-        tokio::time::sleep(one_sec).await;
+        tokio::time::sleep(report_interval).await;
 
         // compute number of attempts per second
         let new_done = session.get_done();
-        let speed = new_done - last_done;
+        let speed = (new_done - last_done) as f64 / report_interval.as_secs_f64();
         last_done = new_done;
 
-        session.set_speed(speed);
+        session.set_speed(speed as usize);
 
         if persistent && let Err(e) = session.save() {
             log::error!("could not save session: {:?}", e);
@@ -339,15 +339,15 @@ impl Session {
     }
 
     pub async fn report_runtime_statistics(&self) {
-        let one_sec = time::Duration::from_millis(1000);
+        let report_interval = time::Duration::from_millis(self.options.report_time);
         while !self.is_stop() {
-            tokio::time::sleep(one_sec).await;
+            tokio::time::sleep(report_interval).await;
 
             let total = self.get_total();
             let done = self.get_done();
             let perc = (done as f32 / total as f32) * 100.0;
             let errors = self.get_errors();
-            let speed = self.get_speed();
+            let speed: usize = self.get_speed();
             let memory = if let Some(usage) = memory_stats() {
                 usage.physical_mem
             } else {

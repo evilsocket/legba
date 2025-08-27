@@ -75,6 +75,9 @@ pub(crate) struct Options {
     /// Delay in milliseconds to wait before a retry.
     #[clap(long, default_value_t = 1000)]
     pub retry_time: u64,
+    /// Report runtime statistics every N milliseconds.
+    #[clap(long, default_value_t = 5000)]
+    pub report_time: u64,
     #[clap(long, default_value_t = false)]
     /// Exit after the first positive match is found.
     pub single_match: bool,
