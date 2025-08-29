@@ -4,7 +4,7 @@ TCP and UDP port scanner with http banner grabbing capabilities.
 
 | Name | Description |
 | ---- | ----------- |
-| `--port-scanner-ports <PORT_SCANNER_PORTS>` |  Range or comma separated values of integer port numbers to scan [default: `[1-65535]`] |
+| `--port-scanner-ports <PORT_SCANNER_PORTS>` |  Range or comma separated values of integer port numbers to scan [default to most common ports] |
 | `--port-scanner-no-banners` |  Do not attempt banner grabbing |
 | `--port-scanner-no-tcp` |  Do not perform TCP scan |
 | `--port-scanner-no-udp` |  Do not perform UDP scan |
