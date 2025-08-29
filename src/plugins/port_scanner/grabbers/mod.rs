@@ -29,7 +29,7 @@ pub(crate) async fn grab_tcp_banner(
         http::http_grabber(opts, host, address, port, stream, with_ssl, timeout).await
     } else {
         // default to an attempt at line grabbing
-        line::line_grabber(address, port, stream, timeout).await
+        line::line_grabber(opts, address, port, stream, timeout).await
     }
 }
 

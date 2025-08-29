@@ -46,6 +46,121 @@ pub(crate) fn is_http_port(opts: &options::Options, port: u16) -> (bool, bool) {
     (false, false)
 }
 
+pub(crate) async fn parse_http_response(
+    opts: &options::Options,
+    response: reqwest::Response,
+    banner: &mut Banner,
+    address: &str,
+    port: u16,
+) {
+    let headers_of_interest: Vec<&str> = opts
+        .port_scanner_http_headers
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
+    let mut content_type = String::from("text/html");
+
+    // collect headers
+    for (name, value) in response.headers() {
+        let name = name.to_string();
+        let mut value = value.to_str().unwrap();
+
+        if name == "content-type" {
+            if value.contains(';') {
+                value = value.split(';').next().unwrap();
+            }
+            value.clone_into(&mut content_type);
+        }
+
+        if headers_of_interest.contains(&name.as_str()) {
+            banner.insert(name, value.to_owned());
+        }
+    }
+
+    // collect info from html
+    let body = response.text().await;
+    if let Ok(body) = body {
+        if content_type.contains("text/html") {
+            if let Some(caps) = HTML_TITLE_PARSER.captures(&body) {
+                banner.insert(
+                    "html.title".to_owned(),
+                    caps.get(1).unwrap().as_str().trim().to_owned(),
+                );
+            }
+        } else if content_type.contains("application/") || content_type.contains("text/") {
+            banner.insert("body".to_owned(), body.to_owned());
+        }
+    } else {
+        log::debug!(
+            "can't read response body from {}:{}: {:?}",
+            address,
+            port,
+            body.err()
+        );
+    }
+}
+
+pub(crate) async fn parse_http_raw_response(
+    opts: &options::Options,
+    response: &str,
+    banner: &mut Banner,
+) {
+    let headers_of_interest: Vec<&str> = opts
+        .port_scanner_http_headers
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
+    let mut content_type = String::from("text/html");
+
+    // split response into headers and body
+    let lines = response.lines();
+    let mut headers_section = true;
+    let mut body_lines = Vec::new();
+
+    for line in lines {
+        if headers_section {
+            if line.trim().is_empty() {
+                // empty line indicates end of headers
+                headers_section = false;
+            } else if let Some(colon_pos) = line.find(':') {
+                let name = line[..colon_pos].trim().to_lowercase();
+                let value = line[colon_pos + 1..].trim();
+
+                if name == "content-type" {
+                    let mut ct_value = value;
+                    if ct_value.contains(';') {
+                        ct_value = ct_value.split(';').next().unwrap();
+                    }
+                    ct_value.clone_into(&mut content_type);
+                }
+
+                if headers_of_interest.contains(&name.as_str()) {
+                    banner.insert(name, value.to_owned());
+                }
+            }
+        } else {
+            body_lines.push(line);
+        }
+    }
+
+    // process body
+    if !body_lines.is_empty() {
+        let body = body_lines.join("\n");
+        if content_type.contains("text/html") {
+            if let Some(caps) = HTML_TITLE_PARSER.captures(&body) {
+                banner.insert(
+                    "html.title".to_owned(),
+                    caps.get(1).unwrap().as_str().trim().to_owned(),
+                );
+            }
+        } else if content_type.contains("application/") || content_type.contains("text/") {
+            banner.insert("body".to_owned(), body);
+        }
+    }
+}
+
 pub(crate) async fn http_grabber(
     opts: &options::Options,
     host: &str,
@@ -161,52 +276,7 @@ pub(crate) async fn http_grabber(
         .await;
 
     if let Ok(resp) = resp {
-        let headers_of_interest: Vec<&str> = opts
-            .port_scanner_http_headers
-            .split(',')
-            .map(|s| s.trim())
-            .filter(|s| !s.is_empty())
-            .collect();
-        let mut content_type = String::from("text/html");
-
-        // collect headers
-        for (name, value) in resp.headers() {
-            let name = name.to_string();
-            let mut value = value.to_str().unwrap();
-
-            if name == "content-type" {
-                if value.contains(';') {
-                    value = value.split(';').next().unwrap();
-                }
-                value.clone_into(&mut content_type);
-            }
-
-            if headers_of_interest.contains(&name.as_str()) {
-                banner.insert(name, value.to_owned());
-            }
-        }
-
-        // collect info from html
-        let body = resp.text().await;
-        if let Ok(body) = body {
-            if content_type.contains("text/html") {
-                if let Some(caps) = HTML_TITLE_PARSER.captures(&body) {
-                    banner.insert(
-                        "html.title".to_owned(),
-                        caps.get(1).unwrap().as_str().trim().to_owned(),
-                    );
-                }
-            } else if content_type.contains("application/") || content_type.contains("text/") {
-                banner.insert("body".to_owned(), body.to_owned());
-            }
-        } else {
-            log::debug!(
-                "can't read response body from {}:{}: {:?}",
-                address,
-                port,
-                body.err()
-            );
-        }
+        parse_http_response(opts, resp, &mut banner, address, port).await;
     } else {
         log::debug!(
             "can't connect via http client to {}:{}: {:?}",
