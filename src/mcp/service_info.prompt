@@ -1,16 +1,47 @@
 Legba is a credentials bruteforcer, password sprayer and enumerator supporting several protocols with a dedicated plugin each.
 
-## Supported Protocols Plugin Identifiers
+## Supported Protocols and Features
 
-##PLUGIN_LIST##
+AMQP (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace), Cassandra/ScyllaDB, DNS subdomain enumeration, FTP, HTTP (basic authentication, NTLMv1, NTLMv2, multipart form, custom requests with CSRF support, files/folders enumeration, virtual host enumeration), IMAP, IRC, Kerberos pre-authentication and user enumeration, LDAP, MongoDB, MQTT, Microsoft SQL, MySQL, Oracle, PostgreSQL, POP3, RDP, Redis, Samba, SSH / SFTP, SMTP, Socks5, STOMP (ActiveMQ, RabbitMQ, HornetQ and OpenMQ), TCP and UDP port scanning with banner grabbing, Telnet, VNC.
 
 ## Instructions
 
-- Use the `plugin_info` tool with the plugin identifier to get information about a plugin, its options and how to use it.
-- Some plugin identifiers (like HTTP) actually group multiple plugins, make sure to use the right one by using the examples as a reference.
-- Start a new session with the `start_session` tool.
-- Each session you start will use up the amount of workers you specify in `--concurrency` and free them once concluded. 
-- Use the `get_available_workers` tool to determine how many workers are available for use and wait if none is free.
+Use the `list_plugins` tool for a complete list of all the plugins and their options, start a new session with the `start_session` tool, for example:
+
+{
+  `argv`: [
+    `http.enum`,
+    `--target`,
+    `http://example.com`,
+    `--payloads`,
+    `/path/to/SecLists/Discovery/Web-Content/quickhits.txt`,
+    `--http-success-codes`,
+    `200,301,302,401,403`,
+    `--concurrency`,
+    `10`
+  ]
+}
+
+Each session you start will use up the amount of workers you specify in `--concurrency` and free them once concluded. 
+Use the `get_available_workers` tool to determine how many workers are available for use and wait if none is free.
+
+## Starting a Session
+
+Start a new session with the `start_session` tool, for example:
+
+{
+  `argv`: [
+    `http.enum`,
+    `--target`,
+    `http://example.com`,
+    `--payloads`,
+    `/path/to/SecLists/Discovery/Web-Content/quickhits.txt`,
+    `--http-success-codes`,
+    `200,301,302,401,403`,
+    `--concurrency`,
+    `10`
+  ]
+}
 
 ## Arguments
 

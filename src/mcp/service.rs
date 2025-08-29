@@ -79,6 +79,24 @@ impl Service {
         format!("Waited for {} seconds.", seconds)
     }
 
+    #[tool(description = "List all available plugins.")]
+    async fn list_plugins(&self) -> String {
+        // Populate the prompt with the list of plugins.
+        let mut plugins = Vec::new();
+        for plugin in PLUGINS_DOCS_DIR.files() {
+            plugins.push(format!(
+                "* {}",
+                plugin
+                    .path()
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+                    .replace(".md", "")
+            ));
+        }
+        include_str!("plugins.prompt").replace("##PLUGIN_LIST##", &plugins.join("\n"))
+    }
+
     #[tool(description = "Get information about a plugin.")]
     async fn plugin_info(
         &self,
@@ -231,24 +249,8 @@ impl Service {
 #[tool_handler]
 impl ServerHandler for Service {
     fn get_info(&self) -> ServerInfo {
-        // Populate the prompt with the list of plugins.
-        let mut plugins = Vec::new();
-        for plugin in PLUGINS_DOCS_DIR.files() {
-            plugins.push(format!(
-                "* {}",
-                plugin
-                    .path()
-                    .to_str()
-                    .unwrap()
-                    .to_string()
-                    .replace(".md", "")
-            ));
-        }
-        let prompt =
-            include_str!("service_info.prompt").replace("##PLUGIN_LIST##", &plugins.join("\n"));
-
         ServerInfo {
-            instructions: Some(prompt),
+            instructions: Some(include_str!("service_info.prompt").to_owned()),
             // TODO: add loot to resources?
             capabilities: ServerCapabilities::builder().enable_tools().build(),
             ..Default::default()

@@ -1,0 +1,6 @@
+## Available Plugins Identifiers
+
+##PLUGIN_LIST##
+
+Use the `plugin_info` tool with the plugin identifier, as it is in this list, as it is to get information about a plugin, its options and how to use it.
+Some plugin identifiers (like HTTP) actually group multiple plugins, make sure to use the right one by using the examples as a reference.
