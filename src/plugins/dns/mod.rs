@@ -25,8 +25,9 @@ super::manager::register_plugin! {
 
 #[derive(Clone)]
 pub(crate) struct DNS {
-    resolver: Option<TokioAsyncResolver>,
+    ips: Vec<IpAddr>,
     opts: options::Options,
+    core_options: Options,
     hits: Arc<DashMap<IpAddr, usize>>,
     domains: Arc<DashSet<String>>,
 }
@@ -34,10 +35,38 @@ pub(crate) struct DNS {
 impl DNS {
     pub fn new() -> Self {
         DNS {
-            resolver: None,
+            ips: vec![],
             opts: options::Options::default(),
+            core_options: Options::default(),
             hits: Arc::new(DashMap::new()),
             domains: Arc::new(DashSet::new()),
+        }
+    }
+
+    async fn get_resolver(&self, timeout: Duration) -> Result<TokioAsyncResolver, Error> {
+        if !self.ips.is_empty() {
+            let nameserver_group =
+                NameServerConfigGroup::from_ips_clear(&self.ips, self.opts.dns_port, true);
+
+            let mut options = ResolverOpts::default();
+
+            options.num_concurrent_reqs = self.core_options.concurrency;
+            options.attempts = self.opts.dns_attempts;
+            options.timeout = timeout;
+            options.shuffle_dns_servers = true;
+
+            Ok(AsyncResolver::tokio(
+                ResolverConfig::from_parts(None, vec![], nameserver_group),
+                options,
+            ))
+        } else {
+            let (config, mut options) =
+                trust_dns_resolver::system_conf::read_system_conf().map_err(|e| e.to_string())?;
+
+            options.attempts = self.opts.dns_attempts;
+            options.timeout = timeout;
+
+            Ok(AsyncResolver::tokio(config, options))
         }
     }
 
@@ -170,8 +199,9 @@ impl Plugin for DNS {
     }
 
     async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
+        self.core_options = opts.clone();
         self.opts = opts.dns.clone();
-        self.resolver = Some(if let Some(resolvers) = opts.dns.dns_resolvers.as_ref() {
+        self.ips = if let Some(resolvers) = opts.dns.dns_resolvers.as_ref() {
             let ips: Vec<IpAddr> = resolvers
                 .split(',')
                 .map(|s| s.trim())
@@ -181,25 +211,12 @@ impl Plugin for DNS {
 
             log::info!("using resolvers: {:?}", &ips);
 
-            let nameserver_group =
-                NameServerConfigGroup::from_ips_clear(&ips, opts.dns.dns_port, true);
-
-            let mut options = ResolverOpts::default();
-
-            options.num_concurrent_reqs = opts.concurrency;
-            options.attempts = opts.dns.dns_attempts;
-            options.timeout = Duration::from_millis(opts.timeout);
-            options.shuffle_dns_servers = true;
-
-            AsyncResolver::tokio(
-                ResolverConfig::from_parts(None, vec![], nameserver_group),
-                options,
-            )
+            ips
         } else {
             log::info!("using system resolver");
 
-            AsyncResolver::tokio_from_system_conf().map_err(|e| e.to_string())?
-        });
+            vec![]
+        };
 
         Ok(())
     }
@@ -224,10 +241,11 @@ impl Plugin for DNS {
         }
 
         // each worker will use its own resolver object instance
-        let resolver = self.resolver.as_ref().unwrap().clone();
-
+        let resolver = self.get_resolver(timeout).await?;
+        let started_at = std::time::Instant::now();
         // attempt resolving this subdomain to a one or more IP addresses
         if let Ok(response) = resolver.lookup_ip(&subdomain).await {
+            let elapsed = started_at.elapsed();
             // collect valid IPs
             let addresses: Vec<IpAddr> = response.iter().filter(|ip| !ip.is_loopback()).collect();
             // Some domains are configured to resolve any subdomain, whatever it is, to the same IP. We do
@@ -259,6 +277,7 @@ impl Plugin for DNS {
                 };
 
                 loot_data.push(("addresses".to_owned(), addr_data));
+                loot_data.push(("time_ms".to_owned(), elapsed.as_millis().to_string()));
 
                 let mut loot = vec![Loot::new("dns", &subdomain, loot_data)];
 

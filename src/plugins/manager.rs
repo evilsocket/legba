@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::{LazyLock, Mutex};
-use std::time;
+use std::time::{self, Duration};
 
 use ansi_term::Style;
 use dashmap::DashSet;
@@ -134,7 +134,6 @@ pub(crate) async fn run(
 async fn worker(plugin: &dyn Plugin, unreachables: Arc<DashSet<Arc<str>>>, session: Arc<Session>) {
     log::debug!("worker started");
 
-    let timeout = time::Duration::from_millis(session.options.timeout);
     let retry_time: time::Duration = time::Duration::from_millis(session.options.retry_time);
 
     while let Ok(creds) = session.recv_credentials().await {
@@ -161,6 +160,7 @@ async fn worker(plugin: &dyn Plugin, unreachables: Arc<DashSet<Arc<str>>>, sessi
 
             // skip attempt if we had enough failures from this specific target
             if !unreachables.contains(creds.target.as_str()) {
+                let timeout = session.runtime.get_timeout();
                 match plugin.attempt(&creds, timeout).await {
                     Err(err) => {
                         errors += 1;
@@ -196,6 +196,21 @@ async fn worker(plugin: &dyn Plugin, unreachables: Arc<DashSet<Arc<str>>>, sessi
                         // do we have new loot?
                         if let Some(loots) = loot {
                             for loot in loots {
+                                // some plugins might return the elapsed time in the loot
+                                // if we have it, we can adjust the timeout to avoid waiting
+                                // for too long
+                                if let Some(mut elapsed) = loot.get_elapsed_time() {
+                                    if elapsed.as_millis() == 0 {
+                                        // make it at least 1ms
+                                        elapsed = Duration::from_millis(1);
+                                    }
+                                    // increase the elapsed time just to be safe
+                                    elapsed *= 10;
+                                    if elapsed < timeout {
+                                        session.runtime.set_timeout(elapsed.as_millis() as u64);
+                                    }
+                                }
+
                                 session.add_loot(loot).await.unwrap();
                             }
                         }

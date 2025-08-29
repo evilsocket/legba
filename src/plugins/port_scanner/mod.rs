@@ -50,7 +50,10 @@ impl PortScanner {
             let mut data = vec![
                 ("transport".to_owned(), "tcp".to_owned()),
                 ("port".to_owned(), creds.username.to_owned()),
-                ("time".to_owned(), format!("{:?}", start.elapsed())),
+                (
+                    "time_ms".to_owned(),
+                    format!("{}", start.elapsed().as_millis()),
+                ),
             ];
 
             if !self.opts.port_scanner_no_banners {
@@ -143,7 +146,10 @@ impl PortScanner {
                 let mut data = vec![
                     ("transport".to_owned(), "udp".to_owned()),
                     ("port".to_owned(), creds.username.to_owned()),
-                    ("time".to_owned(), format!("{:?}", start.elapsed())),
+                    (
+                        "time_ms".to_owned(),
+                        format!("{}", start.elapsed().as_millis()),
+                    ),
                 ];
 
                 for (name, value) in grab_udp_banner(&buf[0..size]).await {

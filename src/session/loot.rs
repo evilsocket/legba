@@ -1,5 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use std::time::Duration;
 use std::{fmt, path::Path};
 
 use ansi_term::Colour;
@@ -57,6 +58,15 @@ impl Loot {
 
     pub fn get_data(&self) -> &IndexMap<String, String> {
         &self.data
+    }
+
+    pub fn get_elapsed_time(&self) -> Option<Duration> {
+        if let Some(time) = self.data.get("time_ms")
+            && let Ok(time) = time.parse::<u64>()
+        {
+            return Some(Duration::from_millis(time));
+        }
+        None
     }
 
     pub fn is_partial(&self) -> bool {

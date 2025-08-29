@@ -1,4 +1,7 @@
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::{
+    sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
+    time::Duration,
+};
 
 use super::Error;
 use crate::Credentials;
@@ -9,21 +12,23 @@ pub(crate) struct Runtime {
     creds_tx: async_channel::Sender<Credentials>,
     creds_rx: async_channel::Receiver<Credentials>,
     speed: AtomicUsize,
+    timeout_ms: AtomicU64,
 }
 
 impl Default for Runtime {
     fn default() -> Self {
-        Self::new(1)
+        Self::new(1, 10000)
     }
 }
 
 impl Runtime {
-    pub(crate) fn new(concurrency: usize) -> Self {
+    pub(crate) fn new(concurrency: usize, timeout_ms: u64) -> Self {
         // use a buffer of 100x the concurrency to avoid blocking on sending credentials
         let (creds_tx, creds_rx) = async_channel::bounded(concurrency * 100);
         Self {
             stop: AtomicBool::new(false),
             speed: AtomicUsize::new(0),
+            timeout_ms: AtomicU64::new(timeout_ms),
             creds_tx,
             creds_rx,
         }
@@ -53,5 +58,18 @@ impl Runtime {
 
     pub async fn recv_credentials(&self) -> Result<Credentials, Error> {
         self.creds_rx.recv().await.map_err(|e| e.to_string())
+    }
+
+    pub fn get_timeout(&self) -> Duration {
+        Duration::from_millis(self.timeout_ms.load(Ordering::Relaxed))
+    }
+
+    pub fn set_timeout(&self, timeout_ms: u64) {
+        log::info!(
+            "adjusting timeout from {:?} to {}ms",
+            self.get_timeout(),
+            timeout_ms
+        );
+        self.timeout_ms.store(timeout_ms, Ordering::Relaxed);
     }
 }

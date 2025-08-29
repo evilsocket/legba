@@ -109,7 +109,7 @@ pub(crate) struct Session {
     pub results: Mutex<Vec<Loot>>,
 
     #[serde(skip_serializing, skip_deserializing)]
-    runtime: Runtime,
+    pub runtime: Runtime,
 }
 
 impl Session {
@@ -129,7 +129,7 @@ impl Session {
             parse_target(target, 0)?;
         }
 
-        let runtime = Runtime::new(options.concurrency);
+        let runtime = Runtime::new(options.concurrency, options.timeout);
         let total = AtomicUsize::new(0);
         let done = AtomicUsize::new(0);
         let errors = AtomicUsize::new(0);
@@ -153,7 +153,7 @@ impl Session {
             let file = fs::File::open(path).map_err(|e| e.to_string())?;
             let mut session: Session = serde_json::from_reader(file).map_err(|e| e.to_string())?;
 
-            session.runtime = Runtime::new(session.options.concurrency);
+            session.runtime = Runtime::new(session.options.concurrency, session.options.timeout);
 
             Ok(Arc::new(session))
         } else {
@@ -341,8 +341,6 @@ impl Session {
     pub async fn report_runtime_statistics(&self) {
         let report_interval = time::Duration::from_millis(self.options.report_time);
         while !self.is_stop() {
-            tokio::time::sleep(report_interval).await;
-
             let total = self.get_total();
             let done = self.get_done();
             let perc = (done as f32 / total as f32) * 100.0;
@@ -371,6 +369,8 @@ impl Session {
             } else {
                 log::info!("{}", stats.to_text());
             }
+
+            tokio::time::sleep(report_interval).await;
         }
     }
 }
