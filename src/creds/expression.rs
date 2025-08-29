@@ -138,39 +138,28 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                         };
                     }
                 }
-
-                // constant value casually starting with #
-                return Expression::Constant {
-                    value: expr.to_owned(),
-                };
             }
             // glob expression or constant
             '@' => {
-                return if expr.contains('*') {
+                if expr.contains('*') {
                     // in order to be considered a glob expression at least one * must be used
-                    // constant value casually starting with @
-                    Expression::Glob {
+                    return Expression::Glob {
                         pattern: expr[1..].to_owned(),
-                    }
-                } else {
-                    // constant value casually starting with @
-                    Expression::Constant {
-                        value: expr.to_owned(),
-                    }
-                };
+                    };
+                }
             }
             // range expression or constant
             '[' => {
-                return if let Some(captures) = RANGE_MIN_MAX_PARSER.captures(expr) {
+                if let Some(captures) = RANGE_MIN_MAX_PARSER.captures(expr) {
                     // [min-max]
-                    Expression::Range {
+                    return Expression::Range {
                         min: captures.get(1).unwrap().as_str().parse().unwrap(),
                         max: captures.get(2).unwrap().as_str().parse().unwrap(),
                         set: vec![],
-                    }
+                    };
                 } else if let Some(captures) = RANGE_SET_PARSER.captures(expr) {
                     // [n, n, n, ...]
-                    Expression::Range {
+                    return Expression::Range {
                         min: 0,
                         max: 0,
                         set: captures
@@ -180,42 +169,37 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                             .split(',')
                             .map(|s| s.trim().parse().unwrap())
                             .collect(),
-                    }
-                } else {
-                    // constant value casually starting with [
-                    Expression::Constant {
-                        value: expr.to_owned(),
-                    }
-                };
-            }
-            // file name, constant or multiple
-            _ => {
-                let filepath = Path::new(&expr);
-                if filepath.exists() && filepath.is_file() {
-                    // this is a file name
-                    return Expression::Wordlist {
-                        filename: expr.to_owned(),
-                    };
-                } else if expr.contains(',') {
-                    // parse as multiple expressions
-                    let multi = expr
-                        .split(',')
-                        .map(|s| s.trim().to_owned())
-                        .collect::<Vec<String>>();
-                    let mut expressions = vec![];
-                    for exp in multi {
-                        expressions.push(parse_expression(Some(exp).as_ref()));
-                    }
-
-                    return Expression::Multiple { expressions };
-                } else {
-                    // constant value casually starting with @
-                    return Expression::Constant {
-                        value: expr.to_owned(),
                     };
                 }
             }
+            _ => {}
         };
+
+        // file name, constant or multiple
+        let filepath = Path::new(&expr);
+        if filepath.exists() && filepath.is_file() {
+            // this is a file name
+            return Expression::Wordlist {
+                filename: expr.to_owned(),
+            };
+        } else if expr.contains(',') {
+            // parse as multiple expressions
+            let multi = expr
+                .split(',')
+                .map(|s| s.trim().to_owned())
+                .collect::<Vec<String>>();
+            let mut expressions = vec![];
+            for exp in multi {
+                expressions.push(parse_expression(Some(exp).as_ref()));
+            }
+
+            return Expression::Multiple { expressions };
+        } else {
+            // constant value casually starting with @
+            return Expression::Constant {
+                value: expr.to_owned(),
+            };
+        }
     }
 
     Expression::default()
@@ -370,6 +354,46 @@ mod tests {
                         min: 3,
                         max: 5,
                         set: vec![],
+                    },
+                    Expression::Range {
+                        min: 6,
+                        max: 8,
+                        set: vec![],
+                    },
+                    Expression::Constant {
+                        value: "9".to_string()
+                    },
+                    Expression::Range {
+                        min: 10,
+                        max: 13,
+                        set: vec![],
+                    },
+                ]
+            }
+        )
+    }
+
+    #[test]
+    fn can_parse_multiple_starting_with_range() {
+        let expr = "[1-2],3,4,5,[6-8],9,[10-13]";
+        let res = parse_expression(Some(expr.to_owned()).as_ref());
+        assert_eq!(
+            res,
+            Expression::Multiple {
+                expressions: vec![
+                    Expression::Range {
+                        min: 1,
+                        max: 2,
+                        set: vec![],
+                    },
+                    Expression::Constant {
+                        value: "3".to_string()
+                    },
+                    Expression::Constant {
+                        value: "4".to_string()
+                    },
+                    Expression::Constant {
+                        value: "5".to_string()
                     },
                     Expression::Range {
                         min: 6,
