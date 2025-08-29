@@ -25,9 +25,9 @@ super::manager::register_plugin! {
 
 #[derive(Clone)]
 pub(crate) struct DNS {
-    ips: Vec<IpAddr>,
     opts: options::Options,
-    core_options: Options,
+    resolver_config: ResolverConfig,
+    resolver_options: ResolverOpts,
     hits: Arc<DashMap<IpAddr, usize>>,
     domains: Arc<DashSet<String>>,
 }
@@ -35,39 +35,22 @@ pub(crate) struct DNS {
 impl DNS {
     pub fn new() -> Self {
         DNS {
-            ips: vec![],
+            resolver_config: ResolverConfig::default(),
+            resolver_options: ResolverOpts::default(),
             opts: options::Options::default(),
-            core_options: Options::default(),
             hits: Arc::new(DashMap::new()),
             domains: Arc::new(DashSet::new()),
         }
     }
 
     async fn get_resolver(&self, timeout: Duration) -> Result<TokioAsyncResolver, Error> {
-        if !self.ips.is_empty() {
-            let nameserver_group =
-                NameServerConfigGroup::from_ips_clear(&self.ips, self.opts.dns_port, true);
+        let mut options = self.resolver_options;
 
-            let mut options = ResolverOpts::default();
+        options.timeout = timeout;
 
-            options.num_concurrent_reqs = self.core_options.concurrency;
-            options.attempts = self.opts.dns_attempts;
-            options.timeout = timeout;
-            options.shuffle_dns_servers = true;
+        let config = self.resolver_config.clone();
 
-            Ok(AsyncResolver::tokio(
-                ResolverConfig::from_parts(None, vec![], nameserver_group),
-                options,
-            ))
-        } else {
-            let (config, mut options) =
-                trust_dns_resolver::system_conf::read_system_conf().map_err(|e| e.to_string())?;
-
-            options.attempts = self.opts.dns_attempts;
-            options.timeout = timeout;
-
-            Ok(AsyncResolver::tokio(config, options))
-        }
+        Ok(AsyncResolver::tokio(config, options))
     }
 
     async fn filter(&self, addresses: Vec<IpAddr>) -> Vec<IpAddr> {
@@ -199,9 +182,9 @@ impl Plugin for DNS {
     }
 
     async fn setup(&mut self, opts: &Options) -> Result<(), Error> {
-        self.core_options = opts.clone();
         self.opts = opts.dns.clone();
-        self.ips = if let Some(resolvers) = opts.dns.dns_resolvers.as_ref() {
+
+        if let Some(resolvers) = opts.dns.dns_resolvers.as_ref() {
             let ips: Vec<IpAddr> = resolvers
                 .split(',')
                 .map(|s| s.trim())
@@ -211,12 +194,30 @@ impl Plugin for DNS {
 
             log::info!("using resolvers: {:?}", &ips);
 
-            ips
+            let nameserver_group =
+                NameServerConfigGroup::from_ips_clear(&ips, self.opts.dns_port, true);
+
+            let mut options = ResolverOpts::default();
+
+            options.num_concurrent_reqs = opts.concurrency;
+            options.attempts = self.opts.dns_attempts;
+            options.timeout = Duration::from_millis(opts.timeout);
+            options.shuffle_dns_servers = true;
+
+            self.resolver_config = ResolverConfig::from_parts(None, vec![], nameserver_group);
+            self.resolver_options = options;
         } else {
+            let (config, mut options) =
+                trust_dns_resolver::system_conf::read_system_conf().map_err(|e| e.to_string())?;
+
             log::info!("using system resolver");
 
-            vec![]
-        };
+            options.attempts = self.opts.dns_attempts;
+            options.timeout = Duration::from_millis(opts.timeout);
+
+            self.resolver_config = config;
+            self.resolver_options = options;
+        }
 
         Ok(())
     }
