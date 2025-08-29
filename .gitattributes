@@ -1,6 +1,4 @@
 /test-servers/** linguist-vendored
-/docker-compose.yml linguist-vendored
 /Dockerfile linguist-vendored
-/release.py linguist-vendored
-/cookbook/** linguist-vendored
-/**/*.py linguist-vendored
+/pkg linguist-vendored
+/HomebrewFormula linguist-vendored
