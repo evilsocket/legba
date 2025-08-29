@@ -1,14 +1,16 @@
-This server provides an interface to Legba, a multiprotocol credentials bruteforcer / password sprayer and enumerator.
+Legba is a credentials bruteforcer, password sprayer and enumerator supporting several protocols with a dedicated plugin each.
 
-## Available Plugins
+## Supported Protocols Plugin Identifiers
 
 ##PLUGIN_LIST##
 
-- Use the plugin_info tool with the plugin identifier, as it is in this list, as it is to get information about a plugin, its options and how to use it.
+## Instructions
+
+- Use the `plugin_info` tool with the plugin identifier to get information about a plugin, its options and how to use it.
 - Some plugin identifiers (like HTTP) actually group multiple plugins, make sure to use the right one by using the examples as a reference.
-- Start a new session with the start_session tool.
-- Each session you start will use up the amount of workers you specify in --concurrency and free them once concluded. 
-- Use the get_available_workers tool to determine how many workers are available for use and wait if none is free.
+- Start a new session with the `start_session` tool.
+- Each session you start will use up the amount of workers you specify in `--concurrency` and free them once concluded. 
+- Use the `get_available_workers` tool to determine how many workers are available for use and wait if none is free.
 
 ## Arguments
 

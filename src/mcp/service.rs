@@ -4,7 +4,7 @@ use std::time::Duration;
 use include_dir::{Dir, include_dir};
 use rmcp::handler::server::tool::{Parameters, ToolRouter};
 use rmcp::model::{ServerCapabilities, ServerInfo};
-use rmcp::{Json, ServerHandler, schemars, tool, tool_handler, tool_router};
+use rmcp::{ServerHandler, schemars, tool, tool_handler, tool_router};
 use tokio::sync::RwLock;
 
 const PLUGINS_DOCS_DIR: Dir = include_dir!("docs/plugins");
@@ -91,9 +91,9 @@ impl Service {
     }
 
     #[tool(description = "Get the number of currently available workers.")]
-    async fn get_available_workers(&self) -> Json<u64> {
+    async fn get_available_workers(&self) -> String {
         let guard = &*self.sessions.read().await;
-        Json(guard.get_available_workers())
+        format!("{}", guard.get_available_workers())
     }
 
     #[tool(
