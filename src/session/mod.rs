@@ -59,13 +59,14 @@ pub(crate) struct Statistics {
     done_percent: f32,
     errors: usize,
     reqs_per_sec: usize,
+    timeout: u64,
 }
 
 impl Statistics {
     pub fn to_text(&self) -> String {
         if self.errors > 0 {
             format!(
-                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) errors={} speed={:.2?} reqs/s",
+                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) errors={} timeout={}ms speed={:.2?} reqs/s",
                 self.tasks,
                 human_bytes(self.memory),
                 self.targets,
@@ -73,17 +74,19 @@ impl Statistics {
                 self.done,
                 self.done_percent,
                 self.errors,
+                self.timeout,
                 self.reqs_per_sec,
             )
         } else {
             format!(
-                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) speed={:.2?} reqs/s",
+                "tasks={} mem={} targets={} attempts={} done={} ({:.2?}%) timeout={}ms speed={:.2?} reqs/s",
                 self.tasks,
                 human_bytes(self.memory),
                 self.targets,
                 self.attempts,
                 self.done,
                 self.done_percent,
+                self.timeout,
                 self.reqs_per_sec,
             )
         }
@@ -362,6 +365,7 @@ impl Session {
                 done_percent: perc,
                 errors,
                 reqs_per_sec: speed,
+                timeout: self.runtime.get_timeout_ms(),
             };
 
             if self.options.json {

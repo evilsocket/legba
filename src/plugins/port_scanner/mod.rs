@@ -25,6 +25,7 @@ super::manager::register_plugin! {
 pub(crate) struct PortScanner {
     ports: Expression,
     opts: options::Options,
+    http_client: reqwest::Client,
 }
 
 impl PortScanner {
@@ -32,6 +33,12 @@ impl PortScanner {
         PortScanner {
             ports: Expression::default(),
             opts: options::Options::default(),
+            http_client: reqwest::Client::builder()
+                .no_proxy() // used to set auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
+                .danger_accept_invalid_certs(true)
+                .tcp_nodelay(true)
+                .build()
+                .unwrap(),
         }
     }
 
@@ -58,6 +65,7 @@ impl PortScanner {
 
             if !self.opts.port_scanner_no_banners {
                 let banner = grabbers::grab_tcp_banner(
+                    &self.http_client,
                     &self.opts,
                     &target,
                     &target,

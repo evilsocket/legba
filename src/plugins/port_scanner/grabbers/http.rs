@@ -161,7 +161,9 @@ pub(crate) async fn parse_http_raw_response(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn http_grabber(
+    http_client: &reqwest::Client,
     opts: &options::Options,
     host: &str,
     address: &str,
@@ -252,23 +254,7 @@ pub(crate) async fn http_grabber(
 
     log::debug!("grabbing http banner for {} ...", &url);
 
-    let cli = reqwest::Client::builder()
-        .no_proxy() // used to set auto_sys_proxy to false, see https://github.com/evilsocket/legba/issues/8
-        .danger_accept_invalid_certs(true)
-        .build();
-    let cli = if let Ok(c) = cli {
-        c
-    } else {
-        log::error!(
-            "can't create http client for {}:{}: {:?}",
-            address,
-            port,
-            cli.err()
-        );
-        return banner;
-    };
-
-    let resp = cli
+    let resp = http_client
         .get(&url)
         .header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36")
         .timeout(timeout)

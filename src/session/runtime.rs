@@ -64,8 +64,12 @@ impl Runtime {
         Duration::from_millis(self.timeout_ms.load(Ordering::Relaxed))
     }
 
+    pub fn get_timeout_ms(&self) -> u64 {
+        self.timeout_ms.load(Ordering::Relaxed)
+    }
+
     pub fn set_timeout(&self, timeout_ms: u64) {
-        log::info!(
+        log::debug!(
             "adjusting timeout from {:?} to {}ms",
             self.get_timeout(),
             timeout_ms

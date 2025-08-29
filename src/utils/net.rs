@@ -50,6 +50,8 @@ pub(crate) async fn async_tcp_stream(
         .map_err(|e| e.to_string())?
         .map_err(|e| e.to_string())?;
 
+    tcp_stream.set_nodelay(true).map_err(|e| e.to_string())?;
+
     if ssl {
         upgrade_tcp_stream_to_ssl(Box::new(tcp_stream), host, timeout).await
     } else {

@@ -45,7 +45,13 @@ pub(crate) async fn line_grabber(
 
     // send something
     let _ = stream
-        .write_all(format!("GET / HTTP/1.1\r\nHost: {}\r\n\r\n", address).as_bytes())
+        .write_all(
+            format!(
+                "GET / HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+                address
+            )
+            .as_bytes(),
+        )
         .await;
 
     let response = read_response_from(stream, timeout).await;
