@@ -60,13 +60,6 @@ The `--http-success` parameter accepts a boolean expression that is evaluated to
 - `!` - Logical NOT
 - Parentheses for grouping: `(status == 200 || status == 201) && contains(body, "ok")`
 
-### Variable Interpolation
-
-The following placeholders can be used in expressions and will be replaced with the current credential values:
-- `{$username}` - Current username being tested
-- `{$password}` - Current password being tested
-- `{$payload}` - Current payload/username for enumeration plugins
-
 For a list of all the operators and builtin functions [refer to this documentation](https://docs.rs/evalexpr/latest/evalexpr/index.html).
 
 ### Expression Examples
@@ -96,8 +89,14 @@ For a list of all the operators and builtin functions [refer to this documentati
 # Verify API response
 --http-success 'status == 200 && content_type == "application/json" && contains(body, "\"authenticated\": true")'
 
-# Use interpolation to check for username in response
---http-success 'status == 200 && contains(body, "{$username}")'
+# Check for username in response
+--http-success 'status == 200 && contains(body, username)'
+
+# Check for password in response
+--http-success 'status == 200 && contains(body, password)'
+
+# Check for single payload (for http.enum)
+--http-success 'status == 200 && contains(body, payload)'
 ```
 
 ## Plugin Usage Examples
@@ -208,17 +207,6 @@ file?filename=..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c.
 ...
 ... and so on ...
 ...
-```
-
-Google Suite / GMail valid accounts enumeration:
-
-```sh
-legba http.enum \
-    --payloads data/employees-names.txt \
-    --http-success-string "COMPASS" \
-    --http-success "status == 204" \
-    --quiet \
-    --target "https://mail.google.com/mail/gxlu?email={PAYLOAD}@broadcom.com" 
 ```
 
 ### Misc HTTP Requests

@@ -1,18 +1,8 @@
-// TODO: add more tests
 #[cfg(test)]
 mod tests {
-    use reqwest::header::{CONTENT_TYPE, HeaderValue};
-
-    use crate::{
-        creds::Credentials,
-        options::Options,
-        plugins::{
-            Plugin,
-            http::{HTTP_PASSWORD_VAR, HTTP_PAYLOAD_VAR, HTTP_USERNAME_VAR},
-        },
-    };
-
     use crate::plugins::http::{HTTP, Strategy};
+    use crate::{creds::Credentials, options::Options, plugins::Plugin};
+    use reqwest::header::{CONTENT_TYPE, HeaderValue};
 
     #[test]
     fn test_get_target_url_adds_default_schema_and_path() {
@@ -546,7 +536,7 @@ mod tests {
         let mut http = HTTP::new(Strategy::Enumeration);
         // Set the expression directly with the placeholder
         http.success_expression =
-            format!("status == 200 && contains(body, \"{}\")", HTTP_USERNAME_VAR);
+            evalexpr::build_operator_tree("status == 200 && contains(body, username)").unwrap();
 
         let response = http
             .client
@@ -580,7 +570,7 @@ mod tests {
         let mut http = HTTP::new(Strategy::Enumeration);
         // Set the expression directly with the placeholder
         http.success_expression =
-            format!("status == 200 && contains(body, \"{}\")", HTTP_PASSWORD_VAR);
+            evalexpr::build_operator_tree("status == 200 && contains(body, password)").unwrap();
 
         let response = http
             .client
@@ -614,7 +604,7 @@ mod tests {
         let mut http = HTTP::new(Strategy::Enumeration);
         // Set the expression directly with the placeholder
         http.success_expression =
-            format!("status == 200 && contains(body, \"{}\")", HTTP_PAYLOAD_VAR);
+            evalexpr::build_operator_tree("status == 200 && contains(body, payload)").unwrap();
 
         let response = http
             .client
@@ -749,7 +739,7 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
-        http.success_expression = "status == 200".to_owned();
+        http.success_expression = evalexpr::build_operator_tree("status == 200").unwrap();
         let opts = Options {
             target: Some(server.base_url()),
             ..Options::default()
@@ -773,7 +763,7 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
-        http.success_expression = "status == 200".to_owned();
+        http.success_expression = evalexpr::build_operator_tree("status == 200").unwrap();
         let opts = Options {
             target: Some(server.base_url()),
             ..Options::default()
@@ -888,7 +878,7 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
-        http.success_expression = "status == 200".to_owned();
+        http.success_expression = evalexpr::build_operator_tree("status == 200").unwrap();
         let opts = Options {
             target: Some(server.base_url()),
             ..Options::default()
@@ -918,7 +908,7 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
-        http.success_expression = "status == 200".to_owned();
+        http.success_expression = evalexpr::build_operator_tree("status == 200").unwrap();
         let opts = Options {
             target: Some(server.base_url()),
             ..Options::default()
@@ -973,7 +963,7 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
-        http.success_expression = "status == 200".to_owned();
+        http.success_expression = evalexpr::build_operator_tree("status == 200").unwrap();
         let opts = Options {
             target: Some(server.base_url()),
             ..Options::default()
@@ -999,7 +989,7 @@ mod tests {
         });
 
         let mut http = HTTP::new(Strategy::Request);
-        http.success_expression = "status == 200".to_owned();
+        http.success_expression = evalexpr::build_operator_tree("status == 200").unwrap();
         let opts = Options {
             target: Some(server.base_url()),
             ..Options::default()
@@ -1591,7 +1581,7 @@ mod tests {
         let mut http = HTTP::new(Strategy::Enumeration);
         // Set the expression directly with the placeholder
         http.success_expression =
-            format!("status == 200 && contains(body, \"{}\")", HTTP_USERNAME_VAR);
+            evalexpr::build_operator_tree("status == 200 && contains(body, username)").unwrap();
 
         let response = http
             .client

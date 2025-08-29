@@ -26,11 +26,6 @@ mod payload;
 mod placeholders;
 mod ua;
 
-// Placeholders used for interpolating --http-success
-const HTTP_USERNAME_VAR: &str = "{$username}";
-const HTTP_PASSWORD_VAR: &str = "{$password}";
-const HTTP_PAYLOAD_VAR: &str = "{$payload}";
-
 const HTTP_LOWERCASE_PLACEHOLDERS: &[&str] = &["{payload}", "{username}", "{password}"];
 const HTTP_UPPERCASE_PLACEHOLDERS: &[&str] = &["{PAYLOAD}", "{USERNAME}", "{PASSWORD}"];
 
@@ -79,7 +74,7 @@ pub(crate) struct HTTP {
     real_target: Option<String>,
     user_agent: Option<String>,
 
-    success_expression: String,
+    success_expression: evalexpr::Node<evalexpr::DefaultNumericTypes>,
 
     enum_ext: String,
     enum_ext_placeholder: String,
@@ -103,8 +98,8 @@ impl HTTP {
             csrf: None,
             domain: String::new(),
             workstation: String::new(),
-            success_expression: String::new(),
             enum_ext: String::new(),
+            success_expression: evalexpr::build_operator_tree("").unwrap(),
             enum_ext_placeholder: String::new(),
             method: Method::GET,
             headers: HeaderMap::default(),
@@ -238,11 +233,11 @@ impl HTTP {
         builder
     }
 
-    async fn is_success_response(
+    async fn build_response_context(
         &self,
         creds: &Credentials,
         response: Response,
-    ) -> Option<Success> {
+    ) -> Result<(u16, String, usize, HashMapContext<DefaultNumericTypes>), Error> {
         let status = response.status().as_u16();
 
         let mut context = HashMapContext::<DefaultNumericTypes>::new();
@@ -265,14 +260,14 @@ impl HTTP {
 
             context
                 .set_value(header_var_name, Value::from(value.to_str().unwrap()))
-                .unwrap();
+                .map_err(|e| e.to_string())?;
         }
 
         // always set content_type
         if !content_type_set {
             context
                 .set_value(String::from("content_type"), Value::from(""))
-                .unwrap();
+                .map_err(|e| e.to_string())?;
         }
 
         // add response status, body, size and content type to the context
@@ -281,13 +276,13 @@ impl HTTP {
 
         context
             .set_value(String::from("status"), Value::from_int(status as i64))
-            .unwrap();
+            .map_err(|e| e.to_string())?;
         context
             .set_value(String::from("body"), Value::from(body))
-            .unwrap();
+            .map_err(|e| e.to_string())?;
         context
             .set_value(String::from("size"), Value::from_int(size as i64))
-            .unwrap();
+            .map_err(|e| e.to_string())?;
 
         // the builtin contains function is for searching a string within a tuple of strings,
         // let's override it to something that makes more sense
@@ -305,37 +300,61 @@ impl HTTP {
                     }
                 }),
             )
-            .unwrap();
+            .map_err(|e| e.to_string())?;
 
-        // replace placeholders with actual values
-        let success_expression = self
-            .success_expression
-            .replace(HTTP_USERNAME_VAR, &creds.username)
-            .replace(HTTP_PASSWORD_VAR, &creds.password)
-            .replace(HTTP_PAYLOAD_VAR, creds.single());
+        // set placeholders with actual values
+        context
+            .set_value(
+                String::from("username"),
+                Value::from(creds.username.clone()),
+            )
+            .map_err(|e| e.to_string())?;
+        context
+            .set_value(
+                String::from("password"),
+                Value::from(creds.password.clone()),
+            )
+            .map_err(|e| e.to_string())?;
+        context
+            .set_value(String::from("payload"), Value::from(creds.single()))
+            .map_err(|e| e.to_string())?;
 
-        match eval_boolean_with_context(&success_expression, &context) {
-            Ok(result) => {
-                if result {
-                    Some(Success {
-                        status,
-                        content_type,
-                        size,
-                    })
-                } else {
+        Ok((status, content_type, size, context))
+    }
+
+    async fn is_success_response(
+        &self,
+        creds: &Credentials,
+        response: Response,
+    ) -> Option<Success> {
+        let built = self.build_response_context(creds, response).await;
+        if let Ok((status, content_type, size, context)) = built {
+            match self.success_expression.eval_boolean_with_context(&context) {
+                Ok(result) => {
+                    if result {
+                        Some(Success {
+                            status,
+                            content_type,
+                            size,
+                        })
+                    } else {
+                        None
+                    }
+                }
+                Err(e) => {
+                    #[cfg(test)]
+                    println!(
+                        "error evaluating expression '{}': {}",
+                        self.success_expression, e
+                    );
+                    #[cfg(not(test))]
+                    log::error!("error evaluating success expression: {}", e);
                     None
                 }
             }
-            Err(e) => {
-                #[cfg(test)]
-                println!(
-                    "error evaluating expression '{}': {}",
-                    success_expression, e
-                );
-                #[cfg(not(test))]
-                log::error!("error evaluating success expression: {}", e);
-                None
-            }
+        } else {
+            log::error!("error building response context: {}", built.err().unwrap());
+            None
         }
     }
 
@@ -865,7 +884,13 @@ impl Plugin for HTTP {
             None
         };
 
-        self.success_expression = opts.http.http_success.clone();
+        self.success_expression =
+            evalexpr::build_operator_tree(&opts.http.http_success).map_err(|e| {
+                format!(
+                    "error parsing success expression '{}': {}",
+                    opts.http.http_success, e
+                )
+            })?;
 
         self.enum_ext = opts.http.http_enum_ext.clone();
         self.enum_ext_placeholder = opts.http.http_enum_ext_placeholder.clone();
