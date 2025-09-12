@@ -255,7 +255,7 @@ legba http \
     --password wordlists/passwords.txt \
     --target http://localhost:8888/ \
     --http-csrf-page http://localhost:8888/ \ # where to grab the CSRF token from, or empty if it's the same as --target
-    --http-csrf-regexp '<input type="hidden" name="(token)" value="([^\"]+)"' \ # regular expression to extract it
+    --http-csrf-regexp '<input type="hidden" name="([^\"]+)" value="([^\"]+)"' \ # regular expression to extract it
     --http-method POST \
     --http-payload 'user={USERNAME}&pass={PASSWORD}'
 ```
