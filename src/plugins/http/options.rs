@@ -26,7 +26,7 @@ pub(crate) struct Options {
     pub http_csrf_page: Option<String>,
     #[clap(
         long,
-        default_value = r#"<input type="hidden" name="(token)" value="([^"]+)""#,
+        default_value = r#"<input type="hidden" name="([^\"]+)" value="([^"]+)""#,
         help_heading = "HTTP"
     )]
     /// Regular expression to use to grab the CSRF token name and value.
