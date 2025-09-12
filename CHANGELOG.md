@@ -1,3 +1,31 @@
+## Version 1.2.0 (2025-09-12)
+
+### 🚀 New Features
+- **Adaptive timeout system** - Timeout-sensitive plugins like DNS and port scanner can now dynamically adjust worker timeouts for better performance
+- **Port scanner improvements** - Enhanced banner grabbing and protocol detection, now defaults to scanning common ports instead of full 1-65535 range
+- **Performance optimizations** - Precompiled HTTP success expressions, dedicated DNS resolver objects per worker, and configurable report intervals (--report-time)
+- **MCP server enhancements** - Improved prompts for better clarity about plugins and tooling
+
+### 🐛 Fixes
+- Fixed default regexp for HTTP CSRF token name
+- Fixed parsing of multiple comma-separated credential expressions
+- Fixed VNC plugin password field naming and reduced log verbosity (#82)
+- Ensured DNS plugin only uses host targets (removes schema, port, etc.)
+- Restored original default value for --http-follow-redirects
+
+### 📚 Documentation
+- Added Bludit CMS example (#83)
+- Fixed CSRF regex documentation for HTTP plugin
+
+### Miscellaneous
+- Improved DNS resolver memory allocations
+- Replaced HashMaps with DashMap/DashSet in DNS plugin for better performance
+- Added TCP_NODELAY and single HTTP client for port scanner
+- Updated MCP tools to return string responses for increased compatibility
+- Various CI improvements and minor refactoring
+- Added human coded badge
+- Homebrew formula version bump
+
 ## Version 1.1.1 (2025-08-22)
 
 ### New Features 🚀
