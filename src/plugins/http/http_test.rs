@@ -916,11 +916,7 @@ mod tests {
 
         let result = http.check_dot_false_positives(&opts, false).await;
         assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .contains("aborting due to likely false positives")
-        );
+        assert!(result.unwrap_err().contains("likely false positives"));
     }
 
     // Tests for check_false_positives
@@ -997,11 +993,7 @@ mod tests {
 
         let result = http.check_false_positives(&opts, false).await;
         assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .contains("aborting due to likely false positives")
-        );
+        assert!(result.unwrap_err().contains("likely false positives"));
     }
 
     #[tokio::test]

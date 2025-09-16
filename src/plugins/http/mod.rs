@@ -474,7 +474,7 @@ impl HTTP {
                 ));
             } else {
                 return Err(format!(
-                    "aborting due to likely false positives for {}: validates success condition for a non existent page: {:?}",
+                    "likely false positives for {}: validates success condition for a non existent page: {:?}",
                     target, success
                 ));
             }
@@ -513,7 +513,7 @@ impl HTTP {
                 ));
             } else {
                 return Err(format!(
-                    "aborting due to likely false positives for {}: validates success condition for a non existent page starting with a dot: {:?}",
+                    "likely false positives for {}: validates success condition for a non existent page starting with a dot: {:?}",
                     target, success
                 ));
             }
@@ -942,7 +942,11 @@ impl Plugin for HTTP {
                 .map_err(|e| e.to_string())?
         };
 
-        self.validate_success_condition(opts).await
+        // do not perform check if we expect authentication
+        match self.strategy {
+            Strategy::BasicAuth | Strategy::NLTMv1 | Strategy::NLTMv2 => Ok(()),
+            _ => self.validate_success_condition(opts).await,
+        }
     }
 
     async fn attempt(
