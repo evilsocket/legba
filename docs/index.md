@@ -28,7 +28,7 @@ better performances and stability while consuming less resources than similar to
   * [POP3](plugins/pop3.md)
   * [RDP](plugins/rdp.md)
   * [Redis](plugins/redis.md)
-  * [Samba](plugins/samba.md)
+  * [Samba (Authentication and Shares enumeration)](plugins/samba.md)
   * [ScyllaDB / Cassandra](plugins/scylla.md)
   * [SSH / SFTP](plugins/ssh_and_sftp.md)
   * [SMTP](plugins/smtp.md)
