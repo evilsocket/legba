@@ -94,7 +94,6 @@ x509-parser = "0.17.0"
 lazy-regex = "3.2.0"
 rmcp = { version = "0.6.0", features = ["server", "transport-sse-server", "transport-io"] }
 random-string = "1.1.0"
-#aws-lc-rs = { version = "1.13.3", features = ["bindgen"] }
 dashmap = "6.1.0"
 include_dir = "0.7.4"
 evalexpr = { version = "12.0.2", features = ["regex"] }
