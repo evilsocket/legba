@@ -5,7 +5,7 @@ The command (cmd) plugin allows legba to interact with a custom executable and u
 | Name | Description |
 | ---- | ----------- |
 | `--cmd-binary <CMD_BINARY>` | Command binary [default: not set]  |
-| `--cmd-args <CMD_ARGS>` | Command arguments. {USERNAME}, {PASSWORD}, {TARGET} and {PORT} can be used as placeholders [default: not set] |
+| `--cmd-args <CMD_ARGS>` | Command arguments. {USERNAME}, {PASSWORD}, {TARGET} can be used as placeholders [default: not set] |
 | `--cmd-success-exit-code <CMD_SUCCESS_EXIT_CODE>` | Process exit code to be considered as a positive match [default: `0`] |
 | `--cmd-success-match <CMD_SUCCESS_MATCH>` | String to look for in the process standard output to be considered as a positive match |
 

@@ -19,7 +19,7 @@ For plugins that accept a single payload, like subdomain enumeration:
 
 ```bash
 legba dns \
-    --payload /path/to/subdomains.txt \
+    --payloads /path/to/subdomains.txt \
     --target example.com
 ```
 
@@ -36,6 +36,7 @@ The `--target/-T` argument supports one or multiple targets expressed as one of 
 * `--target 192.168.1.1-10`, `--target 192.168.1.1-10:22` IP range (with or without port).
 * `--target 192.168.1.0/24`, `--target 192.168.1.0/24:22` CIDR (with or without port).
 * `--target 10.0.0.1, 172.0.0.1:2222, @other-targets.txt, 192.168.1.1-10` any comma separated combination of them.
+* IPv6 CIDR is also supported, with port specified as `:[port]`, e.g. `--target 2001:db8::/126:[443]`.
 
 ## Providing Credentials
 
@@ -52,11 +53,15 @@ For instance:
 
 * `legba <plugin name> --username admin --password data/passwords.txt` will always use `admin` as username while loading the passwords from a wordlist.
 * `legba <plugin name> --username data/users.txt --password data/passwords.txt` will load both from wordlists and use all combinations.
-* `legba <plugin name> --username admin` will always use `admin` as username and attempt all permutations of the default printable ASCII charset between 4 and 8 characters (this is the default behaviour when a value is not passed).
+* `legba <plugin name> --username admin` will always use `admin` as username and attempt all permutations of the default alphanumeric lowercase charset between 3 and 5 characters (this is the default behaviour when a value is not passed).
 * `legba <plugin name> --username data/users.txt --password '@/some/path/*.key'` will load users from a wordlist while testing all key files inside `/some/path`.
 * `legba <plugin name> --username data/users.txt --password '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
 * `legba <plugin name> --username data/users.txt --password '[10-999]'` will load users from a wordlist while testing all numbers from 10 to 999.
 * `legba <plugin name> --username data/users.txt --password '[1, 2, 3, 4]'` will load users from a wordlist while testing the numbers 1, 2, 3 and 4.
+
+Notes:
+- Multiple expressions can be combined with commas (e.g., `1,[3-5],9`) and will be expanded in order.
+- In passwords, `{user}` is replaced with the current username (e.g., `--password '{user}123'`).
 
 ### Iteration Logic
 
@@ -95,20 +100,20 @@ Another option is using the `-C, --combinations <FILENAME>` argument, this will 
 | `-L, --list-plugins` | | List all available protocol plugins and exit. |
 | `-R, --recipe <RECIPE>` | | Load a recipe from this YAML file. |
 | `-T, --target <TARGET>` | | Single target host, url or IP address, IP range, CIDR, @filename or comma separated combination of them. |
-| `-U, --payloads, --username <USERNAME>` | `#4-8` | Constant, filename, glob expression as `@/some/path/*.txt`, permutations as `#min-max:charset` / `#min-max` or range as `[min-max`] / `[n, n, n]`. |
-| `-P, --key, --password <PASSWORD>` | `#4-8` | Constant, filename, glob expression as `@/some/path/*.txt`, permutations as `#min-max:charset` / `#min-max` or range as `[min-max`] / `[n, n, n]`. |
+| `-U, --payloads, --username <USERNAME>` | `#3-5` | Constant, filename, glob expression as `@/some/path/*.txt`, permutations as `#min-max:charset` / `#min-max` (default charset `abcdefghijklmnopqrstuvwxyz0123456789`) or range as `[min-max`] / `[n, n, n]`. |
+| `-P, --key, --password <PASSWORD>` | `#3-5` | Constant, filename, glob expression as `@/some/path/*.txt`, permutations as `#min-max:charset` / `#min-max` (default charset `abcdefghijklmnopqrstuvwxyz0123456789`) or range as `[min-max`] / `[n, n, n]`. |
 | `-C, --combinations <COMBINATIONS>` | | Load `username:password` combinations from this file. |
 | `--separator <SEPARATOR>` | `:` | Separator if using the --combinations/-C argument. |
 | `-I, --iterate-by <ITERATE_BY>` | `user` | Whether to iterate by user or by password [possible values: `user`, `password`] |
 | `-S, --session <FILENAME>` | | Save and restore session information from this file. |
 | `-O, --output <OUTPUT>` | | Save results to this file. |
 | `--output-format <FORMAT>` | `text` | Output file format [possible values: text, csv, jsonl] |
-| `--timeout <TIMEOUT>` | `10000` | Connection timeout in milliseconds. |
-| `--retries <RETRIES>` | `5` | Number of attempts if a request fails. |
+| `--timeout <TIMEOUT>` | `1000` | Connection timeout in milliseconds. |
+| `--retries <RETRIES>` | `1` | Number of attempts if a request fails. |
 | `--retry-time <TIME>` | `1000` | Delay in milliseconds to wait before a retry. |
 | `--single-match` | |  Exit after the first positive match is found. | 
 | `--ulimit <ULIMIT>` | `10000` | Value for ulimit (max open file descriptors). | 
-| `--concurrency <VALUE>` | `10` |  Number of concurrent workers. |
+| `--concurrency <VALUE>` | logical CPUs |  Number of concurrent workers. |
 | `--rate-limit <LIMIT>` | `0` | Limit the number of requests per second. |
 | `-W, --wait <WAIT>` | `0` | Wait time in milliseconds per login attempt. |
 | `--jitter-min <VALUE>` | `0` | Minimum number of milliseconds for random request jittering. |
@@ -124,7 +129,7 @@ For the full list of arguments including plugin specific ones run `legba --help`
 
 The `--session` option allows saving and restoring session state, which is useful for resuming interrupted scans. When a session file is specified, legba will:
 
-* Save the current progress to the file every second during execution
+* Save the current progress to the file every `report_time` milliseconds (default 5000 ms) during execution
 * Automatically restore from the file if it exists when starting
 * Preserve the position in the credential space, allowing you to continue exactly where you left off
 * Save all discovered credentials to the session file

@@ -15,7 +15,7 @@ A set of plugins supporting http basic authentication, NTLMv1, NTLMv2, multipart
 | Name | Description |
 | ---- | ----------- | 
 | `--http-success <EXPRESSION>` | Boolean expression to evaluate in order to recognize a succesful attempt [default: "status == 200"] |
-| `--http-random-ua` | Randomize requests User-Agent |
+| `--http-ua <HTTP_UA>` | Set a fixed User-Agent (random by default if not set) |
 | `--http-follow-redirects` | Follow HTTP redirects |
 | `--http-method <HTTP_METHOD>` | Request method for HTTP based plugins [default: `GET`] |
 | `--http-headers <HTTP_HEADERS>...` | Request headers for HTTP based plugins |
@@ -118,8 +118,8 @@ HTTP Request with NTLMv1 Authentication:
 
 ```sh
 legba http.ntlm1 \
-    --domain example.org \
-    --workstation client \
+    --http-ntlm-domain example.org \
+    --http-ntlm-workstation client \
     --username admin \
     --password wordlists/passwords.txt \
     --target https://localhost:8888/
@@ -129,8 +129,8 @@ HTTP Request with NTLMv2 Authentication:
 
 ```sh
 legba http.ntlm2 \
-    --domain example.org \
-    --workstation client \
+    --http-ntlm-domain example.org \
+    --http-ntlm-workstation client \
     --username admin \
     --password wordlists/passwords.txt \
     --target https://localhost:8888/

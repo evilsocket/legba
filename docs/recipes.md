@@ -11,8 +11,7 @@ plugin: http
 args:
     target: "{$schema or https}://{$host}:{$port or 443}/owa/auth.owa"
     http-method: POST
-    http-success-codes: 302
-    http-success-string: set-cookie
+    http-success: "status == 302 && set_cookie != \"\""
     http-payload: destination={$schema or https}://{$host}:{$port or 443}/&flags=4&username={USERNAME}&password={PASSWORD}
 ```
 
@@ -51,8 +50,7 @@ plugin: http.enum
 args:
     target: "{$schema or https}://{$host}:{$port or 443}{$path or /}"
     payloads: "{$recipe.path}/payloads.txt"
-    http-success-codes: "{$success_code or 200}"
-    http-success-string: "Destination host"
+    http-success: "status == {$success_code or 200} && contains(body, \"Destination host\")"
     http-method: POST
 ```
 
@@ -65,6 +63,5 @@ plugin: http.enum
 args:
     target: "{$schema or https}://{$host}:{$port or 443}{$path or /}"
     payloads: "{$recipe.path}/dictionary.txt"
-    http-success-codes: "{$success_code or 200}"
-    http-success-string: "root:"
+    http-success: "status == {$success_code or 200} && contains(body, \"root:\")"
 ```
