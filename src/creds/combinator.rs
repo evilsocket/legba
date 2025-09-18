@@ -98,11 +98,11 @@ impl Combinator {
             None
         };
 
-        // get either override, username or password
-        let payload_expr = if let Some(override_expr) = override_expr {
-            override_expr
-        } else if options.username.is_some() {
+        // get either user provided payload/username, or plugin override or password
+        let payload_expr = if options.username.is_some() {
             expression::parse_expression(options.username.as_ref())
+        } else if let Some(override_expr) = override_expr {
+            override_expr
         } else {
             expression::parse_expression(options.password.as_ref())
         };
