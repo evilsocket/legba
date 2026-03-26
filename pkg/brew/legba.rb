@@ -1,8 +1,8 @@
 
 class Legba < Formula
-    version '1.2.0'
+    version '1.2.0-fix-set-cookies'
     desc "Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator."
-    homepage "https://github.com/evilsocket/legba"
+    homepage "https://github.com/thibon/legba"
   
     if OS.mac?
         url "https://github.com/evilsocket/legba/releases/download/#{version}/legba-#{version}-apple-darwin-arm64.tar.gz"
