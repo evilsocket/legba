@@ -111,13 +111,33 @@ pub(crate) async fn run(
         });
     }
 
+    let rate_limit = session.options.rate_limit;
+    let cred_wait = if session.options.wait > 0 {
+        Some(time::Duration::from_millis(session.options.wait as u64))
+    } else {
+        None
+    };
+
     // loop credentials for this session
+    let mut dispatched: usize = 0;
     for creds in combinations {
         // exit on ctrl-c if we have to, otherwise send the new credentials to the workers
         if session.is_stop() {
             log::debug!("exiting loop");
             return Ok(());
-        } else if let Err(e) = session.send_credentials(creds).await {
+        }
+
+        dispatched += 1;
+
+        if rate_limit > 0 && dispatched.is_multiple_of(rate_limit) {
+            tokio::time::sleep(time::Duration::from_secs(1)).await;
+        }
+
+        if let Some(wait) = cred_wait {
+            tokio::time::sleep(wait).await;
+        }
+
+        if let Err(e) = session.send_credentials(creds).await {
             if session.is_stop() {
                 log::debug!("{}", e);
                 return Ok(());

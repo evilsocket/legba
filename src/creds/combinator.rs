@@ -39,7 +39,6 @@ pub(crate) struct Combinator {
     pass_expr: creds::Expression,
     product: Box<dyn Iterator<Item = (String, String, String)>>,
 
-    wait: Option<time::Duration>,
     dispatched: usize,
     search_space_size: usize,
 }
@@ -92,11 +91,6 @@ impl Combinator {
     ) -> Result<Self, Error> {
         let mode = Mode::Single;
         let dispatched = 0;
-        let wait = if options.wait > 0 {
-            Some(time::Duration::from_millis(options.wait as u64))
-        } else {
-            None
-        };
 
         // get either user provided payload/username, or plugin override or password
         let payload_expr = if options.username.is_some() {
@@ -112,7 +106,6 @@ impl Combinator {
 
         Ok(Self {
             options,
-            wait,
             mode,
             user_expr: payload_expr,
             pass_expr: creds::Expression::default(),
@@ -124,11 +117,6 @@ impl Combinator {
 
     fn for_double_payload(targets: &Vec<String>, options: Options) -> Result<Self, Error> {
         let dispatched = 0;
-        let wait = if options.wait > 0 {
-            Some(time::Duration::from_millis(options.wait as u64))
-        } else {
-            None
-        };
 
         if let Some(combo_filename) = options.combinations.as_ref() {
             // get username:password combinations from the specified file
@@ -145,7 +133,6 @@ impl Combinator {
             Ok(Self {
                 options,
                 mode,
-                wait,
                 user_expr: combo_expr,
                 pass_expr,
                 product,
@@ -167,7 +154,6 @@ impl Combinator {
             Ok(Self {
                 options,
                 mode,
-                wait,
                 user_expr,
                 pass_expr,
                 product,
@@ -215,16 +201,6 @@ impl Iterator for Combinator {
     fn next(&mut self) -> Option<Self::Item> {
         // we're done
         if let Some((target, outer, inner)) = self.product.next() {
-            // check if we have to rate limit
-            if self.options.rate_limit > 0 && self.dispatched % self.options.rate_limit == 0 {
-                std::thread::sleep(time::Duration::from_secs(1));
-            }
-
-            // check if we have a wait time
-            if let Some(wait) = self.wait {
-                std::thread::sleep(wait);
-            }
-
             let (username, password) = match self.mode {
                 Mode::Multi | Mode::Single => match self.options.iterate_by {
                     IterationStrategy::User => (outer, inner),

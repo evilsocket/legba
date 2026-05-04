@@ -40,7 +40,7 @@ impl Command {
 
         log::debug!("{} {}", &self.opts.cmd_binary, args.join(" "));
 
-        let child = std::process::Command::new(&self.opts.cmd_binary)
+        let child = tokio::process::Command::new(&self.opts.cmd_binary)
             .args(&args)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
@@ -48,7 +48,7 @@ impl Command {
             .spawn()
             .map_err(|e| e.to_string())?;
 
-        child.wait_with_output().map_err(|e| e.to_string())
+        child.wait_with_output().await.map_err(|e| e.to_string())
     }
 }
 
