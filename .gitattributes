@@ -1,4 +1,45 @@
-/test-servers/** linguist-vendored
-/Dockerfile linguist-vendored
-/pkg linguist-vendored
-/HomebrewFormula linguist-vendored
+# Force GitHub Linguist to count only the Rust source tree.
+# Anything that isn't src/ or top-level Rust manifests is build infrastructure,
+# vendored test scaffolding, or documentation — none of it should skew the
+# language stats.
+
+# --- Test scaffolding ----------------------------------------------------
+/test-servers/**           linguist-vendored
+/data/**                   linguist-vendored
+
+# --- Build / packaging ---------------------------------------------------
+/Dockerfile                linguist-vendored
+/pkg/**                    linguist-vendored
+/HomebrewFormula/**        linguist-vendored
+/scripts/**                linguist-vendored
+/.github/**                linguist-vendored
+
+# --- Documentation site --------------------------------------------------
+/docs/**                   linguist-documentation
+/overrides/**              linguist-vendored
+/mkdocs.yml                linguist-vendored
+/AGENTS.md                 linguist-documentation
+/CLAUDE.md                 linguist-documentation
+/CHANGELOG.md              linguist-documentation
+/README.md                 linguist-documentation
+
+# --- Catch-all by extension ----------------------------------------------
+# Any HTML/CSS/JS/Python/Ruby/PHP/Shell/Dockerfile/YAML/JSON/Markdown anywhere
+# in the tree is vendored test data, packaging, or docs — never Rust.
+*.html                     linguist-vendored
+*.htm                      linguist-vendored
+*.css                      linguist-vendored
+*.js                       linguist-vendored
+*.py                       linguist-vendored
+*.rb                       linguist-vendored
+*.php                      linguist-vendored
+*.sh                       linguist-vendored
+*.dockerfile               linguist-vendored
+Dockerfile*                linguist-vendored
+*.conf                     linguist-vendored
+*.yml                      linguist-vendored
+*.yaml                     linguist-vendored
+*.json                     linguist-vendored
+*.toml                     linguist-vendored
+*.md                       linguist-documentation
+*.txt                      linguist-vendored
