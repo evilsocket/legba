@@ -104,5 +104,5 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/evilsocket/legba
-    - icon: fontawesome/brands/mastodon
-      link: https://infosec.exchange/@evilsocket
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/evilsocket
