@@ -253,6 +253,12 @@ impl HTTP {
                 key, header_var_name
             );
 
+            // set_cookie is handled separately below because it can have multiple values
+            // and must always be set so success expressions can safely reference it
+            if header_var_name == "set_cookie" {
+                continue;
+            }
+
             if header_var_name == "content_type" {
                 content_type_set = true;
                 content_type = value.to_str().unwrap().to_owned();
@@ -262,6 +268,21 @@ impl HTTP {
                 .set_value(header_var_name, Value::from(value.to_str().unwrap()))
                 .map_err(|e| e.to_string())?;
         }
+
+        let set_cookie_value = response
+            .headers()
+            .get_all("set-cookie")
+            .iter()
+            .filter_map(|v| v.to_str().ok())
+            .collect::<Vec<&str>>()
+            .join("; ");
+
+        context
+            .set_value(
+                String::from("set_cookie"),
+                Value::from(set_cookie_value.as_str()),
+            )
+            .map_err(|e| e.to_string())?;
 
         // always set content_type
         if !content_type_set {
