@@ -12,6 +12,7 @@ theme:
   name: material
   custom_dir: overrides
   language: en
+  favicon: logo.png
   features:
     - navigation.instant
     - navigation.tracking
