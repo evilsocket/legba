@@ -43,6 +43,25 @@ fn method_requires_payload(method: &Method) -> bool {
     matches!(method, &Method::POST | &Method::PUT | &Method::PATCH)
 }
 
+// Produce a human-readable error including the underlying source chain.
+// Reqwest's top-level Display often hides the real cause (e.g. timeouts during
+// TLS handshake look like a generic "error sending request"), which made #88
+// confusing to diagnose.
+fn fmt_request_error(e: reqwest::Error) -> String {
+    use std::error::Error;
+    let mut msg = e.to_string();
+    let mut src: Option<&(dyn Error + 'static)> = e.source();
+    while let Some(cause) = src {
+        msg.push_str(": ");
+        msg.push_str(&cause.to_string());
+        src = cause.source();
+    }
+    if e.is_timeout() {
+        msg.push_str(" (hint: increase --timeout, current value may be too short for TLS handshake)");
+    }
+    msg
+}
+
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) enum Strategy {
     Request,
@@ -695,7 +714,7 @@ impl HTTP {
         request = self.setup_request_body(&creds, csrf_token, request);
         // execute
         match request.send().await {
-            Err(e) => Err(e.to_string()),
+            Err(e) => Err(fmt_request_error(e)),
             Ok(res) => {
                 let cookie = if let Some(cookie) = res.headers().get(COOKIE) {
                     cookie.to_str().unwrap().to_owned()
@@ -766,7 +785,7 @@ impl HTTP {
 
         // execute
         match request.send().await {
-            Err(e) => Err(e.to_string()),
+            Err(e) => Err(fmt_request_error(e)),
             Ok(res) => {
                 if let Some(success) = self.is_success_response(&creds, res).await {
                     Ok(Some(vec![Loot::new(
@@ -810,7 +829,7 @@ impl HTTP {
 
         // execute
         match request.send().await {
-            Err(e) => Err(e.to_string()),
+            Err(e) => Err(fmt_request_error(e)),
             Ok(res) => {
                 if let Some(success) = self.is_success_response(&creds, res).await {
                     Ok(Some(vec![Loot::new(
