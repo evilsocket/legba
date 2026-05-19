@@ -152,8 +152,8 @@ git add Cargo.toml Cargo.lock CHANGELOG.md pkg/brew/legba.rb docs/
 git commit -m "release: <VER>"
 git push origin main
 
-git tag -a "v<VER>" -m "releasing v<VER>"
-git push origin "v<VER>"
+git tag -a "<VER>" -m "releasing <VER>"
+git push origin "<VER>"
 ```
 
 Pushing the tag triggers `.github/workflows/release.yml`, which builds the Linux and macOS tarballs and creates the GitHub Release.
@@ -173,13 +173,13 @@ After the GitHub Actions release workflow finishes and the tarballs are attached
 
 1. Compute the new SHA256s. Inspect a prior asset URL first to confirm the actual URL pattern the workflow produces (the tag prefix `v` may or may not appear in asset names):
    ```bash
-   gh release view "v<VER>" --json assets -q '.assets[].url'
+   gh release view "<VER>" --json assets -q '.assets[].url'
    curl -sL <asset-url> | sha256sum
    ```
 2. Update `pkg/brew/legba.rb` with the two `sha256` values.
 3. Paste the changelog entry into the GitHub Release notes:
    ```bash
-   gh release edit "v<VER>" --notes-file <(awk '/^## Version/{c++} c==1' CHANGELOG.md)
+   gh release edit "<VER>" --notes-file <(awk '/^## Version/{c++} c==1' CHANGELOG.md)
    ```
 4. Commit the brew formula update on `main`:
    ```bash
@@ -199,5 +199,6 @@ If something goes wrong **after pushing the tag**:
 ## Style notes for this repo
 
 - Commit prefixes in use: `new:`, `fix:`, `docs:`, `misc:`, `release:`. Follow these — they drive changelog grouping.
-- The release workflow validates that `Cargo.toml`'s `version =` matches the tag (sans `v` prefix). Tag/version mismatch fails CI.
+- Release tags are **unprefixed** (`1.3.0`, not `v1.3.0`). The `release.yml` workflow trigger filter is `tags: ["[0-9]+.[0-9]+.[0-9]+"]` and only fires on bare semver tags; a `v`-prefixed tag is a silent no-op. Past `v0.x` tags exist in the repo from before this convention; do not follow that pattern.
+- The release workflow validates that `Cargo.toml`'s `version =` matches the tag. Tag/version mismatch fails CI.
 - `pkg/brew/legba.rb` is the canonical Homebrew formula and is mirrored to the tap repo on release.
