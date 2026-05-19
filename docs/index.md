@@ -1,6 +1,6 @@
 ---
-title: Fast Rust multi-protocol credential bruteforcer
-description: Fast async Rust credential bruteforcer and password sprayer. Modern alternative to hydra, medusa, ncrack, and patator. 1.5x to 55x faster.
+title: Multi-protocol credential bruteforcing tool in Rust
+description: Open-source multi-protocol credential bruteforcing and password spraying tool in Rust for penetration testing. 1.5x to 55x faster than hydra.
 ---
 
 # legba
