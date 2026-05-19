@@ -45,13 +45,45 @@ Ask the user for the next version using `AskUserQuestion` if they haven't alread
 
 Remember the chosen version and substitute it directly into the commands below. In the snippets it appears as `<VER>`.
 
-### 3. Generate the changelog
+### 3. Inspect changes since the last release
 
 ```bash
 git log --no-merges --pretty=format:'%h %s' "$(git describe --tags --abbrev=0)..HEAD"
 ```
 
-From that log, draft a changelog entry matching the format of existing entries in `CHANGELOG.md`:
+Read through the log and keep the commit list handy — it drives both the docs audit (next step) and the changelog (step 5).
+
+### 4. Audit and update the docs
+
+Before drafting the changelog, walk through the commits from step 3 and decide whether any of them require doc updates. Anything below should trigger a doc edit:
+
+- a new plugin / module / subcommand was added → needs a new `docs/plugins/<name>.md` and a link from `docs/index.md`
+- new CLI flags or options were added → `docs/usage.md` and any affected `docs/plugins/<plugin>.md`
+- existing flags/options changed names, defaults, or semantics → same files as above; flag breaking changes prominently
+- behavior changed in a way that's user-visible (output format, success criteria, recipe schema, REST/MCP API surface) → `docs/usage.md`, `docs/recipes.md`, `docs/rest.md`, `docs/mcp.md` as appropriate
+- install/build steps changed → `docs/install.md`
+- removed/deprecated functionality → strike or mark in every doc that referenced it; do not silently delete
+
+Quick scan to find candidates:
+
+```bash
+# CLI surface changes (clap definitions)
+git diff "$(git describe --tags --abbrev=0)..HEAD" -- 'src/**/options.rs' 'src/options.rs'
+
+# New or renamed plugin modules
+git diff --name-status "$(git describe --tags --abbrev=0)..HEAD" -- 'src/plugins/'
+
+# Doc files that already exist (so you know what to update vs. create)
+ls docs/ docs/plugins/
+```
+
+For each item that requires a doc change, **make the edit now** in the same release commit. Do not defer doc updates to a separate PR — releasing with stale docs is the failure mode this step exists to prevent.
+
+If you're unsure whether a change is user-visible, surface it to the user via `AskUserQuestion` rather than guessing.
+
+### 5. Generate the changelog
+
+Using the same commit list from step 3, draft a changelog entry matching the format of existing entries in `CHANGELOG.md`:
 
 ```markdown
 ## Version <VER> (<YYYY-MM-DD>)
@@ -80,14 +112,14 @@ Prepend the new entry to `CHANGELOG.md` (do not replace existing content).
 
 **Show the drafted entry to the user via AskUserQuestion before writing**, with options to accept, edit, or skip a section. Releases are public artifacts — humans should approve the prose.
 
-### 4. Bump versions in source files
+### 6. Bump versions in source files
 
 Edit these in lockstep — both must reference the new version:
 
 - `Cargo.toml` — `version = "<VER>"`
 - `pkg/brew/legba.rb` — `version '<VER>'` (note: the formula's `sha256` fields are updated **after** the GitHub release publishes binaries; leave them alone for now)
 
-### 5. Sync `Cargo.lock`
+### 7. Sync `Cargo.lock`
 
 ```bash
 cargo update -p legba              # rewrites the legba package entry only; no transitive bumps
@@ -97,7 +129,7 @@ cargo package --locked --no-verify # confirms the crate is publishable
 
 If `--locked` fails, the lockfile is out of sync — re-run `cargo update -p legba` and investigate. Do not pass `--frozen` or `--offline` to paper over a mismatch.
 
-### 6. Final sync check before commit
+### 8. Final sync check before commit
 
 ```bash
 # All three must report the new version
@@ -109,14 +141,14 @@ git diff --stat                    # should touch only the expected files
 git status                         # nothing unexpected should be modified or untracked
 ```
 
-The expected diff is: `Cargo.toml`, `Cargo.lock`, `CHANGELOG.md`, `pkg/brew/legba.rb`. Anything else is a red flag — stop and ask.
+The expected diff is: `Cargo.toml`, `Cargo.lock`, `CHANGELOG.md`, `pkg/brew/legba.rb`, and any `docs/**` files touched in step 4. Anything else is a red flag — stop and ask.
 
-### 7. Commit, tag, push
+### 9. Commit, tag, push
 
 Confirm with the user before pushing (this is a destructive-blast-radius operation; we don't push on autopilot).
 
 ```bash
-git add Cargo.toml Cargo.lock CHANGELOG.md pkg/brew/legba.rb
+git add Cargo.toml Cargo.lock CHANGELOG.md pkg/brew/legba.rb docs/
 git commit -m "release: <VER>"
 git push origin main
 
@@ -126,7 +158,7 @@ git push origin "v<VER>"
 
 Pushing the tag triggers `.github/workflows/release.yml`, which builds the Linux and macOS tarballs and creates the GitHub Release.
 
-### 8. Publish to crates.io
+### 10. Publish to crates.io
 
 ```bash
 cargo publish --dry-run --locked
@@ -135,7 +167,7 @@ cargo publish --locked
 
 Confirm with the user before the non-dry-run publish — crates.io versions are immutable.
 
-### 9. Post-release follow-ups
+### 11. Post-release follow-ups
 
 After the GitHub Actions release workflow finishes and the tarballs are attached to the release:
 
