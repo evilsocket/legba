@@ -1,0 +1,19 @@
+services:
+  mock-smtp-ntlm:
+    image: python:3.12-slim
+    container_name: legba-mock-smtp-ntlm
+    working_dir: /srv
+    command: ["sh", "-c", "pip install --no-cache-dir aiosmtpd cryptography && python /srv/mock_smtp_ntlm.py"]
+    environment:
+      LEGBA_NTLM_PORT: "25"
+      LEGBA_NTLM_USER: "jeff"
+      LEGBA_NTLM_PASSWORD: "letmein"
+      LEGBA_NTLM_DOMAIN: "LEGBA"
+      # Set to "1" to advertise STARTTLS, "require" to also refuse AUTH on
+      # the unencrypted channel (which is what production servers do).
+      LEGBA_NTLM_STARTTLS: "require"
+    volumes:
+      - ./mock_smtp_ntlm.py:/srv/mock_smtp_ntlm.py:ro
+    ports:
+      - "2526:25"
+    restart: unless-stopped
