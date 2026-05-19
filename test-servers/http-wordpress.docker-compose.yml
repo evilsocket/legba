@@ -3,26 +3,27 @@
 
 version: '2'
 services:
-  mysql:
-    image: docker.io/bitnami/mysql:8.0
+  mariadb:
+    image: docker.io/bitnami/mariadb:latest
     volumes:
-      - 'mysql_data:/bitnami/mysql'
+      - 'mariadb_data:/bitnami/mariadb'
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
-      - MYSQL_USER=bn_wordpress
-      - MYSQL_DATABASE=bitnami_wordpress
+      - MARIADB_USER=bn_wordpress
+      - MARIADB_DATABASE=bitnami_wordpress
+
   wordpress:
-    image: docker.io/bitnami/wordpress:6
+    image: docker.io/bitnami/wordpress:latest
     ports:
       - '8888:8080'
       - '8443:8443'
     volumes:
       - 'wordpress_data:/bitnami/wordpress'
     depends_on:
-      - mysql
+      - mariadb
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
-      - WORDPRESS_DATABASE_HOST=mysql
+      - WORDPRESS_DATABASE_HOST=mariadb
       - WORDPRESS_DATABASE_PORT_NUMBER=3306
       - WORDPRESS_DATABASE_USER=bn_wordpress
       - WORDPRESS_DATABASE_NAME=bitnami_wordpress
@@ -31,7 +32,7 @@ services:
       - WORDPRESS_EMAIL=evilsocket@gmail.com
 
 volumes:
-  mysql_data:
+  mariadb_data:
     driver: local
   wordpress_data:
     driver: local
