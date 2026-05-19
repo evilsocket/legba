@@ -71,6 +71,7 @@ nav:
   - Benchmark: benchmark.md
   - Comparison: comparison.md
   - FAQ: faq.md
+  - Sponsor: sponsor.md
   - Plugins:
       - AMQP: plugins/amqp.md
       - Custom Binary: plugins/custom_binary.md
