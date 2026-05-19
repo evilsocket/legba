@@ -140,13 +140,11 @@ pub(crate) fn parse_expression(expr: Option<&String>) -> Expression {
                 }
             }
             // glob expression or constant
-            '@' => {
-                if expr.contains('*') {
-                    // in order to be considered a glob expression at least one * must be used
-                    return Expression::Glob {
-                        pattern: expr[1..].to_owned(),
-                    };
-                }
+            '@' if expr.contains('*') => {
+                // in order to be considered a glob expression at least one * must be used
+                return Expression::Glob {
+                    pattern: expr[1..].to_owned(),
+                };
             }
             // range expression or constant
             '[' => {

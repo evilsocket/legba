@@ -954,12 +954,9 @@ impl Plugin for HTTP {
         self.client = if let Some(proxy) = &self.proxy {
             // add proxy if specified
             let mut proxy = reqwest::Proxy::all(proxy).map_err(|e| e.to_string())?;
-            if self.proxy_user.is_some() && self.proxy_pass.is_some() {
+            if let (Some(user), Some(pass)) = (self.proxy_user.as_ref(), self.proxy_pass.as_ref()) {
                 // set proxy authentication
-                proxy = proxy.basic_auth(
-                    self.proxy_user.as_ref().unwrap(),
-                    self.proxy_pass.as_ref().unwrap(),
-                );
+                proxy = proxy.basic_auth(user, pass);
             }
 
             reqwest::Client::builder()
