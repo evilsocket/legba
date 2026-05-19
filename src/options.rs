@@ -188,12 +188,19 @@ fn update_field_by_name(
                     }
                 }
                 Value::Number(_) => {
-                    if let Some(val) = matches.get_one::<usize>(field_name) {
-                        log::debug!("updating field: {:?} = {:?}", &field_name, &val);
-                        map.insert(field_name.to_string(), Value::Number((*val).into()));
-                    } else {
-                        return Err(format!("Missing value for field: {:?}", &field_name).into());
-                    }
+                    // clap stores numeric args with different concrete types (u64, usize, ...).
+                    // matches.get_one::<T>() panics on type mismatch, so read the raw string and
+                    // parse it ourselves to stay type-agnostic.
+                    let raw = matches
+                        .get_raw(field_name)
+                        .and_then(|mut it| it.next())
+                        .ok_or_else(|| format!("Missing value for field: {:?}", &field_name))?;
+                    let s = raw.to_string_lossy();
+                    let n: u64 = s.parse().map_err(|e| {
+                        format!("Failed to parse {:?} as number for field {:?}: {}", s, field_name, e)
+                    })?;
+                    log::debug!("updating field: {:?} = {:?}", &field_name, &n);
+                    map.insert(field_name.to_string(), Value::Number(n.into()));
                 }
                 Value::Bool(_) => {
                     if let Some(val) = matches.get_one::<bool>(field_name) {
