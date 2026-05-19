@@ -1,14 +1,16 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
+use sqlx::mysql::MySqlConnectOptions;
 use sqlx::pool::PoolOptions;
+use sqlx::postgres::PgConnectOptions;
 use sqlx::{MySql, Postgres};
 
+use crate::Options;
+use crate::Plugin;
 use crate::creds::Credentials;
 use crate::session::{Error, Loot};
 use crate::utils;
-use crate::Options;
-use crate::Plugin;
 
 super::manager::register_plugin! {
     "mysql" => SQL::new(Flavour::My),
@@ -49,20 +51,20 @@ impl SQL {
         SQL { flavour, port }
     }
 
-    async fn do_attempt<DB: sqlx::Database>(
+    async fn do_attempt<DB>(
         &self,
         scheme: &str,
-        db: &str,
         creds: &Credentials,
         timeout: Duration,
-    ) -> Result<Option<Vec<Loot>>, Error> {
+        connect_options: <<DB as sqlx::Database>::Connection as sqlx::Connection>::Options,
+    ) -> Result<Option<Vec<Loot>>, Error>
+    where
+        DB: sqlx::Database,
+    {
         let address = utils::parse_target_address(&creds.target, self.port)?;
         let pool_result = tokio::time::timeout(
             timeout,
-            PoolOptions::<DB>::new().connect(&format!(
-                "{}://{}:{}@{}/{}",
-                scheme, &creds.username, &creds.password, &address, db
-            )),
+            PoolOptions::<DB>::new().connect_with(connect_options),
         )
         .await;
 
@@ -134,13 +136,26 @@ impl Plugin for SQL {
         creds: &Credentials,
         timeout: Duration,
     ) -> Result<Option<Vec<Loot>>, Error> {
+        let (host, port) = utils::parse_target(&creds.target, self.port)?;
         match self.flavour {
             Flavour::My => {
-                self.do_attempt::<MySql>("mysql", "mysql", creds, timeout)
+                let opts = MySqlConnectOptions::new()
+                    .host(&host)
+                    .port(port)
+                    .username(&creds.username)
+                    .password(&creds.password)
+                    .database("mysql");
+                self.do_attempt::<MySql>("mysql", creds, timeout, opts)
                     .await
             }
             Flavour::PG => {
-                self.do_attempt::<Postgres>("postgres", "postgres", creds, timeout)
+                let opts = PgConnectOptions::new()
+                    .host(&host)
+                    .port(port)
+                    .username(&creds.username)
+                    .password(&creds.password)
+                    .database("postgres");
+                self.do_attempt::<Postgres>("postgres", creds, timeout, opts)
                     .await
             }
         }
