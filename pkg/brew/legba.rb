@@ -1,6 +1,6 @@
 
 class Legba < Formula
-    version '1.2.0'
+    version '1.3.0'
     desc "Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator."
     homepage "https://github.com/evilsocket/legba"
   

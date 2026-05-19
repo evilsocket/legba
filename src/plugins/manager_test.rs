@@ -10,6 +10,16 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::time::Duration;
 
+    // Serializes tests that mutate the global INVENTORY. Cargo runs tests in parallel
+    // within a binary, so without this guard concurrent tests race on the singleton
+    // and intermittently see each other's plugin registrations. Uses tokio's Mutex
+    // because the guard is held across .await points.
+    static SERIAL_INVENTORY: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    async fn lock_inventory() -> tokio::sync::MutexGuard<'static, ()> {
+        SERIAL_INVENTORY.lock().await
+    }
+
     // Mock plugin for testing
     struct MockPlugin {
         #[allow(dead_code)]
@@ -183,6 +193,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_plugin_setup_success() {
+        let _serial = lock_inventory().await;
         *INVENTORY.lock().unwrap() = create_inventory_with_plugin(
             "test_plugin_setup_success",
             MockPlugin::new("test_plugin_setup_success"),
@@ -201,6 +212,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_plugin_setup_with_error() {
+        let _serial = lock_inventory().await;
         *INVENTORY.lock().unwrap() = create_inventory_with_plugin(
             "test_plugin_setup_with_error",
             MockPlugin::new("test_plugin_setup_with_error")
@@ -216,6 +228,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_plugin_not_found() {
+        let _serial = lock_inventory().await;
         let inventory = Inventory::new();
         *INVENTORY.lock().unwrap() = inventory;
 
@@ -487,6 +500,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_single_payload_strategy() {
+        let _serial = lock_inventory().await;
         let test_payload = "test_payload".to_string();
         let plugin = MockPlugin::new("test_single_payload_strategy")
             .with_single_payload()

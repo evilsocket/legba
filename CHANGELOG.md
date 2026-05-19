@@ -1,3 +1,30 @@
+## Version 1.3.0 (2026-05-19)
+
+### 🚀 New Features
+- **Documentation site at https://legba.evilsocket.net/** — mkdocs-material site with full-text search, comparison page (legba vs Hydra, Medusa, Ncrack, Patator), FAQ, JSON-LD/schema.org structured data, sitemap, and `llms.txt` / `llms-full.txt` for LLM ingestion.
+- **Samba shares enumeration** — new `smb.shares` plugin (closes #86).
+- **Agent-driven release protocol** — `pkg/release.py` replaced by `AGENTS.md` / `CLAUDE.md`, with pre-flight checks, docs audit, and lockstep version sync.
+- Rate limiting and `--wait` delays moved from the blocking credential iterator to the async dispatch loop, improving responsiveness and stop-signal handling.
+- `cmd` plugin now uses `tokio::process` instead of blocking `std::process`.
+
+### 🐛 Fixes
+- HTTP success expressions no longer error when `set_cookie` is referenced but absent from the response (closes #93).
+- Fixed panic when `--timeout` is combined with `-R/--recipe` due to a clap type mismatch (fixes #95).
+- MySQL plugin now correctly handles usernames and passwords containing special characters by using `MySqlConnectOptions` instead of string interpolation (fixes #96).
+- HTTP request errors now surface the underlying cause (e.g. "operation timed out") and a hint when the timeout is the root cause (ref #88).
+- HTTP authenticated strategies (basic, NTLMv1, NTLMv2) skip success-code validation, fixing false negatives (fixes #84).
+- User-provided payloads now correctly take precedence over plugin default overrides.
+
+### 📚 Documentation
+- README links to the new docs site at `legba.evilsocket.net`.
+- Several documentation fixes and additions including the comparison page, FAQ, and per-page SEO/GEO metadata.
+
+### Miscellaneous
+- Homebrew formula version bump.
+- Test server for HTTP plugin switched to MariaDB.
+- Plugin manager unit tests now serialize access to the global `INVENTORY`, eliminating a pre-existing parallel-test flake.
+- Various clippy / lint-driven refactors.
+
 ## Version 1.2.0 (2025-09-12)
 
 ### 🚀 New Features
