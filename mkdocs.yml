@@ -1,0 +1,104 @@
+site_name: legba
+site_description: A fast, multi-protocol credential bruteforcer / password sprayer and enumerator.
+site_url: https://legba.evilsocket.net/
+repo_url: https://github.com/evilsocket/legba
+repo_name: evilsocket/legba
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: red
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: red
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Installation: install.md
+  - Usage: usage.md
+  - Recipes: recipes.md
+  - REST API: rest.md
+  - MCP: mcp.md
+  - Benchmark: benchmark.md
+  - Plugins:
+      - AMQP: plugins/amqp.md
+      - Custom Binary: plugins/custom_binary.md
+      - DNS: plugins/dns.md
+      - FTP: plugins/ftp.md
+      - HTTP: plugins/http.md
+      - IMAP: plugins/imap.md
+      - IRC: plugins/irc.md
+      - Kerberos: plugins/kerberos.md
+      - LDAP: plugins/ldap.md
+      - MongoDB: plugins/mongodb.md
+      - MQTT: plugins/mqtt.md
+      - MSSQL: plugins/mssql.md
+      - MySQL: plugins/mysql.md
+      - Oracle: plugins/oracle.md
+      - POP3: plugins/pop3.md
+      - Port Scanner: plugins/port_scanner.md
+      - PostgreSQL: plugins/postgresql.md
+      - RDP: plugins/rdp.md
+      - Redis: plugins/redis.md
+      - Samba: plugins/samba.md
+      - ScyllaDB: plugins/scylla.md
+      - SMTP: plugins/smtp.md
+      - SNMP: plugins/snmp.md
+      - SOCKS5: plugins/socks5.md
+      - SSH / SFTP: plugins/ssh_and_sftp.md
+      - STOMP: plugins/stomp.md
+      - Telnet: plugins/telnet.md
+      - VNC: plugins/vnc.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/evilsocket/legba
+    - icon: fontawesome/brands/mastodon
+      link: https://infosec.exchange/@evilsocket

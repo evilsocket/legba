@@ -28,7 +28,7 @@ Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerat
 - **Flexible Credentials** - [Multiple input formats](https://github.com/evilsocket/legba/blob/main/docs/usage.md) including wordlist files, ranges, permutations, and expression generators.
 - **Smart Session Management** - Save and restore session state to resume interrupted scans.
 - **Advanced Rate Control** - Rate limiting, delays, jittering, and retry mechanisms for stealth and stability.
-- **Extensible Architecture** - [REST API](https://github.com/evilsocket/legba/blob/main/docs/rest.md), [Model Context Protocol (MCP)](https://github.com/evilsocket/legba/blob/main/docs/mcp.md) server, and custom binary plugin support.
+- **AI Ready** - [REST API](https://github.com/evilsocket/legba/blob/main/docs/rest.md), [Model Context Protocol (MCP)](https://github.com/evilsocket/legba/blob/main/docs/mcp.md) server, and custom binary plugin support.
 - **Recipe System** - [YAML-based configuration](https://github.com/evilsocket/legba/blob/main/docs/recipes.md) for complex authentication scenarios.
 - **Multiple Output Formats** - Export results in various formats for easy integration with other tools.
 
