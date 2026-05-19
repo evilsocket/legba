@@ -1,3 +1,8 @@
+---
+title: legba REST API
+description: Programmatic interface for driving legba over HTTP. Start scans, query status, and consume results from any language or automation framework.
+---
+
 # REST API
 
 Legba has a REST API that can be activated by using the `--api address:port` command line argument.

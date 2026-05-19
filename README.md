@@ -2,7 +2,7 @@
 
 # `legba`
 
-[![Documentation](https://img.shields.io/badge/docs-blue)](https://github.com/evilsocket/legba/blob/main/docs/index.md)
+[![Documentation](https://img.shields.io/badge/docs-blue)](https://legba.evilsocket.net/)
 [![Release](https://img.shields.io/github/release/evilsocket/legba.svg?style=flat-square)](https://github.com/evilsocket/legba/releases/latest)
 [![Rust Report](https://rust-reportcard.xuri.me/badge/github.com/evilsocket/legba)](https://rust-reportcard.xuri.me/report/github.com/evilsocket/legba)
 [![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/legba/ci.yml)](https://github.com/evilsocket/legba/actions/workflows/ci.yml)
@@ -18,18 +18,18 @@
 </div>
 
 Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve
-[better performances and stability](https://github.com/evilsocket/legba/blob/main/docs/benchmark.md) while consuming less resources than similar tools.
+[better performances and stability](https://legba.evilsocket.net/benchmark/) while consuming less resources than similar tools.
 
 ## Key Features
 
 - **100% Rust** - Legba is entirely written in Rust, does not have native dependencies and can be easily compiled for all operating systems and architectures. 🦀
-- **Multi Protocol** - Support for HTTP, DNS, SSH, FTP, SMTP, RDP, VNC, SQL databases, NoSQL, LDAP, Kerberos, SAMBA, SNMP, STOMP, MQTT [and more](https://github.com/evilsocket/legba/blob/main/docs/index.md).
-- **High Performance** - Async/concurrent architecture with customizable workers for [maximum speed](https://github.com/evilsocket/legba/blob/main/docs/benchmark.md).
-- **Flexible Credentials** - [Multiple input formats](https://github.com/evilsocket/legba/blob/main/docs/usage.md) including wordlist files, ranges, permutations, and expression generators.
+- **Multi Protocol** - Support for HTTP, DNS, SSH, FTP, SMTP, RDP, VNC, SQL databases, NoSQL, LDAP, Kerberos, SAMBA, SNMP, STOMP, MQTT [and more](https://legba.evilsocket.net/).
+- **High Performance** - Async/concurrent architecture with customizable workers for [maximum speed](https://legba.evilsocket.net/benchmark/).
+- **Flexible Credentials** - [Multiple input formats](https://legba.evilsocket.net/usage/) including wordlist files, ranges, permutations, and expression generators.
 - **Smart Session Management** - Save and restore session state to resume interrupted scans.
 - **Advanced Rate Control** - Rate limiting, delays, jittering, and retry mechanisms for stealth and stability.
-- **AI Ready** - [REST API](https://github.com/evilsocket/legba/blob/main/docs/rest.md), [Model Context Protocol (MCP)](https://github.com/evilsocket/legba/blob/main/docs/mcp.md) server, and custom binary plugin support.
-- **Recipe System** - [YAML-based configuration](https://github.com/evilsocket/legba/blob/main/docs/recipes.md) for complex authentication scenarios.
+- **AI Ready** - [REST API](https://legba.evilsocket.net/rest/), [Model Context Protocol (MCP)](https://legba.evilsocket.net/mcp/) server, and custom binary plugin support.
+- **Recipe System** - [YAML-based configuration](https://legba.evilsocket.net/recipes/) for complex authentication scenarios.
 - **Multiple Output Formats** - Export results in various formats for easy integration with other tools.
 
 ## Quick Start
@@ -47,7 +47,7 @@ You are now ready to go! 🚀
 legba smb --target domain.local --username administrator --password wordlist.txt
 ```
 
-For the usage and the complete list of options [check the project documentation](https://github.com/evilsocket/legba/blob/main/docs/index.md).
+For the usage and the complete list of options [check the project documentation](https://legba.evilsocket.net/).
 
 ## Contributors
 

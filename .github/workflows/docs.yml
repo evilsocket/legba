@@ -34,6 +34,9 @@ jobs:
       - name: Install mkdocs-material
         run: pip install mkdocs-material pymdown-extensions
 
+      - name: Regenerate llms-full.txt
+        run: scripts/generate-llms-full.sh
+
       - name: Configure git author
         run: |
           git config user.name "github-actions[bot]"

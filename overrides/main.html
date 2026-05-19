@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{# Extra <head> content: JSON-LD structured data and extra meta tags for SEO/GEO. #}
+{% block extrahead %}
+  {{ super() }}
+
+  {# Canonical SoftwareApplication schema, emitted on every page. #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "legba",
+    "alternateName": "evilsocket/legba",
+    "url": "{{ config.site_url | default('https://legba.evilsocket.net/', true) }}",
+    "description": "{{ config.site_description }}",
+    "applicationCategory": "SecurityApplication",
+    "applicationSubCategory": "Credential Bruteforcer",
+    "operatingSystem": "Linux, macOS, Windows, BSD",
+    "softwareVersion": "1.2.0",
+    "programmingLanguage": "Rust",
+    "codeRepository": "https://github.com/evilsocket/legba",
+    "downloadUrl": "https://github.com/evilsocket/legba/releases/latest",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "author": {
+      "@type": "Person",
+      "name": "Simone Margaritelli",
+      "url": "https://www.evilsocket.net/",
+      "sameAs": [
+        "https://github.com/evilsocket",
+        "https://infosec.exchange/@evilsocket"
+      ]
+    },
+    "keywords": "credential bruteforce, password spraying, penetration testing, red team, security tool, Rust, async, Tokio, MCP, hydra alternative, medusa alternative, ncrack alternative, patator alternative",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  {# Breadcrumb trail for the current page. #}
+  {% if page and page.url %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "legba",
+        "item": "{{ config.site_url | default('https://legba.evilsocket.net/', true) }}"
+      }{% if page.url and page.url != '' %},
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "{{ page.title | e }}",
+        "item": "{{ config.site_url | default('https://legba.evilsocket.net/', true) }}{{ page.url }}"
+      }{% endif %}
+    ]
+  }
+  </script>
+  {% endif %}
+
+  {# FAQPage schema, only on the FAQ page. The questions are kept in sync with docs/faq.md. #}
+  {% if page and page.url and 'faq' in page.url %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type": "Question", "name": "What is legba?", "acceptedAnswer": {"@type": "Answer", "text": "legba is a fast, multi-protocol credential bruteforcer, password sprayer, and enumerator written in Rust on top of the Tokio asynchronous runtime. It is a modern replacement for tools like THC-Hydra, Medusa, Ncrack, and Patator, with measurably higher throughput, no native dependencies, a YAML recipe system, a REST API, and a Model Context Protocol (MCP) server for AI agent integration."}},
+      {"@type": "Question", "name": "How is legba different from THC-Hydra?", "acceptedAnswer": {"@type": "Answer", "text": "Legba is written in Rust, and async-first (Tokio), distributed as a single static binary with no native deps, exposes a REST API and an MCP server for AI agents, supports YAML recipes, and is measurably faster on every protocol benchmarked against Hydra (1.5x to 55x)."}},
+      {"@type": "Question", "name": "Is legba faster than Hydra, Medusa, or Ncrack?", "acceptedAnswer": {"@type": "Answer", "text": "On the protocols benchmarked against Hydra (HTTP basic, HTTP POST login, SSH, MySQL, MSSQL), legba is 1.5x to 55x faster on identical hardware and wordlists. Medusa and Ncrack have not been formally benchmarked yet."}},
+      {"@type": "Question", "name": "How do I install legba?", "acceptedAnswer": {"@type": "Answer", "text": "Install via Homebrew (brew tap evilsocket/legba and brew install evilsocket/legba/legba), download a precompiled binary from GitHub releases, build from source with cargo install --git https://github.com/evilsocket/legba, or use the published Docker image."}},
+      {"@type": "Question", "name": "How do I brute-force SSH with legba?", "acceptedAnswer": {"@type": "Answer", "text": "Run: legba ssh --target 10.0.0.1 --username root --password /path/to/passwords.txt. For SSH key authentication, point --key at a glob of key files."}},
+      {"@type": "Question", "name": "Does legba support CSRF token grabbing?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The HTTP plugin can fetch a CSRF token page before each login attempt and substitute the extracted token into the request body or headers using --http-csrf-page and --http-csrf-regexp."}},
+      {"@type": "Question", "name": "Does legba support NTLM authentication?", "acceptedAnswer": {"@type": "Answer", "text": "Yes — both NTLMv1 (http.ntlm1) and NTLMv2 (http.ntlm2) via the HTTP plugin, with --http-ntlm-domain and --http-ntlm-workstation options."}},
+      {"@type": "Question", "name": "Can an AI agent drive legba?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. legba ships a Model Context Protocol (MCP) server enabled with --mcp stdio or --mcp host:port. MCP makes legba directly drivable by any MCP-compatible client including Claude Desktop, Claude Code, and custom agents. legba is the only credential bruteforcer that ships an MCP server."}},
+      {"@type": "Question", "name": "Is legba legal to use?", "acceptedAnswer": {"@type": "Answer", "text": "legba is a security tool for authorized testing only — penetration tests, red team engagements, CTFs, and security research on systems you own or have explicit permission to test. Using it against systems you do not have authorization to test is illegal in most jurisdictions."}},
+      {"@type": "Question", "name": "What license is legba?", "acceptedAnswer": {"@type": "Answer", "text": "GPL-3.0."}}
+    ]
+  }
+  </script>
+  {% endif %}
+
+  {# Open Graph + Twitter cards (text-only; social plugin not enabled). #}
+  {% set _og_title = (page.title if page else config.site_name) | default(config.site_name, true) %}
+  {% set _og_desc = (page.meta.description if (page and page.meta) else config.site_description) | default(config.site_description, true) %}
+  {% set _og_url = config.site_url | default('https://legba.evilsocket.net/', true) ~ (page.url if page else '') %}
+  <meta property="og:type" content="{% if page and page.is_homepage %}website{% else %}article{% endif %}">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:title" content="{{ _og_title }}">
+  <meta property="og:description" content="{{ _og_desc }}">
+  <meta property="og:url" content="{{ _og_url }}">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ _og_title }}">
+  <meta name="twitter:description" content="{{ _og_desc }}">
+  <meta name="twitter:creator" content="@evilsocket">
+
+  {# Keywords meta tag — modest SEO signal but explicit for GEO crawlers. #}
+  <meta name="keywords" content="legba, credential bruteforcer, password sprayer, penetration testing tool, red team, hydra alternative, medusa alternative, ncrack alternative, patator alternative, rust security tool, MCP server, Tokio, async bruteforcer, HTTP brute force, SSH brute force">
+  <meta name="author" content="Simone Margaritelli">
+{% endblock %}

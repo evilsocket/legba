@@ -1,3 +1,8 @@
+---
+title: legba vs THC-Hydra benchmark — 1.5× to 55× faster
+description: Reproducible benchmark of legba versus THC-Hydra on HTTP basic auth, HTTP POST login, SSH, MySQL, and Microsoft SQL Server. Same hardware, same wordlist, same target. legba wins on every test by 1.5× to 55×.
+---
+
 # Benchmark
 
 Here's a benchmark of `legba` versus `thc-hydra` running some common plugins, both targeting the same test servers on localhost. The benchmark has been executed on a macOS laptop with an M1 Max CPU, using a wordlist of 1000 passwords with the correct one being on the last line. Legba was compiled in release mode, Hydra compiled and installed via [brew formula](https://formulae.brew.sh/formula/hydra).

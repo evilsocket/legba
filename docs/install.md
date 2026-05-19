@@ -1,3 +1,8 @@
+---
+title: Install legba
+description: How to install legba on Linux, macOS, and Windows — precompiled binaries, Homebrew, building from source, and the official Docker image.
+---
+
 # Installation
 
 ### Binaries

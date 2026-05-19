@@ -1,40 +1,10 @@
-Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve
-better performances and stability while consuming less resources than similar tools (see the benchmark page).
+---
+title: legba — fast Rust multi-protocol credential bruteforcer
+description: legba is a fast, multi-protocol credential bruteforcer, password sprayer, and enumerator written in Rust on Tokio. Modern alternative to THC-Hydra, Medusa, Ncrack, and Patator with REST API and MCP server for AI agents.
+---
 
-# Table of Contents
+# legba
 
-* [Installation](install.md)
-* [Usage](usage.md)
-* [Recipes](recipes.md)
-* [REST API](rest.md)
-* [Model Context Protocol (MCP)](mcp.md)
-* [Benchmark](benchmark.md)
-* Plugins
-  * [AMQP](plugins/amqp.md) (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace)
-  * [DNS (subdomain enumeration)](plugins/dns.md)
-  * [FTP](plugins/ftp.md)
-  * [HTTP (basic auth, pages and virtual hosts enumeration, login forms with CSRF, NTLMv1 and NTLMv2 authentication)](plugins/http.md)
-  * [IMAP](plugins/imap.md)
-  * [IRC](plugins/irc.md)
-  * [Kerberos](plugins/kerberos.md)
-  * [LDAP](plugins/ldap.md)
-  * [MongoDB](plugins/mongodb.md)
-  * [MQTT](plugins/mqtt.md)
-  * [Microsoft SQL](plugins/mssql.md)
-  * [MySQL](plugins/mysql.md)
-  * [Oracle](plugins/oracle.md)
-  * [Port Scanner (TCP & UDP with banner grabbing)](plugins/port_scanner.md)
-  * [PostgreSQL](plugins/postgresql.md)
-  * [POP3](plugins/pop3.md)
-  * [RDP](plugins/rdp.md)
-  * [Redis](plugins/redis.md)
-  * [Samba (Authentication and Shares enumeration)](plugins/samba.md)
-  * [ScyllaDB / Cassandra](plugins/scylla.md)
-  * [SSH / SFTP](plugins/ssh_and_sftp.md)
-  * [SMTP](plugins/smtp.md)
-  * [SNMP v1/v2/v3](plugins/snmp.md)
-  * [SOCKS5](plugins/socks5.md)
-  * [STOMP](plugins/stomp.md) (ActiveMQ, RabbitMQ, HornetQ and OpenMQ)
-  * [Telnet](plugins/telnet.md)
-  * [VNC](plugins/vnc.md)
-  * [Custom Binary (for password protected files and anything with a CLI)](plugins/custom_binary.md)
+Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve better performances and stability while consuming less resources than similar tools (see the [benchmark](benchmark.md) page).
+
+Browse the sidebar for installation instructions, usage, recipes, the REST and MCP APIs, and per-protocol plugin documentation.

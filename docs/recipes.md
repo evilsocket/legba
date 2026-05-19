@@ -1,3 +1,8 @@
+---
+title: legba recipes (YAML attack definitions)
+description: Define reusable, parameterized credential testing attacks in YAML. legba recipes wrap plugin invocations into named, shareable configurations with variable substitution.
+---
+
 # Recipes
 
 Legba recipes are YAML files wrapping specific command line options and use cases, you can look at them as a templating engine for Legba. They are a convenient tool to alias otherwise complex arguments as a single mnemonic word. 
