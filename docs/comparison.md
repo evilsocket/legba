@@ -5,15 +5,15 @@ description: Side-by-side comparison of legba with THC-Hydra, Medusa, Ncrack, an
 
 # legba vs Hydra, Medusa, Ncrack, Patator
 
-This page compares **legba** with the four most widely used credential bruteforcers in the security community: [THC-Hydra](https://github.com/vanhauser-thc/thc-hydra), [Medusa](https://github.com/jmk-foofus/medusa), [Ncrack](https://nmap.org/ncrack/), and [Patator](https://github.com/lanjelot/patator). Where speed is reported, the numbers are measured — see [Benchmark](benchmark.md) for the full methodology.
+This page compares **legba** with the four most widely used credential bruteforcers in the security community: [THC-Hydra](https://github.com/vanhauser-thc/thc-hydra), [Medusa](https://github.com/jmk-foofus/medusa), [Ncrack](https://nmap.org/ncrack/), and [Patator](https://github.com/lanjelot/patator). Where speed is reported, the numbers are measured. See [Benchmark](benchmark.md) for the full methodology.
 
 ## TL;DR
 
 | Question | Answer |
 | -------- | ------ |
 | Which is **fastest** on common protocols? | **legba**, by 1.5×–55× over THC-Hydra on identical hardware and wordlists (HTTP basic auth, HTTP POST login, SSH, MySQL, MSSQL). [Benchmark methodology.](benchmark.md) |
-| Which has the **best AI agent integration**? | **legba** — ships a REST API and a Model Context Protocol (MCP) server out of the box. No other tool in this list exposes an MCP server. |
-| Which has **no native dependencies**? | **legba** — single static Rust binary, no libssh/libssl/libpq/etc to link. Hydra, Medusa, and Ncrack are C with multiple C library deps. Patator is Python with per-protocol Python deps. |
+| Which has the **best AI agent integration**? | **legba** ships a REST API and a Model Context Protocol (MCP) server out of the box. No other tool in this list exposes an MCP server. |
+| Which has **no native dependencies**? | **legba** is a single static Rust binary, no libssh/libssl/libpq/etc to link. Hydra, Medusa, and Ncrack are C with multiple C library deps. Patator is Python with per-protocol Python deps. |
 | Which has a **YAML recipe / reusable attack config** system? | **legba** (built-in YAML recipes). Patator approximates this via shell aliases; Hydra/Medusa/Ncrack have no equivalent. |
 | Which is **actively maintained** (commits in last 12 months)? | legba ✓, Patator ✓ (sporadic), Hydra ✓, Medusa (low activity), Ncrack (low activity). Check upstream repos for current status. |
 
@@ -95,7 +95,7 @@ docker compose -f test-servers/http-basic.docker-compose.yml up -d
 
 ## See also
 
-- [Benchmark](benchmark.md) — full methodology, commands, hardware spec.
-- [Usage](usage.md) — CLI reference and expression syntax.
-- [REST API](rest.md) and [MCP](mcp.md) — agent / automation surface.
-- [FAQ](faq.md) — common questions about legba and how it compares.
+- [Benchmark](benchmark.md): full methodology, commands, hardware spec.
+- [Usage](usage.md): CLI reference and expression syntax.
+- [REST API](rest.md) and [MCP](mcp.md): agent and automation surface.
+- [FAQ](faq.md): common questions about legba and how it compares.

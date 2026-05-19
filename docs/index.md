@@ -1,6 +1,6 @@
 ---
-title: legba — fast Rust multi-protocol credential bruteforcer
-description: legba is a fast, multi-protocol credential bruteforcer, password sprayer, and enumerator written in Rust on Tokio. Modern alternative to THC-Hydra, Medusa, Ncrack, and Patator with REST API and MCP server for AI agents.
+title: Fast Rust multi-protocol credential bruteforcer
+description: Fast async Rust credential bruteforcer and password sprayer. Modern alternative to hydra, medusa, ncrack, and patator. 1.5x to 55x faster.
 ---
 
 # legba

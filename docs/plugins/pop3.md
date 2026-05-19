@@ -1,3 +1,8 @@
+---
+title: POP3 brute-force plugin for legba
+description: Async POP3 password authentication wordlist attacks with optional SSL or TLS support.
+---
+
 POP3 password authentication.
 
 ## Options

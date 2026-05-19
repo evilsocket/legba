@@ -1,5 +1,5 @@
 ---
-title: legba REST API
+title: REST API for legba automation
 description: Programmatic interface for driving legba over HTTP. Start scans, query status, and consume results from any language or automation framework.
 ---
 

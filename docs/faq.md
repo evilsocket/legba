@@ -1,5 +1,5 @@
 ---
-title: legba FAQ
+title: Frequently asked questions about legba
 description: Frequently asked questions about legba, the fast Rust multi-protocol credential bruteforcer and password sprayer.
 ---
 
@@ -58,7 +58,7 @@ Yes. The HTTP plugin can fetch a CSRF token page before each login attempt and s
 
 ## Does legba support NTLM?
 
-Yes — both NTLMv1 (`http.ntlm1`) and NTLMv2 (`http.ntlm2`) via the HTTP plugin, with `--http-ntlm-domain` and `--http-ntlm-workstation` options. See [HTTP plugin docs](plugins/http.md).
+Yes, both NTLMv1 (`http.ntlm1`) and NTLMv2 (`http.ntlm2`) via the HTTP plugin, with `--http-ntlm-domain` and `--http-ntlm-workstation` options. See [HTTP plugin docs](plugins/http.md).
 
 ## Can legba enumerate subdomains?
 
@@ -86,19 +86,19 @@ The `--username` / `--password` / `--payloads` arguments accept:
 - an integer list: `[1, 2, 3, 4]`
 - comma-separated combinations of the above
 
-See [Usage → Providing Credentials](usage.md#providing-credentials).
+See [Usage > Providing Credentials](usage.md#providing-credentials).
 
 ## How do I rate-limit attempts to avoid lockouts?
 
-Combine `--rate-limit` (max requests per second), `--wait` (delay per attempt), and `--jitter-min` / `--jitter-max` (random jitter in ms). See [Usage → Main Options](usage.md).
+Combine `--rate-limit` (max requests per second), `--wait` (delay per attempt), and `--jitter-min` / `--jitter-max` (random jitter in ms). See [Usage > Main Options](usage.md).
 
 ## Can I save and resume an interrupted scan?
 
-Yes — pass `-S session.json` (or `--session session.json`). legba will persist state and pick up where it left off on the next run with the same argument.
+Yes, pass `-S session.json` (or `--session session.json`). legba will persist state and pick up where it left off on the next run with the same argument.
 
 ## Does legba have an API?
 
-Yes — two of them:
+Yes, two of them:
 
 - A [REST API](rest.md) enabled with `--api 127.0.0.1:8080`.
 - A [Model Context Protocol (MCP)](mcp.md) server enabled with `--mcp 127.0.0.1:8080` (or `--mcp stdio` for stdio transport). MCP makes legba directly drivable by AI agents that speak MCP (Claude Desktop, Claude Code, custom agents using the MCP SDK).
@@ -117,7 +117,7 @@ Linux, macOS, Windows, and BSDs. Because it's pure Rust with no native deps, any
 
 ## Is legba legal to use?
 
-legba is a security tool for authorized testing only — penetration tests, red team engagements, CTFs, and security research on systems you own or have explicit permission to test. Using it against systems you do not have authorization to test is illegal in most jurisdictions. The maintainers do not provide support for unauthorized use.
+legba is a security tool for authorized testing only: penetration tests, red team engagements, CTFs, and security research on systems you own or have explicit permission to test. Using it against systems you do not have authorization to test is illegal in most jurisdictions. The maintainers do not provide support for unauthorized use.
 
 ## What license is legba?
 

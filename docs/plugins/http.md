@@ -1,3 +1,8 @@
+---
+title: HTTP brute-force plugin (basic, form, NTLM)
+description: Brute-force HTTP basic auth, form logins with CSRF tokens, NTLMv1, NTLMv2, plus page and vhost enumeration. Proxy and header support.
+---
+
 A set of plugins supporting http basic authentication, NTLMv1, NTLMv2, multipart form requests, standard HTTP requests, CSRF token grabbing and HTTP pages enumeration.
 
 | Name | Description |

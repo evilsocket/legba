@@ -1,6 +1,6 @@
 ---
-title: legba Model Context Protocol (MCP) server for AI agents
-description: legba ships a native MCP server so AI agents (Claude Desktop, Claude Code, custom MCP clients) can drive credential testing tasks programmatically. The only credential bruteforcer with first-class MCP support.
+title: legba MCP server for AI agents
+description: Drive legba from AI agents via the built-in Model Context Protocol server. Works with Claude Desktop, Claude Code, and any MCP client.
 ---
 
 # Model Context Protocol (MCP)

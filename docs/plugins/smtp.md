@@ -1,3 +1,8 @@
+---
+title: SMTP brute-force (PLAIN, LOGIN, XOAUTH2)
+description: Async SMTP password authentication brute-force with PLAIN, LOGIN, and XOAUTH2 mechanisms. Modern hydra smtp alternative.
+---
+
 SMTP password authentication.
 
 ## Options

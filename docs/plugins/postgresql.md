@@ -1,3 +1,8 @@
+---
+title: PostgreSQL brute-force plugin for legba
+description: Async PostgreSQL authentication brute-force. Handles special characters in credentials via typed connect options.
+---
+
 PostgreSQL Password Authentication.
 
 ## Examples

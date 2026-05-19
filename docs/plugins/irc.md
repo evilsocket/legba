@@ -1,3 +1,8 @@
+---
+title: IRC server password brute-force
+description: Brute-force IRC server passwords with optional TLS support. Async Rust implementation for large wordlists and rate-limited probing.
+---
+
 IRC server password authentication.
 
 ## Options

@@ -1,3 +1,8 @@
+---
+title: Samba brute-force and shares enumeration
+description: Brute-force SMB authentication and enumerate accessible shares. Pure Rust SMB implementation, no native Samba client required.
+---
+
 Samba username and password authentication and shares enumeration.
 
 | Name | Description |

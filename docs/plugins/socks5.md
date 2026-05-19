@@ -1,3 +1,8 @@
+---
+title: SOCKS5 brute-force plugin for legba
+description: Brute-force SOCKS5 proxy authentication with configurable target address and port.
+---
+
 SOCKS5 username and password authentication.
 
 ## Options

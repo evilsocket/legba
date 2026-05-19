@@ -1,6 +1,6 @@
 ---
 title: legba usage and CLI reference
-description: Complete CLI reference for legba — target syntax, credential expressions (wordlists, ranges, permutations, globs), iteration strategies, rate limiting, sessions, and output formats.
+description: "Complete legba CLI reference: target syntax, credential expressions, iteration strategies, rate limiting, sessions, and output formats."
 ---
 
 # Usage

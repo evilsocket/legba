@@ -1,3 +1,8 @@
+---
+title: Telnet brute-force plugin for legba
+description: Async telnet password brute-force with configurable user, password, and shell prompts.
+---
+
 Telnet password authentication.
 
 ## Options

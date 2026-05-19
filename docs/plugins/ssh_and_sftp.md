@@ -1,3 +1,8 @@
+---
+title: SSH and SFTP brute-force with key support
+description: Brute-force SSH and SFTP authentication. Supports password mode and private-key mode with optional passphrases. 55x faster than hydra.
+---
+
 SSH/SFTP password and private key authentication.
 
 ## Options

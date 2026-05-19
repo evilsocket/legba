@@ -1,3 +1,8 @@
+---
+title: MQTT brute-force (MQTT v3/v5, TLS optional)
+description: Brute-force MQTT broker authentication with MQTT v3 and v5 support, optional TLS. Useful for IoT pentest engagements.
+---
+
 MQTT password authentication.
 
 ## Options

@@ -1,3 +1,8 @@
+---
+title: LDAP brute-force plugin for legba
+description: Async LDAP bind authentication brute-force with domain support. Modern hydra alternative with first-class rate limiting and recipes.
+---
+
 LDAP Password Authentication.
 
 ## Options

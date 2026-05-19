@@ -1,3 +1,8 @@
+---
+title: Kerberos 5 brute-force and enumeration
+description: Pre-authentication brute-force and user enumeration against Kerberos 5 KDCs. Configurable realm, protocol, and Linux handling.
+---
+
 Kerberos 5 Pre Auth (users enumeration and password authentication).
 
 **NOTE:** due to the way that the realm string is uppercase'd in order to generate the cryptographic salt for Microsoft domain controllers, you'll need to add the `--kerberos-linux` argument when targeting Linux Kerberos servers.

@@ -1,3 +1,8 @@
+---
+title: Custom binary plugin - wrap any CLI tool
+description: Drive any external command from legba as a native plugin. Useful for password-protected archives, file formats, or one-off CLIs.
+---
+
 The command (cmd) plugin allows legba to interact with a custom executable and use either its exit code or a string pattern to determine a success or failure. It can be used to integrate with clients and utilities that are not natively supported by legba and parallelize their execution in order to attack credentials.
 
 ## Options

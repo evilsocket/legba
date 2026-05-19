@@ -60,6 +60,31 @@ Author: Simone Margaritelli (evilsocket)
 - [SOCKS5](https://legba.evilsocket.net/plugins/socks5/)
 - [Custom binary plugin (wrap any CLI tool)](https://legba.evilsocket.net/plugins/custom_binary/)
 
+## Usage
+
+```bash
+# Brute-force HTTP basic auth
+legba http.basic --target https://example.com --username admin --password wordlist.txt
+
+# Subdomain enumeration
+legba dns --target example.com --payloads subdomains.txt
+
+# SSH with key files
+legba ssh --target host --username root --key '@/path/*.key'
+
+# SMB authentication + share enumeration
+legba smb --target share.company.com --username admin --password wordlist.txt
+legba smb.shares --target share.company.com
+```
+
+See https://legba.evilsocket.net/usage/ for the complete CLI reference and https://legba.evilsocket.net/faq/ for common attack recipes.
+
+## Contact
+
+- Bug reports and feature requests: https://github.com/evilsocket/legba/issues
+- Author: Simone Margaritelli (`@evilsocket`), https://x.com/evilsocket
+- Project home: https://github.com/evilsocket/legba
+
 ## Optional
 
 - [Full-text dump of the documentation](https://legba.evilsocket.net/llms-full.txt): single-file concatenation of all docs pages for ingestion.

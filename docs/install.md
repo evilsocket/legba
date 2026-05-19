@@ -1,15 +1,15 @@
 ---
-title: Install legba
-description: How to install legba on Linux, macOS, and Windows — precompiled binaries, Homebrew, building from source, and the official Docker image.
+title: Install legba on Linux, macOS, Windows
+description: How to install legba on Linux, macOS, and Windows. Precompiled binaries, Homebrew, building from source, and the official Docker image.
 ---
 
 # Installation
 
-### Binaries
+## Binaries
 
 Download one of the precompiled binaries from the [project latest release page](https://github.com/evilsocket/legba/releases/latest).
 
-### Cargo
+## Cargo
 
 Legba is published as a binary crate on [crates.io](https://crates.io/crates/legba), if you have [Cargo installed](https://rustup.rs/) you can:
 
@@ -19,7 +19,7 @@ cargo install legba
 
 This will compile its sources and install the binary in `$HOME/.cargo/bin/legba`.
 
-### Homebrew
+## Homebrew
 
 If you're a **Homebrew** user, you can install Legba with a custom tap:
 
@@ -28,7 +28,7 @@ brew tap evilsocket/legba https://github.com/evilsocket/legba
 brew install evilsocket/legba/legba
 ```
 
-### Docker
+## Docker
 
 For any OS supporting docker, an image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/legba):
 

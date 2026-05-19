@@ -1,3 +1,8 @@
+---
+title: SNMP v1/v2/v3 community and OID enum
+description: Brute-force SNMP v1, v2, and v3 community strings and enumerate OIDs. Configurable maximum results and target OID.
+---
+
 # SNMP
 
 SNMP (Simple Network Management Protocol) community and credential enumeration with OID tree discovery.

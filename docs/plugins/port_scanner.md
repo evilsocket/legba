@@ -1,3 +1,8 @@
+---
+title: TCP and UDP port scanner with banners
+description: Concurrent TCP and UDP port scanner with banner grabbing and HTTP/HTTPS probe support. Adaptive timeouts on positive results.
+---
+
 TCP and UDP port scanner with http banner grabbing capabilities.
 
 ## Options

@@ -1,3 +1,8 @@
+---
+title: RDP brute-force plugin for legba
+description: Microsoft Remote Desktop Protocol password brute-force with optional NTLM, admin mode, auto-logon flags, and domain support.
+---
+
 Microsoft Remote Desktop.
 
 ## Options

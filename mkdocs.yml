@@ -1,12 +1,12 @@
 site_name: legba
-site_description: legba is a fast, multi-protocol credential bruteforcer, password sprayer, and enumerator written in Rust on top of the Tokio async runtime. A modern replacement for THC-Hydra, Medusa, Ncrack, and Patator with a REST API and MCP server for AI agents.
+site_description: Fast async Rust credential bruteforcer and password sprayer for HTTP, SSH, SMB, LDAP, SQL, RDP, and 25+ other protocols. Modern hydra alternative.
 site_url: https://legba.evilsocket.net/
 site_author: Simone Margaritelli
 repo_url: https://github.com/evilsocket/legba
 repo_name: evilsocket/legba
 edit_uri: edit/main/docs/
 docs_dir: docs
-copyright: Copyright &copy; Simone Margaritelli — released under GPL-3.0
+copyright: Copyright &copy; Simone Margaritelli, released under GPL-3.0
 
 theme:
   name: material

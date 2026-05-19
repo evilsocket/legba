@@ -1,6 +1,6 @@
 ---
 title: legba recipes (YAML attack definitions)
-description: Define reusable, parameterized credential testing attacks in YAML. legba recipes wrap plugin invocations into named, shareable configurations with variable substitution.
+description: Define reusable, parameterized credential testing attacks in YAML. legba recipes wrap plugin invocations with variable substitution.
 ---
 
 # Recipes
@@ -30,7 +30,7 @@ legba \
   "host=ms-server.local" 
 ```
 
-### Variables
+## Variables
 
 Recipes support a minimal template engine with the `{$variable_name or default_value}` syntax (or just `{$variable_name}` to make it mandatory for the user to provide). Each variable can be set via command line as:
 
@@ -42,7 +42,7 @@ legba \
   "host=ms-server.local&port=8443" 
 ```
 
-### Resources
+## Resources
 
 Another way of using recipes is including common dictionaries within their folder and referencing them in the YAML so that everything for that use case is self contained.
 

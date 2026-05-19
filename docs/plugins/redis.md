@@ -1,3 +1,8 @@
+---
+title: Redis legacy and ACL brute-force
+description: Brute-force Redis legacy password and ACL authentication. Optional SSL or TLS. Single-binary alternative to hydra redis.
+---
+
 Redis password authentication, both legacy and ACL based.
 
 ## Options

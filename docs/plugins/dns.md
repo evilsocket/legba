@@ -1,3 +1,8 @@
+---
+title: DNS subdomain enumeration with legba
+description: Enumerate subdomains and DNS records over UDP, TCP, and DoH. Multiple resolvers, configurable attempts, IP lookup, HTTPS resolvers.
+---
+
 DNS subdomain enumeration.
 
 ## Options

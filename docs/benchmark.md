@@ -1,6 +1,6 @@
 ---
-title: legba vs THC-Hydra benchmark — 1.5× to 55× faster
-description: Reproducible benchmark of legba versus THC-Hydra on HTTP basic auth, HTTP POST login, SSH, MySQL, and Microsoft SQL Server. Same hardware, same wordlist, same target. legba wins on every test by 1.5× to 55×.
+title: legba vs THC-Hydra benchmark - 1.5x to 55x faster
+description: Reproducible benchmark of legba versus THC-Hydra on HTTP, SSH, MySQL, and MSSQL. Same hardware, same wordlist. 1.5x to 55x faster on every test.
 ---
 
 # Benchmark
