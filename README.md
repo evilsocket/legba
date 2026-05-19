@@ -49,6 +49,16 @@ legba smb --target domain.local --username administrator --password wordlist.txt
 
 For the usage and the complete list of options [check the project documentation](https://legba.evilsocket.net/).
 
+### AI Agent Skill
+
+If you use an AI coding agent (Claude Code, Cursor, Copilot, OpenCode, etc.), you can install the legba skill to give it full knowledge of the tool — syntax, plugins, recipes, and API:
+
+```bash
+npx skills add https://github.com/evilsocket/legba --skill legba
+```
+
+Once installed, your agent will know how to construct legba commands, write recipes, and configure the REST API or MCP server without needing to look things up manually.
+
 ## Contributors
 
 <a href="https://github.com/evilsocket/legba/graphs/contributors">
