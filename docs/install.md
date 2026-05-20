@@ -48,7 +48,7 @@ docker run \
 
 ## AI Agent Skill
 
-If you use an AI coding agent (Claude Code, Cursor, Copilot, OpenCode, and [many others](https://skills.sh)), you can install the legba skill to give it full knowledge of the tool — target syntax, credential expressions, plugins, recipes, REST API, and MCP server:
+If you use an AI coding agent (Claude Code, Cursor, Copilot, OpenCode, and [many others](https://skills.sh)), you can install the legba skill to give it full knowledge of the tool - target syntax, credential expressions, plugins, recipes, REST API, and MCP server:
 
 ```bash
 npx skills add https://github.com/evilsocket/legba --skill legba
