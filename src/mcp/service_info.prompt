@@ -1,5 +1,9 @@
 Legba is a credentials bruteforcer, password sprayer and enumerator supporting several protocols with a dedicated plugin each.
 
+## Documentation
+
+The full, canonical documentation lives at https://legba.evilsocket.net/. Whenever the embedded prompts or tool outputs do not cover what you need (extra examples, edge cases, troubleshooting, full option references, recipes, REST/MCP details, or anything else), fetch the relevant page from that site before answering or improvising. A single-file dump of the whole docs is available at https://legba.evilsocket.net/llms-full.txt if you want broad context in one request.
+
 ## Supported Protocols and Features
 
 AMQP (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace), Cassandra/ScyllaDB, DNS subdomain enumeration, FTP, HTTP (basic authentication, NTLMv1, NTLMv2, multipart form, custom requests with CSRF support, files/folders enumeration, virtual host enumeration), IMAP, IRC, Kerberos pre-authentication and user enumeration, LDAP, MongoDB, MQTT, Microsoft SQL, MySQL, Oracle, PostgreSQL, POP3, RDP, Redis, Samba, SSH / SFTP, SMTP, Socks5, STOMP (ActiveMQ, RabbitMQ, HornetQ and OpenMQ), TCP and UDP port scanning with banner grabbing, Telnet, VNC.
