@@ -1,0 +1,2179 @@
+# legba — full documentation
+
+Single-file concatenation of every page under https://legba.evilsocket.net/, intended for ingestion by LLMs and AI agents. Source: https://github.com/evilsocket/legba/tree/main/docs
+
+Generated: 2026-05-20T11:58:14Z
+
+---
+
+
+
+## Source: https://legba.evilsocket.net/
+
+---
+title: Multi-protocol credential bruteforcing tool in Rust
+description: Open-source multi-protocol credential bruteforcing and password spraying tool in Rust for penetration testing. 1.5x to 55x faster than hydra.
+---
+
+# legba
+
+Legba is a multiprotocol credentials bruteforcer / password sprayer and enumerator built with Rust and the Tokio asynchronous runtime in order to achieve better performances and stability while consuming less resources than similar tools (see the [benchmark](benchmark.md) page).
+
+Browse the sidebar for installation instructions, usage, recipes, the REST and MCP APIs, and per-protocol plugin documentation.
+
+<p align="center"><img src="logo.png" alt="legba logo" width="320"></p>
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/install/
+
+---
+title: Install legba on Linux, macOS, Windows
+description: How to install legba on Linux, macOS, and Windows. Precompiled binaries, Homebrew, building from source, and the official Docker image.
+---
+
+# Installation
+
+## Binaries
+
+Download one of the precompiled binaries from the [project latest release page](https://github.com/evilsocket/legba/releases/latest).
+
+## Cargo
+
+Legba is published as a binary crate on [crates.io](https://crates.io/crates/legba), if you have [Cargo installed](https://rustup.rs/) you can:
+
+```sh
+cargo install legba
+```
+
+This will compile its sources and install the binary in `$HOME/.cargo/bin/legba`.
+
+## Homebrew
+
+If you're a **Homebrew** user, you can install Legba with a custom tap:
+
+```bash
+brew tap evilsocket/legba https://github.com/evilsocket/legba
+brew install evilsocket/legba/legba
+```
+
+## Docker
+
+For any OS supporting docker, an image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/legba):
+
+```sh
+docker run -it evilsocket/legba -h 
+```
+
+When using wordlist files, remember to share them via a docker volume. Moreover you'll want to use the host network in order to reach the target, for instance:
+
+```sh
+docker run \
+  -v $(pwd):/data \ # shared the current directory as /data inside the container
+  --network host \ # docker will use the same network of the host
+  -it evilsocket/legba:latest \
+  ssh --username root --password /data/your-wordlist.txt --target 192.168.1.1
+```
+
+## AI Agent Skill
+
+If you use an AI coding agent (Claude Code, Cursor, Copilot, OpenCode, and [many others](https://skills.sh)), you can install the legba skill to give it full knowledge of the tool - target syntax, credential expressions, plugins, recipes, REST API, and MCP server:
+
+```bash
+npx skills add https://github.com/evilsocket/legba --skill legba
+```
+
+Once installed, your agent will be able to construct legba commands, write recipes, and configure the REST API or MCP server without needing to look things up manually.
+
+## Building
+
+### Sources
+
+Building the project from sources requires [Rust to be installed](https://rustup.rs/). After cloning this repository you can build it with:
+
+```sh
+cargo build --release
+```
+
+The binary will be compiled inside the `./target/release` folder.
+
+### Docker Image
+
+Alternatively it is possible to build a Docker container:
+
+```sh
+docker build -t legba .
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/usage/
+
+---
+title: legba usage and CLI reference
+description: "Complete legba CLI reference: target syntax, credential expressions, iteration strategies, rate limiting, sessions, and output formats."
+---
+
+# Usage
+
+In order to use this tool, you'll need to provide:
+
+1. A plugin name, depending on which protocol you are attacking.
+2. A `--target` argument specifying the ip, hostname and (optionally) the port of the target
+3. depending on the selected plugin, a pair of `--username` and `--password` arguments , a single `--payloads` argument (like in the case of the `dns.enum` plugin which requires a single enumeration element) or a single `-C/--combinations` argument.
+
+For instance, to perform a simple HTTP basic authentication wordlist attack:
+
+```bash
+legba http.basic \
+    --username admin \
+    --password /path/to/wordlists.txt \
+    --target https://example.com/
+```
+
+For plugins that accept a single payload, like subdomain enumeration:
+
+```bash
+legba dns \
+    --payloads /path/to/subdomains.txt \
+    --target example.com
+```
+
+And so on.
+
+## Selecting One or More Targets
+
+The `--target/-T` argument supports one or multiple targets expressed as one of the following, or a comma separated list of the following:
+
+* `--target 127.0.0.1`, `--target www.google.com`, ... single target.
+* `--target 127.0.0.1:22` single target with port.
+* `--target 127.0.0.1, 192.168.1.1:80` comma separated list of targets.
+* `--target @targets.txt` load a list of targets from a file.
+* `--target 192.168.1.1-10`, `--target 192.168.1.1-10:22` IP range (with or without port).
+* `--target 192.168.1.0/24`, `--target 192.168.1.0/24:22` CIDR (with or without port).
+* `--target 10.0.0.1, 172.0.0.1:2222, @other-targets.txt, 192.168.1.1-10` any comma separated combination of them.
+* IPv6 CIDR is also supported, with port specified as `:[port]`, e.g. `--target 2001:db8::/126:[443]`.
+
+## Providing Credentials
+
+The `--username`/`--payloads` and `--password`/`--key` arguments all support the same logic depending on the value passed to them:
+
+* If the value provided is an existing file name, it'll be loaded as a wordlist.
+* If the value provided is in the form of `@/some/path/*.txt` it'll be used as a [glob expression](https://docs.rs/glob/latest/glob/) to iterate matching files.
+* If the value provided is in the form of `#<NUMBER>-<NUMBER>:<OPTIONAL CHARSET>`, it'll be used to generate all possible permutations of the given charset (or the default one if not provided) and of the given length. For instance: `#1-3` will generate all permutations from 1 to 3 characters using the default ASCII printable charset, while `#4-5:0123456789` will generate all permutations of digits of 4 and 5 characters.
+* If the value provided is in the form of `[<NUMBER>-<NUMBER>]`, it'll be used as an integer range.
+* If the value provided is in the form of `[<NUMBER>, <NUMBER>, <NUMBER>]`, it'll be used as comma separated list of integers.
+* Anything else will be considered as a constant string.
+
+For instance:
+
+* `legba <plugin name> --username admin --password data/passwords.txt` will always use `admin` as username while loading the passwords from a wordlist.
+* `legba <plugin name> --username data/users.txt --password data/passwords.txt` will load both from wordlists and use all combinations.
+* `legba <plugin name> --username admin` will always use `admin` as username and attempt all permutations of the default alphanumeric lowercase charset between 3 and 5 characters (this is the default behaviour when a value is not passed).
+* `legba <plugin name> --username data/users.txt --password '@/some/path/*.key'` will load users from a wordlist while testing all key files inside `/some/path`.
+* `legba <plugin name> --username data/users.txt --password '#4-5:abcdef'` will load users from a wordlist while testing all permutations of the charaters `abcdef` 4 and 5 characters long.
+* `legba <plugin name> --username data/users.txt --password '[10-999]'` will load users from a wordlist while testing all numbers from 10 to 999.
+* `legba <plugin name> --username data/users.txt --password '[1, 2, 3, 4]'` will load users from a wordlist while testing the numbers 1, 2, 3 and 4.
+
+Notes:
+- Multiple expressions can be combined with commas (e.g., `1,[3-5],9`) and will be expanded in order.
+- In passwords, `{user}` is replaced with the current username (e.g., `--password '{user}123'`).
+
+### Iteration Logic
+
+Iteration over these credentials can be controlled by the `-I, --iterate-by <ITERATE_BY>` argument. The `-I user` (the default) will iterate like this:
+
+```
+for user in usernames {
+  for password in passwords {
+     // rate limiting and delays happen here
+     plugin.login(user, password)
+  }
+}
+```
+
+While `-I password` will invert the loop:
+
+```
+for password in passwords {
+  for user in usernames {
+     // rate limiting and delays happen here
+     plugin.login(user, password)
+  }
+}
+```
+
+While both strategies will eventually produce the same results, using a different approach can be useful in [cases like this one](https://github.com/evilsocket/legba/issues/7), especially when using `--rate-limit` or `--wait` delays.
+
+### Predefined Combinations
+
+Another option is using the `-C, --combinations <FILENAME>` argument, this will load a predefined set of `username:password` combinations from the given filename.
+
+## Main Options
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| `-L, --list-plugins` | | List all available protocol plugins and exit. |
+| `-R, --recipe <RECIPE>` | | Load a recipe from this YAML file. |
+| `-T, --target <TARGET>` | | Single target host, url or IP address, IP range, CIDR, @filename or comma separated combination of them. |
+| `-U, --payloads, --username <USERNAME>` | `#3-5` | Constant, filename, glob expression as `@/some/path/*.txt`, permutations as `#min-max:charset` / `#min-max` (default charset `abcdefghijklmnopqrstuvwxyz0123456789`) or range as `[min-max`] / `[n, n, n]`. |
+| `-P, --key, --password <PASSWORD>` | `#3-5` | Constant, filename, glob expression as `@/some/path/*.txt`, permutations as `#min-max:charset` / `#min-max` (default charset `abcdefghijklmnopqrstuvwxyz0123456789`) or range as `[min-max`] / `[n, n, n]`. |
+| `-C, --combinations <COMBINATIONS>` | | Load `username:password` combinations from this file. |
+| `--separator <SEPARATOR>` | `:` | Separator if using the --combinations/-C argument. |
+| `-I, --iterate-by <ITERATE_BY>` | `user` | Whether to iterate by user or by password [possible values: `user`, `password`] |
+| `-S, --session <FILENAME>` | | Save and restore session information from this file. |
+| `-O, --output <OUTPUT>` | | Save results to this file. |
+| `--output-format <FORMAT>` | `text` | Output file format [possible values: text, csv, jsonl] |
+| `--timeout <TIMEOUT>` | `1000` | Connection timeout in milliseconds. |
+| `--retries <RETRIES>` | `1` | Number of attempts if a request fails. |
+| `--retry-time <TIME>` | `1000` | Delay in milliseconds to wait before a retry. |
+| `--single-match` | |  Exit after the first positive match is found. | 
+| `--ulimit <ULIMIT>` | `10000` | Value for ulimit (max open file descriptors). | 
+| `--concurrency <VALUE>` | logical CPUs |  Number of concurrent workers. |
+| `--rate-limit <LIMIT>` | `0` | Limit the number of requests per second. |
+| `-W, --wait <WAIT>` | `0` | Wait time in milliseconds per login attempt. |
+| `--jitter-min <VALUE>` | `0` | Minimum number of milliseconds for random request jittering. |
+| `--jitter-max <VALUE>` | `0` | Maximum number of milliseconds for random request jittering. |
+| `-Q, --quiet` | | Do not report statistics. |
+| `--generate-completions <GENERATE_COMPLETIONS>` | | Generate shell completions [possible values: bash, elvish, fish, powershell, zsh] |
+| `-h, --help` | | Print help. |
+| `-V, --version` | | Print version. |
+
+For the full list of arguments including plugin specific ones run `legba --help`.
+
+## Session Management
+
+The `--session` option allows saving and restoring session state, which is useful for resuming interrupted scans. When a session file is specified, legba will:
+
+* Save the current progress to the file every `report_time` milliseconds (default 5000 ms) during execution
+* Automatically restore from the file if it exists when starting
+* Preserve the position in the credential space, allowing you to continue exactly where you left off
+* Save all discovered credentials to the session file
+
+### Session File Format
+
+Session files are stored in JSON format and contain:
+* Original command options
+* List of targets
+* Progress counters (total attempts, completed attempts, errors)
+* All discovered credentials
+
+### Examples
+
+Starting a new session with persistence:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.0/24 \
+    --session my-scan.session
+```
+
+If the scan is interrupted (Ctrl+C, network issue, etc.), you can resume it:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.0/24 \
+    --session my-scan.session
+```
+
+Legba will automatically detect the existing session file and continue from where it stopped.
+
+## Output Formats
+
+Legba supports three output formats via the `--output-format` option: `text` (default), `csv`, and `jsonl`. All formats include timestamps, target information, and discovered credentials.
+
+### Text Format
+
+Human-readable format with timestamps and key-value pairs:
+
+```
+[2024-01-15 14:23:45] (ssh) <192.168.1.1:22> username=admin password=secret123
+[2024-01-15 14:24:12] (http) <192.168.1.10:80> username=root password=toor
+```
+
+### CSV Format
+
+Comma-separated values with headers, suitable for spreadsheet applications:
+
+```csv
+found_at,plugin,target,data
+2024-01-15 14:23:45,ssh,192.168.1.1:22,username=admin;password=secret123
+2024-01-15 14:24:12,http,192.168.1.10:80,username=root;password=toor
+```
+
+Note: Multiple data fields are separated by semicolons within the data column.
+
+### JSONL Format
+
+JSON Lines format with one JSON object per line, ideal for programmatic parsing:
+
+```json
+{"found_at":"2024-01-15T14:23:45.123456","target":"192.168.1.1:22","plugin":"ssh","data":{"username":"admin","password":"secret123"},"partial":false}
+{"found_at":"2024-01-15T14:24:12.456789","target":"192.168.1.10:80","plugin":"http","data":{"username":"root","password":"toor"},"partial":false}
+```
+
+### Examples
+
+Save results as text (default):
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.1 \
+    --output results.txt
+```
+
+Save results as CSV:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.1 \
+    --output results.csv \
+    --output-format csv
+```
+
+Save results as JSONL for processing with jq or other tools:
+
+```sh
+legba ssh \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target 192.168.1.1 \
+    --output results.jsonl \
+    --output-format jsonl
+```
+
+Process JSONL output with jq:
+
+```sh
+# Extract all passwords found
+cat results.jsonl | jq -r '.data.password'
+
+# Filter results by plugin type
+cat results.jsonl | jq 'select(.plugin == "ssh")'
+
+# Get results for specific target
+cat results.jsonl | jq 'select(.target | startswith("192.168.1."))'
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/recipes/
+
+---
+title: legba recipes (YAML attack definitions)
+description: Define reusable, parameterized credential testing attacks in YAML. legba recipes wrap plugin invocations with variable substitution.
+---
+
+# Recipes
+
+Legba recipes are YAML files wrapping specific command line options and use cases, you can look at them as a templating engine for Legba. They are a convenient tool to alias otherwise complex arguments as a single mnemonic word. 
+
+A "cookbook" with a few examples is [available here](https://github.com/evilsocket/legba-cookbook). For instance, this is the recipe to bruteforce a MS Exchange server via its auth.owa endpoint:
+
+```yaml
+description: Microsoft Exchange bruteforce via OWA endpoint.
+author: evilsocket
+plugin: http
+args:
+    target: "{$schema or https}://{$host}:{$port or 443}/owa/auth.owa"
+    http-method: POST
+    http-success: "status == 302 && set_cookie != \"\""
+    http-payload: destination={$schema or https}://{$host}:{$port or 443}/&flags=4&username={USERNAME}&password={PASSWORD}
+```
+
+This complex command line can now be executed simply via:
+
+```bash
+legba \
+  -R cookbook/http/ms-exchange/owa.yml \
+  -U users.txt \
+  -P passwords.txt \
+  "host=ms-server.local" 
+```
+
+## Variables
+
+Recipes support a minimal template engine with the `{$variable_name or default_value}` syntax (or just `{$variable_name}` to make it mandatory for the user to provide). Each variable can be set via command line as:
+
+```bash
+legba \
+  -R cookbook/http/ms-exchange/owa.yml \
+  -U users.txt \
+  -P passwords.txt \
+  "host=ms-server.local&port=8443" 
+```
+
+## Resources
+
+Another way of using recipes is including common dictionaries within their folder and referencing them in the YAML so that everything for that use case is self contained.
+
+For instance, the [CVE-2023-46805 recipe](https://github.com/evilsocket/legba-cookbook/tree/main/http/vulnerabilities/CVE-2023-46805) contains a payloads.txt file that's being referenced like this:
+
+```yaml
+description: Tests one or multiple hosts for CVE-2023-46805.
+author: https://twitter.com/assetnote/status/1747525904551842097
+plugin: http.enum
+args:
+    target: "{$schema or https}://{$host}:{$port or 443}{$path or /}"
+    payloads: "{$recipe.path}/payloads.txt"
+    http-success: "status == {$success_code or 200} && contains(body, \"Destination host\")"
+    http-method: POST
+```
+
+Another example is the [LFI vulnerability testing recipe](https://github.com/evilsocket/legba-cookbook/tree/main/http/vulnerabilities/lfi):
+
+```yaml
+description: Performs common local file inclusion (LFI) vulnerabilities fuzzing.
+author: evilsocket
+plugin: http.enum
+args:
+    target: "{$schema or https}://{$host}:{$port or 443}{$path or /}"
+    payloads: "{$recipe.path}/dictionary.txt"
+    http-success: "status == {$success_code or 200} && contains(body, \"root:\")"
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/rest/
+
+---
+title: REST API for legba automation
+description: Programmatic interface for driving legba over HTTP. Start scans, query status, and consume results from any language or automation framework.
+---
+
+# REST API
+
+Legba has a REST API that can be activated by using the `--api address:port` command line argument.
+
+To start the API (it is recommended to always bind it to localhost) on a given port:
+
+```sh
+legba --api 127.0.0.1:8080
+```
+
+To set which origins are allowed:
+
+```sh
+legba --api 127.0.0.1:8080 --api-allowed-origin 127.0.0.1:1234
+```
+
+To allow any origin (use this at your own risk):
+
+```sh
+legba --api 127.0.0.1:8080 --api-allowed-origin any
+```
+
+## Routes
+
+### GET `localhost:8080/api/plugins`
+
+Returns a list of available plugins and their options:
+
+```json
+[
+    {
+        "name": "amqp",
+        "description": "AMQP password authentication (ActiveMQ, RabbitMQ, Qpid, JORAM and Solace).",
+        "strategy": "username_and_password",
+        "options": {
+            "amqp_ssl": {
+                "name": "amqp_ssl",
+                "description": "Enable SSL for AMQP",
+                "value": false
+            }
+        },
+        "override_payload": null
+    },
+    ... etc etc ...
+]
+```
+
+### POST `localhost:8080/api/session/new`
+
+POSTs an array of command line arguments to start a new Legba session.
+
+#### Request
+
+```json
+[
+    "http",
+    "-T",
+    "localhost",
+    "-U", "admin", 
+    "-P", "admin"
+]
+```
+
+#### Response
+
+The new session identifier:
+
+```
+54e54b44-db39-4b1d-819a-dd12926a59bf
+```
+
+### GET `localhost:8080/api/session/<session id>`
+
+Returns a session status given its identifier:
+
+```json
+{
+    "id": "54e54b44-db39-4b1d-819a-dd12926a59bf",
+    "plugin_name": "http",
+    "targets": [
+        "localhost"
+    ],
+    "process_id": 45178,
+    "client": "127.0.0.1:64829",
+    "argv": [
+        "http",
+        "-T",
+        "localhost",
+        "-U",
+        "admin",
+        "-P",
+        "admin"
+    ],
+    "started_at": 1734528859,
+    "statistics": {
+        "tasks": 12,
+        "memory": "24.8 MiB",
+        "targets": 1,
+        "attempts": 1,
+        "errors": 0,
+        "done": 0,
+        "done_percent": 0.0,
+        "reqs_per_sec": 0
+    },
+    "loot": [],
+    "output": [
+        "legba v0.10.0",
+        "[INFO ] target: localhost",
+        "[INFO ] username -> string 'admin'",
+        "[INFO ] password -> string 'admin'",
+        "[ERROR] [localhost] attempt 5/5: error sending request for url (http://localhost/): error trying to connect: tcp connect error: Connection refused (os error 61)",
+        "[INFO ] runtime 5.009478792s"
+    ],
+    "completed": {
+        "completed_at": 1734528864,
+        "exit_code": 0,
+        "error": null
+    }
+}
+```
+
+### GET `localhost:8080/api/session/<session id>/stop`
+
+Stops a session given its identifier.
+
+### GET `localhost:8080/api/sessions`
+
+List all available sessions.
+
+---
+
+
+## Source: https://legba.evilsocket.net/mcp/
+
+---
+title: legba MCP server for AI agents
+description: Drive legba from AI agents via the built-in Model Context Protocol server. Works with Claude Desktop, Claude Code, and any MCP client.
+---
+
+# Model Context Protocol (MCP)
+
+Legba's Model Context Protocol integration allows any LLMs to use any of its plugins in order to perform automated tasks.
+
+To start Legba MCP server (an high level of concurrency is recommended in order to allow the AI to spawn multiple plugins concurrently):
+
+## SSE Mode
+
+```sh
+legba --mcp 127.0.0.1:3001 --concurrency 256
+```
+
+## STDIO Mode
+
+```sh
+legba --mcp stdio --concurrency 256
+```
+
+## Claude
+
+Edit your `claude_desktop_config.json` file and add (using STDIO mode in this example):
+
+```json
+{
+  "mcpServers": {
+    "Legba": {
+      "command": "/path/to/legba",
+      "args": [
+        "--mcp",
+        "stdio"
+      ]
+    }
+  }
+}
+```
+
+You should now be able to [ask the AI to perform tasks with Legba for you](https://www.youtube.com/watch?v=PJv4Z4uSAtE).
+
+## Cline
+
+Edit your `cline_mcp_settings.json` file and add (using SSE mode in this example):
+
+```json
+{
+  "mcpServers": {
+    "Legba": {
+      "url": "http://localhost:3001/sse",
+      "disabled": false,
+      "autoApprove": [
+        "show_session",
+        "list_plugins",
+        "start_session"
+      ]
+    }
+  }
+}
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/benchmark/
+
+---
+title: legba vs THC-Hydra benchmark - 1.5x to 55x faster
+description: Reproducible benchmark of legba versus THC-Hydra on HTTP, SSH, MySQL, and MSSQL. Same hardware, same wordlist. 1.5x to 55x faster on every test.
+---
+
+# Benchmark
+
+Here's a benchmark of `legba` versus `thc-hydra` running some common plugins, both targeting the same test servers on localhost. The benchmark has been executed on a macOS laptop with an M1 Max CPU, using a wordlist of 1000 passwords with the correct one being on the last line. Legba was compiled in release mode, Hydra compiled and installed via [brew formula](https://formulae.brew.sh/formula/hydra).
+
+Far from being an exhaustive benchmark (some legba features are simply not supported by hydra, such as CSRF token grabbing), this table still gives a clear idea of how using an asynchronous runtime can drastically improve performances.
+
+| Test Name | Hydra Tasks | Hydra Time | Legba Tasks | Legba Time |
+| --------- | ----------- | ---------- | ----------- | ---------- |
+| HTTP basic auth | 16 | 7.100s | 10 | 1.560s **(🚀 4.5x faster)** |
+| HTTP POST login (wordpress) | 16 | 14.854s | 10 | 5.045s **(🚀 2.9x faster)** |
+| SSH | 16 | 7m29.85s * | 10 | 8.150s **(🚀 55.1x faster)** |
+| MySQL | 4 ** | 9.819s | 4 ** | 2.542s **(🚀 3.8x faster)** |
+| Microsoft SQL | 16 | 7.609s | 16 | 4.789s **(🚀 1.5x faster)** |
+
+<sup>* While this result would suggest a default delay between connection attempts used by Hydra. I've tried to study the source code to find such delay but to my knowledge there's none. For some reason it's simply very slow.</sup><br/>
+<sup>** For MySQL hydra automatically reduces the amount of tasks to 4, therefore legba's concurrency level has been adjusted to 4 as well.</sup>
+
+---
+
+
+## Source: https://legba.evilsocket.net/comparison/
+
+---
+title: legba vs Hydra, Medusa, Ncrack, Patator
+description: Side-by-side comparison of legba with THC-Hydra, Medusa, Ncrack, and Patator across speed, protocol coverage, automation, and packaging.
+---
+
+# legba vs Hydra, Medusa, Ncrack, Patator
+
+This page compares **legba** with the four most widely used credential bruteforcers in the security community: [THC-Hydra](https://github.com/vanhauser-thc/thc-hydra), [Medusa](https://github.com/jmk-foofus/medusa), [Ncrack](https://nmap.org/ncrack/), and [Patator](https://github.com/lanjelot/patator). Where speed is reported, the numbers are measured. See [Benchmark](benchmark.md) for the full methodology.
+
+## TL;DR
+
+| Question | Answer |
+| -------- | ------ |
+| Which is **fastest** on common protocols? | **legba**, by 1.5×–55× over THC-Hydra on identical hardware and wordlists (HTTP basic auth, HTTP POST login, SSH, MySQL, MSSQL). [Benchmark methodology.](benchmark.md) |
+| Which has the **best AI agent integration**? | **legba** ships a REST API and a Model Context Protocol (MCP) server out of the box. No other tool in this list exposes an MCP server. |
+| Which has **no native dependencies**? | **legba** is a single static Rust binary, no libssh/libssl/libpq/etc to link. Hydra, Medusa, and Ncrack are C with multiple C library deps. Patator is Python with per-protocol Python deps. |
+| Which has a **YAML recipe / reusable attack config** system? | **legba** (built-in YAML recipes). Patator approximates this via shell aliases; Hydra/Medusa/Ncrack have no equivalent. |
+| Which is **actively maintained** (commits in last 12 months)? | legba ✓, Patator ✓ (sporadic), Hydra ✓, Medusa (low activity), Ncrack (low activity). Check upstream repos for current status. |
+
+## Speed comparison (vs THC-Hydra)
+
+All tests on the same machine (M1 Max), same target server on localhost, same 1000-password wordlist with the correct password on the last line. Legba compiled in release mode; Hydra installed via Homebrew. Full reproduction details in [Benchmark](benchmark.md).
+
+| Protocol | Hydra time | Legba time | Speedup |
+| -------- | ---------- | ---------- | ------- |
+| HTTP basic auth | 7.100 s | **1.560 s** | **4.5×** |
+| HTTP POST login (WordPress) | 14.854 s | **5.045 s** | **2.9×** |
+| SSH | 7 m 29.85 s | **8.150 s** | **55.1×** |
+| MySQL | 9.819 s | **2.542 s** | **3.8×** |
+| Microsoft SQL Server | 7.609 s | **4.789 s** | **1.5×** |
+
+Medusa, Ncrack, and Patator were not included in the benchmark run. Anecdotal community reports place Medusa close to Hydra and Patator (Python-based) consistently slower than both; we welcome [reproducible measurements](https://github.com/evilsocket/legba/issues) to add to this table.
+
+## Feature matrix
+
+Legend: ● built-in · ◐ partial / via plugin · ○ not supported
+
+| Capability | legba | Hydra | Medusa | Ncrack | Patator |
+| ---------- | :---: | :---: | :----: | :----: | :-----: |
+| Async / non-blocking core | ● | ○ | ○ | ◐ | ○ |
+| Single static binary (no native deps) | ● | ○ | ○ | ○ | ○ |
+| Rate limiting | ● | ◐ | ◐ | ● | ● |
+| Per-attempt jitter (anti-detection) | ● | ○ | ○ | ○ | ◐ |
+| Resumable sessions | ● | ● | ○ | ● | ○ |
+| Wordlist + permutation + range expressions | ● | ◐ | ◐ | ○ | ● |
+| Glob expressions for files (e.g. `*.key`) | ● | ○ | ○ | ○ | ◐ |
+| YAML recipes (reusable attack configs) | ● | ○ | ○ | ○ | ○ |
+| REST API | ● | ○ | ○ | ○ | ○ |
+| **Model Context Protocol (MCP) for AI agents** | **●** | ○ | ○ | ○ | ○ |
+| Custom binary plugin (wrap any CLI) | ● | ○ | ○ | ○ | ◐ |
+| HTTP basic auth | ● | ● | ● | ● | ● |
+| HTTP form login (with CSRF token grabbing) | ● | ◐ | ◐ | ○ | ● |
+| HTTP NTLMv1 / NTLMv2 | ● | ◐ | ○ | ○ | ○ |
+| HTTP page enumeration | ● | ○ | ○ | ○ | ○ |
+| HTTP virtual host enumeration | ● | ○ | ○ | ○ | ○ |
+| SSH / SFTP | ● | ● | ● | ● | ● |
+| RDP | ● | ● | ○ | ● | ○ |
+| VNC | ● | ● | ● | ● | ○ |
+| SMB / Samba (auth + share enum) | ● | ◐ | ● | ○ | ● |
+| LDAP | ● | ● | ● | ○ | ● |
+| Kerberos | ● | ○ | ○ | ○ | ◐ |
+| MySQL / PostgreSQL / MSSQL / Oracle | ● | ● | ◐ | ○ | ● |
+| MongoDB / ScyllaDB / Cassandra | ● | ○ | ○ | ○ | ◐ |
+| Redis | ● | ○ | ○ | ○ | ◐ |
+| AMQP / MQTT / STOMP | ● | ○ | ○ | ○ | ◐ |
+| SNMP v1 / v2 / v3 | ● | ◐ | ○ | ○ | ● |
+| DNS subdomain enumeration | ● | ○ | ○ | ○ | ● |
+| TCP / UDP port scanner with banners | ● | ○ | ○ | ○ | ○ |
+| IRC / Telnet / SOCKS5 | ● | ◐ | ◐ | ◐ | ◐ |
+| SMTP / IMAP / POP3 | ● | ● | ● | ● | ● |
+
+Inevitable disclaimer: Hydra, Medusa, Ncrack, and Patator are all mature, well-respected projects and each has features and corner cases that legba does not match yet. The table above reflects documented capabilities of each tool at the time of writing; correct any inaccuracy by [opening an issue](https://github.com/evilsocket/legba/issues).
+
+## When to pick which tool
+
+- **Pick legba** when you want raw throughput, modern Rust ergonomics, a single static binary, AI-agent driveable workflows (REST + MCP), or reusable YAML attack recipes.
+- **Pick Hydra** when you need a protocol legba doesn't ship yet (rare) or when you're constrained to tools already installed on a Kali pin.
+- **Pick Medusa** when you specifically want its host/user parallelization model.
+- **Pick Ncrack** when you're integrating with Nmap and want shared scripting infrastructure.
+- **Pick Patator** when you want Python and the ability to write quick custom protocol modules inline.
+
+## Reproducing the benchmark
+
+The benchmark commands and Docker test servers used to produce the numbers above are part of the repository. See [Benchmark](benchmark.md) and the `test-servers/` directory in the source tree.
+
+```bash
+git clone https://github.com/evilsocket/legba
+cd legba
+cargo build --release
+# Spin up a test server (example: HTTP basic auth)
+docker compose -f test-servers/http-basic.docker-compose.yml up -d
+# Run legba
+./target/release/legba http.basic -T http://localhost:8080 -U admin -P wordlists/passwords.txt
+```
+
+## See also
+
+- [Benchmark](benchmark.md): full methodology, commands, hardware spec.
+- [Usage](usage.md): CLI reference and expression syntax.
+- [REST API](rest.md) and [MCP](mcp.md): agent and automation surface.
+- [FAQ](faq.md): common questions about legba and how it compares.
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/faq/
+
+---
+title: Frequently asked questions about legba
+description: Frequently asked questions about legba, the fast Rust multi-protocol credential bruteforcer and password sprayer.
+---
+
+# Frequently Asked Questions
+
+A short, question-shaped reference for the most common things people (and AI agents) ask about legba. For the canonical reference, see [Usage](usage.md), [Recipes](recipes.md), and the per-plugin pages.
+
+## What is legba?
+
+legba is a fast, multi-protocol credential bruteforcer, password sprayer, and enumerator written in Rust on top of the Tokio asynchronous runtime. It is a modern replacement for tools like THC-Hydra, Medusa, Ncrack, and Patator, with measurably higher throughput (see [Benchmark](benchmark.md)), no native dependencies, a YAML recipe system, a REST API, and a Model Context Protocol (MCP) server for AI agent integration.
+
+## How is legba different from THC-Hydra?
+
+Legba is written in Rust, and async-first (Tokio), distributed as a single static binary with no native deps, exposes a REST API and an MCP server for AI agents, supports YAML recipes, and is measurably faster on every protocol benchmarked against Hydra (1.5× to 55×, see [Comparison](comparison.md#speed-comparison-vs-thc-hydra)). Hydra still ships a few niche protocols legba does not yet implement; check [the plugin list](index.md) before switching.
+
+## Is legba faster than Hydra / Medusa / Ncrack?
+
+On the protocols we have benchmarked against Hydra (HTTP basic, HTTP POST login, SSH, MySQL, MSSQL), legba is 1.5× to 55× faster on identical hardware and wordlists. Full numbers and reproduction steps in [Benchmark](benchmark.md). Medusa and Ncrack have not been formally benchmarked; [contributions welcome](https://github.com/evilsocket/legba/issues).
+
+## How do I install legba?
+
+The fastest paths:
+
+- **Homebrew** (macOS / Linux): `brew tap evilsocket/legba https://github.com/evilsocket/legba && brew install evilsocket/legba/legba`
+- **Precompiled binary**: download from the [latest release](https://github.com/evilsocket/legba/releases/latest)
+- **From source**: `cargo install --git https://github.com/evilsocket/legba`
+- **Docker**: see [Installation](install.md) for the published image and tags
+
+## How do I brute-force SSH with legba?
+
+```bash
+legba ssh \
+  --target 10.0.0.1 \
+  --username root \
+  --password /path/to/passwords.txt
+```
+
+For SSH key authentication, point `--password` (aliased to `--key`) at a glob of key files: `--key '@/path/to/keys/*.key'`. See [SSH / SFTP plugin docs](plugins/ssh_and_sftp.md).
+
+## How do I brute-force an HTTP login form?
+
+```bash
+legba http.form \
+  --target https://example.com/login \
+  --http-payload 'user={USERNAME}&pass={PASSWORD}' \
+  --http-success 'status == 302' \
+  --username admin \
+  --password /path/to/passwords.txt
+```
+
+For pages with CSRF tokens, use `--http-csrf-page` and `--http-csrf-regexp` to scrape the token before each attempt. See the [HTTP plugin docs](plugins/http.md) for the full recipe.
+
+## Does legba support CSRF token grabbing?
+
+Yes. The HTTP plugin can fetch a CSRF token page before each login attempt and substitute the extracted token into the request body or headers via the `{CSRF}` placeholder. See [HTTP plugin: CSRF](plugins/http.md).
+
+## Does legba support NTLM?
+
+Yes, both NTLMv1 (`http.ntlm1`) and NTLMv2 (`http.ntlm2`) via the HTTP plugin, with `--http-ntlm-domain` and `--http-ntlm-workstation` options. See [HTTP plugin docs](plugins/http.md).
+
+## Can legba enumerate subdomains?
+
+Yes, via the `dns` plugin:
+
+```bash
+legba dns --target example.com --payloads /path/to/subdomains.txt
+```
+
+See [DNS plugin docs](plugins/dns.md).
+
+## Can legba scan ports?
+
+Yes, via the `port.scanner` plugin which performs TCP and UDP scans with banner grabbing. See [Port Scanner plugin docs](plugins/port_scanner.md).
+
+## What credential expression syntax does legba support?
+
+The `--username` / `--password` / `--payloads` arguments accept:
+
+- a constant string: `admin`
+- a wordlist file: `/path/to/words.txt`
+- a glob expression: `@/path/to/*.key`
+- a charset permutation: `#3-5:abcdef` (all 3- to 5-char permutations of `abcdef`)
+- an integer range: `[100-999]`
+- an integer list: `[1, 2, 3, 4]`
+- comma-separated combinations of the above
+
+See [Usage > Providing Credentials](usage.md#providing-credentials).
+
+## How do I rate-limit attempts to avoid lockouts?
+
+Combine `--rate-limit` (max requests per second), `--wait` (delay per attempt), and `--jitter-min` / `--jitter-max` (random jitter in ms). See [Usage > Main Options](usage.md).
+
+## Can I save and resume an interrupted scan?
+
+Yes, pass `-S session.json` (or `--session session.json`). legba will persist state and pick up where it left off on the next run with the same argument.
+
+## Does legba have an API?
+
+Yes, two of them:
+
+- A [REST API](rest.md) enabled with `--api 127.0.0.1:8080`.
+- A [Model Context Protocol (MCP)](mcp.md) server enabled with `--mcp 127.0.0.1:8080` (or `--mcp stdio` for stdio transport). MCP makes legba directly drivable by AI agents that speak MCP (Claude Desktop, Claude Code, custom agents using the MCP SDK).
+
+## Can an AI agent drive legba?
+
+Yes. Start the MCP server (`legba --mcp stdio`) and connect any MCP-compatible client. The MCP surface exposes every plugin and option so an agent can plan and execute credential testing tasks. legba is the only credential bruteforcer that ships an MCP server. See [MCP docs](mcp.md).
+
+## What's a "recipe" in legba?
+
+A YAML file that bundles a plugin + arguments into a reusable, parameterized attack definition. Recipes support variable substitution from the command line and avoid having to remember long argument lists for complex targets. See [Recipes](recipes.md).
+
+## What platforms does legba run on?
+
+Linux, macOS, Windows, and BSDs. Because it's pure Rust with no native deps, anywhere Rust + Tokio compiles. Precompiled binaries are published for Linux x86_64 and macOS arm64; build from source for everything else.
+
+## Is legba legal to use?
+
+legba is a security tool for authorized testing only: penetration tests, red team engagements, CTFs, and security research on systems you own or have explicit permission to test. Using it against systems you do not have authorization to test is illegal in most jurisdictions. The maintainers do not provide support for unauthorized use.
+
+## What license is legba?
+
+[GPL-3.0](https://github.com/evilsocket/legba/blob/main/LICENSE.md).
+
+## How do I report a bug or request a feature?
+
+Open an issue at [github.com/evilsocket/legba/issues](https://github.com/evilsocket/legba/issues). For security issues, follow the project's responsible disclosure procedure (see the repository).
+
+## How do I cite legba in academic work?
+
+```
+Margaritelli, S. (2023). legba: a fast multi-protocol credential bruteforcer and enumerator.
+https://github.com/evilsocket/legba
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/http/
+
+---
+title: HTTP brute-force plugin (basic, form, NTLM)
+description: Brute-force HTTP basic auth, form logins with CSRF tokens, NTLMv1, NTLMv2, plus page and vhost enumeration. Proxy and header support.
+---
+
+A set of plugins supporting http basic authentication, NTLMv1, NTLMv2, multipart form requests, standard HTTP requests, CSRF token grabbing and HTTP pages enumeration.
+
+| Name | Description |
+| ---- | ----------- |
+| http       | HTTP request. |
+| http.basic | HTTP basic authentication. |
+| http.enum  | HTTP pages enumeration. |
+| http.form  | HTTP multipart form request. |
+| http.ntlm1 | NTLMv1 authentication over HTTP. |
+| http.ntlm2 | NTLMv2 authentication over HTTP. |
+| http.vhost | HTTP virtual host enumeration. |
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--http-success <EXPRESSION>` | Boolean expression to evaluate in order to recognize a succesful attempt [default: "status == 200"] |
+| `--http-ua <HTTP_UA>` | Set a fixed User-Agent (random by default if not set) |
+| `--http-follow-redirects` | Follow HTTP redirects |
+| `--http-method <HTTP_METHOD>` | Request method for HTTP based plugins [default: `GET`] |
+| `--http-headers <HTTP_HEADERS>...` | Request headers for HTTP based plugins |
+| `--http-csrf-page <HTTP_CSRF_PAGE>` | For each request grab a CSRF token from this page |
+| `--http-csrf-regexp <HTTP_CSRF_REGEXP>` | Regular expression to use to grab the CSRF token name and value [default: `"<input type=\"hidden\" name=\"(token)\" value=\"([^\"]+)\""`] |
+| `--http-payload <HTTP_PAYLOAD>` | Request payload (query string, post body or form data) for HTTP based plugins |
+| `--http-enum-ext <HTTP_ENUM_EXT>` | File extension for HTTP enumeration [default: `php`] |
+| `--http-enum-ext-placeholder <HTTP_ENUM_EXT_PLACEHOLDER>` | File extension placeholder for HTTP enumeration wordlist [default: `%EXT%`] |
+| `--http-ntlm-domain <HTTP_NTLM_DOMAIN>` | Domain for NTLM authentication over HTTP |
+| `--http-ntlm-workstation <HTTP_NTLM_WORKSTATION>` | Workstation name for NTLM authentication over HTTP [default: `CLIENT`] |
+| `--proxy <PROXY>` | Proxy URL |
+| `--proxy-auth <PROXY_AUTH>` | Proxy authentication as username:password |
+
+## Success Expression
+
+The `--http-success` parameter accepts a boolean expression that is evaluated to determine if an HTTP response indicates a successful authentication/enumeration attempt. The expression has access to various response properties and supports multiple operators and functions.
+
+### Available Variables
+
+- **`status`** - HTTP response status code (e.g., 200, 302, 404)
+- **`body`** - Response body content as a string
+- **`size`** - Response body size in bytes
+- **headers** - Any response header converted to lowercase with hyphens replaced by underscores (e.g., `X-Auth-Token` becomes `x_auth_token`)
+
+### Supported Operations
+
+#### Basic Comparisons
+- `status == 200` - Check for specific status code
+- `size > 1000` - Compare body size
+- `set_cookie != ""` - Check if cookie is set
+- `content_type == "application/json"` - Check header values
+
+#### String Functions
+- `contains(body, "success")` - Check if body contains text
+- `contains(set_cookie, "session_id")` - Check if cookie contains text
+- `str::regex_matches(body, "user[0-9]+")` - Match body against regex pattern
+- `str::regex_matches(body, "(?i)success")` - Case-insensitive regex match
+
+#### Logical Operators
+- `&&` - Logical AND
+- `||` - Logical OR  
+- `!` - Logical NOT
+- Parentheses for grouping: `(status == 200 || status == 201) && contains(body, "ok")`
+
+For a list of all the operators and builtin functions [refer to this documentation](https://docs.rs/evalexpr/latest/evalexpr/index.html).
+
+### Expression Examples
+
+```sh
+# Simple status check
+--http-success "status == 200"
+
+# Redirect with cookie (common for successful login)
+--http-success 'status == 302 && set_cookie != ""'
+
+# Check for specific text in response
+--http-success 'status == 200 && contains(body, "dashboard")'
+
+# Exclude error messages
+--http-success 'status == 200 && !contains(body, "invalid credentials")'
+
+# Multiple acceptable status codes
+--http-success "status == 200 || status == 201"
+
+# Complex expression with regex
+--http-success 'status == 200 && str::regex_matches(body, "\"token\":\\s*\"[a-z0-9]{32}\"")'
+
+# Check response size
+--http-success "status == 200 && size > 0 && size != 2045"
+
+# Verify API response
+--http-success 'status == 200 && content_type == "application/json" && contains(body, "\"authenticated\": true")'
+
+# Check for username in response
+--http-success 'status == 200 && contains(body, username)'
+
+# Check for password in response
+--http-success 'status == 200 && contains(body, password)'
+
+# Check for single payload (for http.enum)
+--http-success 'status == 200 && contains(body, payload)'
+```
+
+## Plugin Usage Examples
+
+### Basic Authentication
+
+HTTP Basic Authentication
+
+```sh
+legba http.basic \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target http://localhost:8888/
+```
+
+### NTLM Authentication
+
+HTTP Request with NTLMv1 Authentication:
+
+```sh
+legba http.ntlm1 \
+    --http-ntlm-domain example.org \
+    --http-ntlm-workstation client \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target https://localhost:8888/
+```
+
+HTTP Request with NTLMv2 Authentication:
+
+```sh
+legba http.ntlm2 \
+    --http-ntlm-domain example.org \
+    --http-ntlm-workstation client \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target https://localhost:8888/
+```
+
+Targeting an example Microsoft Exchange server via NTLMv2:
+
+```sh
+legba http.ntlm2 \
+    --http-ntlm-domain LEGBA \
+    --username jeff \
+    --password wordlists/passwords.txt \
+    -T "https://exchange-server/ews" \
+    --http-success "status == 200 || status == 500"
+```
+
+### Enumeration
+
+Basic HTTP directories and pages enumeration:
+ 
+```sh
+legba http.enum \
+    --payloads data/pages.txt \
+    --target http://localhost:8888/ \
+    --http-enum-ext php # php is the default value for file extensions
+```
+
+Enumerate Microsoft Azure management URLs:
+
+```sh
+legba http.enum \
+    --payloads data/names.txt \
+    --target 'https://{PAYLOAD}.scm.azurewebsites.net'
+```
+
+Enumerate Firebase apps URLs:
+
+```sh
+legba http.enum \
+    --payloads data/names.txt \
+    --target 'https://{PAYLOAD}.firebaseapp.com'
+```
+
+Enumerate AWS apps URLs:
+
+```sh
+legba http.enum \
+    --payloads data/names.txt \
+    --target 'https://{PAYLOAD}.awsapps.com'
+```
+
+Wordpress plugin discovery using interpolation syntax:
+ 
+```sh
+legba http.enum \
+    --payloads data/wordpress-plugins.txt \
+    --target http://localhost:8888/wp-content/plugins/{PAYLOAD}/readme.txt
+```
+
+LFI vulnerability fuzzing:
+
+```sh
+legba http.enum \
+    --payloads data/lfi.txt \
+    --target http://localhost:8888/ \
+    --http-success 'contains(body, "root:")'
+```
+
+The `data/lfi.txt` would be something like:
+
+```
+?page=..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd
+file?filename=..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5cetc/passwd
+...
+... and so on ...
+...
+```
+
+### Misc HTTP Requests
+
+HTTP Post Request (Wordpress wp-login.php page):
+
+```sh
+legba http \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target http://localhost:8888/wp-login.php \
+    --http-method POST \
+    --http-success "status == 302" \ # wordpress redirects on successful login
+    --http-payload 'log={USERNAME}&pwd={PASSWORD}'
+```
+
+HTTP Post Request (Wordpress xmlrpc.php)
+
+```sh
+legba http \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target http://localhost:8888/xmlrpc.php \
+    --http-method POST \
+    --http-payload '<?xml version="1.0" encoding="iso-8859-1"?><methodCall><methodName>wp.getUsersBlogs</methodName><params><param><value><string>{USERNAME}</string></value></param><param><value><string>{PASSWORD}</string></value></param></params></methodCall>' \
+    --http-success 'contains(body, "isAdmin")' # what string successful response will contain
+```
+
+Or using the @ syntax to load the payload from a file:
+
+```sh
+legba http \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target http://localhost:8888/xmlrpc.php \
+    --http-method POST \
+    --http-payload @xmlrpc-payload.xml \
+    --http-success 'contains(body, "isAdmin")'
+```
+
+HTTP Post Request with CSRF Token grabbing:
+
+```sh
+legba http \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target http://localhost:8888/ \
+    --http-csrf-page http://localhost:8888/ \ # where to grab the CSRF token from
+    --http-csrf-regexp '<input type="hidden" name="([^\"]+)" value="([^\"]+)"' \ # regular expression to extract it
+    --http-method POST \
+    --http-payload 'user={USERNAME}&pass={PASSWORD}'
+```
+
+Practical example for the Bludit CMS:
+
+```sh
+legba http \
+    --username admin \
+    --password /path/to/your/wordlist.txt \
+    -T http://10.10.10.191/admin/ \
+    --http-csrf-page http://10.10.10.191/admin/ \
+    --http-csrf-regexp 'id="jstokenCSRF" name="([^\"]+)" value="([^\"]+)"' \
+    --http-method POST \
+    --http-payload 'username={USERNAME}&password={PASSWORD}' \
+    --http-success 'status == 301'
+```
+
+Targeting an example Microsoft Exchange server via OWA:
+
+```sh
+legba http \
+    --target "https://exchange-server/owa/auth.owa" \
+    --username "LEGBA\jeff" \
+    --password wordlists/passwords.txt \
+    --http-method POST \
+    --http-payload 'destination=https://exchange-server/&flags=4&username={USERNAME}&password={PASSWORD}' \
+    --http-success 'status == 302 && set_cookie != ""'
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/ssh_and_sftp/
+
+---
+title: SSH and SFTP brute-force with key support
+description: Brute-force SSH and SFTP authentication. Supports password mode and private-key mode with optional passphrases. 55x faster than hydra.
+---
+
+SSH/SFTP password and private key authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--ssh-auth-mode <SSH_AUTH_MODE>` | Authentication strategy [default: `password`] [possible values: `key`, `password`] |
+| `--ssh-key-passphrase <SSH_KEY_PASSPHRASE>` | Optional private key passphrase for key based authentication. |
+
+## Examples
+
+
+SSH password based authentication:
+
+```sh
+legba ssh \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target localhost:22
+```
+
+SSH key based authentication, testing keys inside /some/path:
+
+```sh
+legba ssh \
+    --username admin \
+    --password '@/some/path/*' \
+    --ssh-auth-mode key \
+    --target localhost:22
+```
+
+SFTP password based authentication:
+
+```sh
+legba sftp \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target localhost:22
+```
+
+SFTP ley based authentication, testing keys inside /some/path:
+
+```sh
+legba sftp \
+    --username admin \
+    --password '@/some/path/*' \
+    --ssh-auth-mode key \
+    --target localhost:22
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/ftp/
+
+---
+title: FTP brute-force plugin for legba
+description: Async FTP password authentication wordlist attacks. Single-binary alternative to hydra ftp with measurably higher throughput.
+---
+
+FTP password authentication.
+
+## Examples
+
+Password Authentication:
+
+```sh
+legba ftp \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target localhost:21
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/smtp/
+
+---
+title: SMTP brute-force (PLAIN, LOGIN, XOAUTH2, NTLM)
+description: Async SMTP password authentication brute-force with PLAIN, LOGIN, XOAUTH2, and NTLM (MS-SMTPNTLM) mechanisms. Modern hydra smtp alternative.
+---
+
+SMTP password authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--smtp-mechanism <SMTP_MECHANISM>` | SMTP authentication mechanism: `PLAIN` (RFC4616), `LOGIN` (obsolete but needed for some providers like office365), `XOAUTH2`, `NTLM` (NTLMv2 per [MS-SMTPNTLM]), or `NTLMv1` [default: `PLAIN`] |
+| `--smtp-starttls` | Upgrade the connection with STARTTLS after EHLO before authenticating. Required by most modern submission and Exchange servers. |
+| `--smtp-ntlm-domain <SMTP_NTLM_DOMAIN>` | NTLM domain to use when `--smtp-mechanism` is `NTLM` or `NTLMv1` |
+| `--smtp-ntlm-workstation <SMTP_NTLM_WORKSTATION>` | NTLM workstation identifier to use when `--smtp-mechanism` is `NTLM` or `NTLMv1`. Doubles as the EHLO host name. |
+
+## Examples
+
+PLAIN auth (default):
+
+```sh
+legba smtp \
+    --username admin@example.com \
+    --password wordlists/passwords.txt \
+    --target localhost:25
+```
+
+NTLM auth against an Exchange-style SMTP service (per [MS-SMTPNTLM]) over the submission port that requires STARTTLS:
+
+```sh
+legba smtp \
+    --target mail.example.com:587 \
+    --username jeff \
+    --password wordlists/passwords.txt \
+    --smtp-mechanism NTLM \
+    --smtp-ntlm-domain LEGBA \
+    --smtp-ntlm-workstation pentest1 \
+    --smtp-starttls
+```
+
+PLAIN auth over STARTTLS (the common production setup for office365, gmail relays, etc.):
+
+```sh
+legba smtp \
+    --target smtp.example.com:587 \
+    --username admin@example.com \
+    --password wordlists/passwords.txt \
+    --smtp-mechanism PLAIN \
+    --smtp-starttls
+```
+
+Falling back to NTLMv1 if the server only speaks v1:
+
+```sh
+legba smtp \
+    --target mail.example.com:25 \
+    --username jeff \
+    --password wordlists/passwords.txt \
+    --smtp-mechanism NTLMv1 \
+    --smtp-ntlm-domain LEGBA
+```
+
+A reference mock server that implements the NTLM handshake and validates
+NTLMv2 responses lives in [`test-servers/smtp-ntlm/`](https://github.com/evilsocket/legba/tree/main/test-servers/smtp-ntlm)
+and is useful for verifying the plugin end-to-end without an Exchange lab.
+
+[MS-SMTPNTLM]: https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smtpntlm/
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/imap/
+
+---
+title: IMAP brute-force plugin for legba
+description: Async IMAP password authentication. Modern hydra imap alternative with higher throughput and no native dependencies.
+---
+
+IMAP password authentication.
+
+## Examples
+
+```sh
+legba imap \
+    --username user \
+    --password data/passwords.txt \
+    --target localhost:993
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/pop3/
+
+---
+title: POP3 brute-force plugin for legba
+description: Async POP3 password authentication wordlist attacks with optional SSL or TLS support.
+---
+
+POP3 password authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--pop3-ssl` | Enable SSL for POP3 |
+
+## Examples
+
+Insecure:
+
+```sh
+legba pop3 \
+    --username admin@example.com \
+    --password wordlists/passwords.txt \
+    --target localhost:110
+```
+
+Via SSL:
+
+```sh
+legba pop3 \
+    --username admin@example.com \
+    --password wordlists/passwords.txt \
+    --target localhost:995 \
+    --pop3-ssl
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/rdp/
+
+---
+title: RDP brute-force plugin for legba
+description: Microsoft Remote Desktop Protocol password brute-force with optional NTLM, admin mode, auto-logon flags, and domain support.
+---
+
+Microsoft Remote Desktop.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--rdp-domain <RDP_DOMAIN>` | Domain name [default: ``] |
+| `--rdp-ntlm` | Use a NTLM hash instead of a password |
+| `--rdp-admin-mode` | Restricted admin mode |
+| `--rdp-auto-logon` | AutoLogon mode in case of SSL negotiation |
+
+## Examples
+
+```sh
+legba rdp \
+    --target localhost:3389 \
+    --username admin \
+    --password data/passwords.txt
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/vnc/
+
+---
+title: VNC password brute-force plugin
+description: Async VNC password brute-force on default port 5900. Single-binary modern alternative to hydra vnc.
+---
+
+VNC Password Authentication.
+
+## Examples
+
+```sh
+legba vnc \
+    --target localhost:5901 \
+    --password data/passwords.txt
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/samba/
+
+---
+title: Samba brute-force and shares enumeration
+description: Brute-force SMB authentication and enumerate accessible shares. Pure Rust SMB implementation, no native Samba client required.
+---
+
+Samba username and password authentication and shares enumeration.
+
+| Name | Description |
+| ---- | ----------- |
+| smb       | Authentication wordlist attack / bruteforcing. |
+| smb.shares | Shares enumeration. |
+
+## Examples
+
+Password authentication wordlist attack:
+
+```sh
+legba smb \
+    --target share.company.com \
+    --username admin \
+    --password data/passwords.txt
+```
+
+Enumerate SMB shares using the default names:
+
+```sh
+legba smb.shares --target share.company.com
+```
+
+Enumerate SMB shares using a custom wordlist:
+
+```sh
+legba smb.shares --target share.company.com --payloads wordlist.txt
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/ldap/
+
+---
+title: LDAP brute-force plugin for legba
+description: Async LDAP bind authentication brute-force with domain support. Modern hydra alternative with first-class rate limiting and recipes.
+---
+
+LDAP Password Authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--ldap-domain <LDAP_DOMAIN>` | LDAP domain |
+
+## Examples
+
+```sh
+legba ldap \
+    --target 127.0.0.1:389 \
+    --username admin \
+    --password @wordlists/passwords.txt \
+    --ldap-domain example.org \
+    --single-match
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/kerberos/
+
+---
+title: Kerberos 5 brute-force and enumeration
+description: Pre-authentication brute-force and user enumeration against Kerberos 5 KDCs. Configurable realm, protocol, and Linux handling.
+---
+
+Kerberos 5 Pre Auth (users enumeration and password authentication).
+
+**NOTE:** due to the way that the realm string is uppercase'd in order to generate the cryptographic salt for Microsoft domain controllers, you'll need to add the `--kerberos-linux` argument when targeting Linux Kerberos servers.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--kerberos-realm <KERBEROS_REALM>` | Kerberos realm |
+| `--kerberos-protocol <KERBEROS_PROTOCOL>` | Kerberos transport protocol [default: `tcp`] [possible values: `udp`, `tcp`] |
+| `--kerberos-linux` | If targeting a Linux Kerberos5 implementation, pass this flag to preserve the realm string case |
+
+## Examples
+
+```sh
+legba kerberos \
+    --target 127.0.0.1 \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --kerberos-realm example.org
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/mysql/
+
+---
+title: MySQL brute-force plugin for legba
+description: Async MySQL password brute-force. Handles usernames and passwords with special characters via typed connect options. 3.8x faster than hydra.
+---
+
+MySQL Password Authentication.
+
+## Examples
+
+```sh
+legba mysql \
+    --username root \
+    --password wordlists/passwords.txt \
+    --target localhost:3306
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/postgresql/
+
+---
+title: PostgreSQL brute-force plugin for legba
+description: Async PostgreSQL authentication brute-force. Handles special characters in credentials via typed connect options.
+---
+
+PostgreSQL Password Authentication.
+
+## Examples
+
+```sh
+legba pgsql \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target localhost:5432  
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/mssql/
+
+---
+title: Microsoft SQL Server brute-force plugin
+description: Async brute-force of Microsoft SQL Server authentication. 1.5x faster than hydra mssql on identical hardware (see benchmark).
+---
+
+Microsoft SQL Server Password Authentication.
+
+## Examples
+
+```sh
+legba mssql \
+    --username SA \
+    --password wordlists/passwords.txt \
+    --target localhost:1433
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/oracle/
+
+---
+title: Oracle DB brute-force plugin for legba
+description: Brute-force Oracle Database authentication with configurable target database. Single-binary alternative to hydra oracle.
+---
+
+Oracle Password Authentication.
+
+**NOTE**: this is an optional feature that is not compiled by default, enable during compilation with by using `cargo build --release -F oracle`.
+
+## Examples 
+
+```sh
+legba oracle \
+    --target localhost:1521 \
+    --oracle-database SYSTEM \
+    --username admin \
+    --password data/passwords.txt
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/mongodb/
+
+---
+title: MongoDB authentication brute-force
+description: Brute-force MongoDB authentication on default port 27017. Single-binary tool for assessing MongoDB password strength.
+---
+
+MongoDB password authentication.
+
+## Examples
+
+```sh
+legba mongodb \
+  --target localhost:27017 \
+  --username root \
+  --password data/passwords.txt
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/scylla/
+
+---
+title: ScyllaDB / Cassandra brute-force
+description: Async brute-force of ScyllaDB and Cassandra authentication on the default CQL port 9042.
+---
+
+ScyllaDB / Apache Casandra password based authentication.
+
+## Examples
+
+```sh
+legba scylla \
+    --username cassandra \
+    --password wordlists/passwords.txt \
+    --target localhost:9042
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/redis/
+
+---
+title: Redis legacy and ACL brute-force
+description: Brute-force Redis legacy password and ACL authentication. Optional SSL or TLS. Single-binary alternative to hydra redis.
+---
+
+Redis password authentication, both legacy and ACL based.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--redis-ssl` | Enable SSL for Redis. |
+
+## Examples
+
+```sh
+legba redis \
+    --target localhost:6379 \
+    --username admin \
+    --password data/passwords.txt
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/amqp/
+
+---
+title: AMQP brute-force plugin (ActiveMQ, RabbitMQ)
+description: Brute-force AMQP authentication on ActiveMQ, RabbitMQ, Qpid, JORAM, and Solace brokers with legba's async Rust engine.
+---
+
+The AMQP binary protocol allows interaction with message queueing services like ActiveMQ, RabbitMQ, Qpid, JORAM and Solace.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--amqp-ssl` | Enable SSL for AMQP. |
+
+## Examples
+
+```sh
+legba amqp \
+    --target localhost:5672 \
+    --username admin \
+    --password data/passwords.txt
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/mqtt/
+
+---
+title: MQTT brute-force (MQTT v3/v5, TLS optional)
+description: Brute-force MQTT broker authentication with MQTT v3 and v5 support, optional TLS. Useful for IoT pentest engagements.
+---
+
+MQTT password authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--mqtt-client-id <MQTT_CLIENT_ID>` | MQTT client identifier [default: `legba`] |
+| `--mqtt-v5` | Use MQTT v5 |
+| `--mqtt-ssl` | Use SSL/TLS connection (mqtts://) with certificate verification disabled. |
+
+## Examples
+
+```sh
+legba mqtt \
+    --target 127.0.0.1:1883 \
+    --username admin \
+    --password wordlists/passwords.txt \
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/stomp/
+
+---
+title: STOMP brute-force (ActiveMQ, RabbitMQ)
+description: Brute-force STOMP authentication on ActiveMQ, RabbitMQ, HornetQ, and OpenMQ message brokers.
+---
+
+The STOMP text protocol allows interaction with message queueing services like ActiveMQ, RabbitMQ, HornetQ and OpenMQ.
+
+## Examples
+
+```sh
+legba stomp \
+    --target localhost:61613 \
+    --username admin \
+    --password data/passwords.txt
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/snmp/
+
+---
+title: SNMP v1/v2/v3 community and OID enum
+description: Brute-force SNMP v1, v2, and v3 community strings and enumerate OIDs. Configurable maximum results and target OID.
+---
+
+# SNMP
+
+SNMP (Simple Network Management Protocol) community and credential enumeration with OID tree discovery.
+
+Legba supports three SNMP protocol versions:
+- **SNMPv1/v2**: Community string enumeration
+- **SNMPv3**: Username and password authentication with automatic protocol detection
+
+## Protocol Details
+
+### SNMPv1/v2
+These versions use community strings for authentication. The plugin will enumerate valid community strings and retrieve available OIDs (Object Identifiers) from the target device.
+
+### SNMPv3
+SNMPv3 provides enhanced security with username/password authentication. The plugin automatically attempts multiple authentication protocols:
+- MD5
+- SHA1
+- SHA224
+- SHA256
+- SHA384
+- SHA512
+
+When a valid credential is found, the plugin will enumerate all accessible OIDs and their values.
+
+## Examples
+
+Test common community strings against an SNMPv1 device:
+
+```sh
+legba snmp1 \
+    --payload wordlists/snmp-communities.txt \
+    # a short 50ms timeout is recommended for LAN targets
+    --timeout 50 \
+    --target 192.168.1.1
+```
+
+Same but against a whole subnet:
+
+```sh
+legba snmp1 \
+    --payload wordlists/snmp-communities.txt \
+    --timeout 50 \
+    --target 192.168.1.0/24
+```
+
+Walk the entire SNMP tree:
+
+```sh
+legba snmp1 \
+    --payload wordlists/snmp-communities.txt \
+    # a short 50ms timeout is recommended for LAN targets
+    --timeout 50 \
+    # removes the default limit
+    --snmp-max 0 \
+    --target 192.168.1.1
+```
+
+Read a single OID instead of walking the entire tree:
+
+```sh
+legba snmp1 \
+    --payload wordlists/snmp-communities.txt \
+    # a short 50ms timeout is recommended for LAN targets
+    --timeout 50 \
+    --snmp-oid '1.3.6.1.2.1.1' \
+    --target 192.168.1.1
+```
+
+Test community strings against an SNMPv2 device:
+
+```sh
+legba snmp2 \
+    --payload public,private,manager \
+    --timeout 50 \
+    --target 192.168.1.1:161
+```
+
+Test username/password combinations with automatic protocol detection:
+
+```sh
+legba snmp3 \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --timeout 50 \
+    --target 10.0.0.1
+```
+
+Test multiple users and passwords:
+
+```sh
+legba snmp3 \
+    --username admin,snmpuser,monitor \
+    --password wordlists/top-passwords.txt \
+    --timeout 50 \
+    --target snmp.example.com
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/irc/
+
+---
+title: IRC server password brute-force
+description: Brute-force IRC server passwords with optional TLS support. Async Rust implementation for large wordlists and rate-limited probing.
+---
+
+IRC server password authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--irc-tls` | Use TLS for IRC [default: `false`] |
+
+## Examples
+
+IRC password authentication:
+
+```sh
+legba irc \
+    --password wordlists/passwords.txt \
+    --target irc.example.com:6667
+```
+
+IRC password authentication with TLS:
+
+```sh
+legba irc \
+    --password wordlists/passwords.txt \
+    --irc-tls \
+    --target irc.example.com:6697
+```
+
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/telnet/
+
+---
+title: Telnet brute-force plugin for legba
+description: Async telnet password brute-force with configurable user, password, and shell prompts.
+---
+
+Telnet password authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--telnet-user-prompt <TELNET_USER_PROMPT>` | Telnet server username login prompt string [default: `"login: "`] |
+| `--telnet-pass-prompt <TELNET_PASS_PROMPT>` | Telnet server password login prompt string [default: `"Password: "`] |
+| `--telnet-prompt <TELNET_PROMPT>` | Telnet server shell prompt after successful login [default: `":~$ "`] |
+
+## Examples
+
+```sh
+legba telnet \
+    --username admin \
+    --password wordlists/passwords.txt \
+    --target localhost:23 \
+    --telnet-user-prompt "login: " \
+    --telnet-pass-prompt "Password: " \
+    --telnet-prompt ":~$ " \
+    --single-match # this option will stop the program when the first valid pair of credentials will be found, can be used with any plugin
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/dns/
+
+---
+title: DNS subdomain enumeration with legba
+description: Enumerate subdomains and DNS records over UDP, TCP, and DoH. Multiple resolvers, configurable attempts, IP lookup, HTTPS resolvers.
+---
+
+DNS subdomain enumeration.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--dns-resolvers <DNS_RESOLVERS>` | Comma separatd list of DNS resolvers to use instead of the system one. |
+| `--dns-port <DNS_PORT>` | Resolver(s) port [default: `53`] |
+| `--dns-attempts <DNS_ATTEMPTS>` | Number of retries after lookup failure before giving up [default: `1`] |
+| `--dns-ip-lookup` | Perform ip to hostname lookup. |
+| `--dns-max-positives <DNS_MAX_POSITIVES>` | If more than this amount of sequential DNS resolutions point to the same IP, add that IP to an ignore list [default: `10`] |
+| `--dns-no-https` | Do not fetch HTTPS certificates for new domains. |
+
+## Examples
+
+```sh
+legba dns \
+    --payloads data/200k-dns.txt \
+    --target something.com \
+    --dns-resolvers "1.1.1.1" # comma separated list of DNS resolvers, do not pass to use the system resolver
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/port_scanner/
+
+---
+title: TCP and UDP port scanner with banners
+description: Concurrent TCP and UDP port scanner with banner grabbing and HTTP/HTTPS probe support. Adaptive timeouts on positive results.
+---
+
+TCP and UDP port scanner with http banner grabbing capabilities.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--port-scanner-ports <PORT_SCANNER_PORTS>` |  Range or comma separated values of integer port numbers to scan [default to most common ports] |
+| `--port-scanner-no-banners` |  Do not attempt banner grabbing |
+| `--port-scanner-no-tcp` |  Do not perform TCP scan |
+| `--port-scanner-no-udp` |  Do not perform UDP scan |
+| `--port-scanner-banner-timeout <PORT_SCANNER_BANNER_TIMEOUT>` |  Timeout in seconds for banner grabbing [default: `1000`] |
+| `--port-scanner-http <PORT_SCANNER_HTTP>` | Comma separated list of ports for HTTP grabbing [default: `"80, 8080, 8081, 8888"`] |
+| `--port-scanner-https <PORT_SCANNER_HTTPS>` | Comma separated list of ports for HTTPS grabbing [default: `"443, 8443"`] |
+| `--port-scanner-http-headers <PORT_SCANNER_HTTP_HEADERS>` | Comma separated list lowercase header names for HTTP/HTTPS grabbing [default: `"server, x-powered-by, location"`] |
+
+## Examples
+
+Scan all TCP and UDP ports with a 300ms timeout:
+
+```sh
+legba port.scanner \
+    --target something.com \
+    --timeout 300 
+```
+
+Scan a custom range of ports with a 300ms timeout:
+
+```sh
+legba port.scanner \
+    --target something.com \
+    --port-scanner-ports '[80-10000]' \ # it's important to use the '[start-stop]' syntax to indicate a port range
+    --timeout 300 
+```
+
+Scan a custom list of ports with a 300ms timeout:
+
+```sh
+legba port.scanner \
+    --target something.com \
+    --port-scanner-ports '21, 22, 80, 443, 8080' \
+    --timeout 300 
+```
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/socks5/
+
+---
+title: SOCKS5 brute-force plugin for legba
+description: Brute-force SOCKS5 proxy authentication with configurable target address and port.
+---
+
+SOCKS5 username and password authentication.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- | 
+| `--socks5-address <SOCKS5_ADDRESS>` | Remote address to test the proxying for [default: `ifcfg.co`] |
+| `--socks5-port <SOCKS5_PORT>` | Remote port to test the proxying for [default: `80`] |
+
+## Examples
+
+```sh
+legba socks5 \
+    --target localhost:1080 \
+    --username admin \
+    --password data/passwords.txt
+```
+
+With alternative address:
+
+
+```sh
+legba socks5 \
+    --target localhost:1080 \
+    --username admin \
+    --password data/passwords.txt \
+    --socks5-address 'internal.company.com' \
+    --socks5-port 8080
+```
+
+
+---
+
+
+## Source: https://legba.evilsocket.net/plugins/custom_binary/
+
+---
+title: Custom binary plugin - wrap any CLI tool
+description: Drive any external command from legba as a native plugin. Useful for password-protected archives, file formats, or one-off CLIs.
+---
+
+The command (cmd) plugin allows legba to interact with a custom executable and use either its exit code or a string pattern to determine a success or failure. It can be used to integrate with clients and utilities that are not natively supported by legba and parallelize their execution in order to attack credentials.
+
+## Options
+
+| Name | Description |
+| ---- | ----------- |
+| `--cmd-binary <CMD_BINARY>` | Command binary [default: not set]  |
+| `--cmd-args <CMD_ARGS>` | Command arguments. {USERNAME}, {PASSWORD}, {TARGET} can be used as placeholders [default: not set] |
+| `--cmd-success-exit-code <CMD_SUCCESS_EXIT_CODE>` | Process exit code to be considered as a positive match [default: `0`] |
+| `--cmd-success-match <CMD_SUCCESS_MATCH>` | String to look for in the process standard output to be considered as a positive match |
+
+## Examples
+
+Use the unzip utility to find the password of a password protected ZIP archive (as seen in [this recipe](https://github.com/evilsocket/legba-cookbook/tree/main/zip)):
+
+```sh
+legba cmd \
+    --single-match \
+    --cmd-binary unzip \
+    --cmd-args "\\-oP '{PASSWORD}' \\-d /tmp {TARGET}" \
+    -U "" \
+    --password wordlist.txt \
+    --target data/protected.zip
+```
+
+---

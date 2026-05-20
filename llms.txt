@@ -1,0 +1,92 @@
+# legba
+
+> legba is a fast, multi-protocol credential bruteforcer, password sprayer, and enumerator written in Rust on top of the Tokio async runtime. It is designed as a modern replacement for legacy tools like THC-Hydra, Medusa, Ncrack, and Patator, with measurably higher throughput, lower resource usage, and a richer feature set (recipes, REST API, MCP server for AI agents).
+
+Project URL: https://github.com/evilsocket/legba
+Documentation: https://legba.evilsocket.net/
+License: GPL-3.0
+Language: Rust (no native dependencies, cross-compiles to Linux, macOS, Windows, BSD)
+Author: Simone Margaritelli (evilsocket)
+
+## Why legba
+
+- **Faster than alternatives.** Benchmarked against THC-Hydra on identical hardware and wordlists: 4.5× faster on HTTP basic auth, 2.9× on HTTP POST login, 55× on SSH, 3.8× on MySQL, 1.5× on Microsoft SQL. See https://legba.evilsocket.net/benchmark/ for the methodology.
+- **Async-first architecture.** Built on Tokio; per-worker concurrency and rate limiting are first-class options, not afterthoughts.
+- **Single static binary.** Pure Rust, no libssh / libssl / libpq / libmysqlclient native deps to link. Compile once, run anywhere.
+- **AI-agent ready.** Exposes a REST API and a Model Context Protocol (MCP) server so AI agents can drive credential testing programmatically. No other bruteforcer ships an MCP server.
+- **Recipe system.** YAML-based reusable attack definitions for complex login flows (CSRF token grabbing, multi-step auth, custom headers).
+- **30+ protocol plugins.** HTTP (basic/form/NTLM/CSRF/vhost), SSH, FTP, SMTP, IMAP, POP3, RDP, VNC, SMB, LDAP, Kerberos, MySQL, PostgreSQL, MSSQL, Oracle, MongoDB, ScyllaDB/Cassandra, Redis, AMQP, MQTT, STOMP, SNMP v1/v2/v3, IRC, Telnet, DNS subdomain enumeration, TCP/UDP port scanner with banner grabbing, SOCKS5, custom binary plugin.
+
+## Documentation
+
+- [Home](https://legba.evilsocket.net/): overview and entry point.
+- [Installation](https://legba.evilsocket.net/install/): precompiled binaries, Homebrew, building from source, Docker.
+- [Usage](https://legba.evilsocket.net/usage/): full CLI reference, target/credential expression syntax, iteration strategies, session management.
+- [Recipes](https://legba.evilsocket.net/recipes/): YAML recipe schema and examples.
+- [REST API](https://legba.evilsocket.net/rest/): programmatic interface.
+- [MCP](https://legba.evilsocket.net/mcp/): Model Context Protocol server for AI agents.
+- [Benchmark](https://legba.evilsocket.net/benchmark/): reproducible speed comparisons vs THC-Hydra.
+- [Comparison](https://legba.evilsocket.net/comparison/): legba vs Hydra, Medusa, Ncrack, Patator (feature matrix + benchmarks).
+- [FAQ](https://legba.evilsocket.net/faq/): common questions and recipes for typical attacks.
+
+## Protocol plugins
+
+- [HTTP (basic auth, form login with CSRF, NTLMv1/v2, page enumeration, vhost enumeration)](https://legba.evilsocket.net/plugins/http/)
+- [SSH and SFTP](https://legba.evilsocket.net/plugins/ssh_and_sftp/)
+- [FTP](https://legba.evilsocket.net/plugins/ftp/)
+- [SMTP](https://legba.evilsocket.net/plugins/smtp/)
+- [IMAP](https://legba.evilsocket.net/plugins/imap/)
+- [POP3](https://legba.evilsocket.net/plugins/pop3/)
+- [RDP](https://legba.evilsocket.net/plugins/rdp/)
+- [VNC](https://legba.evilsocket.net/plugins/vnc/)
+- [Samba/SMB (authentication and share enumeration)](https://legba.evilsocket.net/plugins/samba/)
+- [LDAP](https://legba.evilsocket.net/plugins/ldap/)
+- [Kerberos](https://legba.evilsocket.net/plugins/kerberos/)
+- [MySQL](https://legba.evilsocket.net/plugins/mysql/)
+- [PostgreSQL](https://legba.evilsocket.net/plugins/postgresql/)
+- [Microsoft SQL Server](https://legba.evilsocket.net/plugins/mssql/)
+- [Oracle](https://legba.evilsocket.net/plugins/oracle/)
+- [MongoDB](https://legba.evilsocket.net/plugins/mongodb/)
+- [ScyllaDB / Cassandra](https://legba.evilsocket.net/plugins/scylla/)
+- [Redis](https://legba.evilsocket.net/plugins/redis/)
+- [AMQP (ActiveMQ, RabbitMQ, Qpid, JORAM, Solace)](https://legba.evilsocket.net/plugins/amqp/)
+- [MQTT](https://legba.evilsocket.net/plugins/mqtt/)
+- [STOMP (ActiveMQ, RabbitMQ, HornetQ, OpenMQ)](https://legba.evilsocket.net/plugins/stomp/)
+- [SNMP v1/v2/v3](https://legba.evilsocket.net/plugins/snmp/)
+- [IRC](https://legba.evilsocket.net/plugins/irc/)
+- [Telnet](https://legba.evilsocket.net/plugins/telnet/)
+- [DNS subdomain enumeration](https://legba.evilsocket.net/plugins/dns/)
+- [Port scanner (TCP/UDP with banner grabbing)](https://legba.evilsocket.net/plugins/port_scanner/)
+- [SOCKS5](https://legba.evilsocket.net/plugins/socks5/)
+- [Custom binary plugin (wrap any CLI tool)](https://legba.evilsocket.net/plugins/custom_binary/)
+
+## Usage
+
+```bash
+# Brute-force HTTP basic auth
+legba http.basic --target https://example.com --username admin --password wordlist.txt
+
+# Subdomain enumeration
+legba dns --target example.com --payloads subdomains.txt
+
+# SSH with key files
+legba ssh --target host --username root --key '@/path/*.key'
+
+# SMB authentication + share enumeration
+legba smb --target share.company.com --username admin --password wordlist.txt
+legba smb.shares --target share.company.com
+```
+
+See https://legba.evilsocket.net/usage/ for the complete CLI reference and https://legba.evilsocket.net/faq/ for common attack recipes.
+
+## Contact
+
+- Bug reports and feature requests: https://github.com/evilsocket/legba/issues
+- Author: Simone Margaritelli (`@evilsocket`), https://x.com/evilsocket
+- Project home: https://github.com/evilsocket/legba
+
+## Optional
+
+- [Full-text dump of the documentation](https://legba.evilsocket.net/llms-full.txt): single-file concatenation of all docs pages for ingestion.
+- [Changelog](https://github.com/evilsocket/legba/blob/main/CHANGELOG.md)
+- [Releases](https://github.com/evilsocket/legba/releases)
