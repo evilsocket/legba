@@ -77,14 +77,26 @@ impl Plugin for IRC {
             .await
             .map_err(|e| e.to_string())?;
 
+        // Cap the accumulated banner and bound the total read time: otherwise a malicious IRC
+        // server can stream unbounded data (OOM) or stall forever without ever sending the
+        // welcome (001) line (a permanent hang), since neither a size cap nor a read deadline
+        // is applied to this loop.
+        const IRC_MAX_RESPONSE: usize = 64 * 1024;
+        let deadline = tokio::time::Instant::now() + timeout;
         let mut buffer = vec![0; 1024];
         let mut accumulated_data = Vec::new();
         loop {
-            let bytes_read = stream.read(&mut buffer).await.map_err(|e| e.to_string())?;
+            let bytes_read = tokio::time::timeout_at(deadline, stream.read(&mut buffer))
+                .await
+                .map_err(|_| "irc: timed out reading the server response".to_string())?
+                .map_err(|e| e.to_string())?;
             if bytes_read == 0 {
                 return Ok(None);
             }
             accumulated_data.extend_from_slice(&buffer[..bytes_read]);
+            if accumulated_data.len() > IRC_MAX_RESPONSE {
+                return Err("irc: server response exceeded the size limit".to_string());
+            }
             let response = String::from_utf8_lossy(&accumulated_data);
             if response.contains(" 001 ") && response.contains("Welcome") {
                 return Ok(Some(vec![Loot::new(
