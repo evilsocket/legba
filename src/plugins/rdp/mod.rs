@@ -53,6 +53,15 @@ impl Plugin for RDP {
             .map_err(|e| e.to_string())?;
 
         let stream = TcpStream::connect_timeout(&address, timeout).map_err(|e| e.to_string())?;
+        // connect_timeout only bounds the connect; without these a malicious or silent RDP
+        // server would hang the operator's thread during the handshake reads in
+        // Connector::connect (blocking, synchronous socket).
+        stream
+            .set_read_timeout(Some(timeout))
+            .map_err(|e| e.to_string())?;
+        stream
+            .set_write_timeout(Some(timeout))
+            .map_err(|e| e.to_string())?;
 
         let mut rdp_connector = Connector::new()
             .screen(800, 600)
