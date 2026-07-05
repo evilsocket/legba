@@ -64,7 +64,10 @@ pub(crate) async fn parse_http_response(
     // collect headers
     for (name, value) in response.headers() {
         let name = name.to_string();
-        let mut value = value.to_str().unwrap();
+        // decode lossily instead of unwrapping: a scanned host can return non-ASCII header
+        // bytes that HeaderValue::to_str rejects, which would panic (abort) the process.
+        let value = String::from_utf8_lossy(value.as_bytes());
+        let mut value = value.as_ref();
 
         if name == "content-type" {
             if value.contains(';') {
