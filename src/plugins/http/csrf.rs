@@ -64,7 +64,9 @@ pub(crate) async fn handle(
             if res.status().is_success() {
                 // get cookie from header
                 if let Some(cookie) = res.headers().get("set-cookie") {
-                    token.cookie = cookie.to_str().unwrap().to_owned();
+                    // decode lossily: a malicious server can send non-ASCII header bytes that
+                    // HeaderValue::to_str would reject, panicking (abort) the process.
+                    token.cookie = String::from_utf8_lossy(cookie.as_bytes()).into_owned();
                 } else {
                     log::warn!("csrf page unexpectetly did not return any cookie");
                 }

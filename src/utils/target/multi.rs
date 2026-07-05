@@ -25,11 +25,21 @@ fn parse_multiple_targets_atom(expression: &str) -> Result<Vec<String>, Error> {
             .collect())
     } else if let Some(caps) = IPV4_RANGE_PARSER.captures(expression) {
         // ipv4 range like 192.168.1.1-10 or 192.168.1.1-10:port
-        let a: u8 = caps.get(1).unwrap().as_str().parse().unwrap();
-        let b: u8 = caps.get(2).unwrap().as_str().parse().unwrap();
-        let c: u8 = caps.get(3).unwrap().as_str().parse().unwrap();
-        let start: u8 = caps.get(4).unwrap().as_str().parse().unwrap();
-        let stop: u8 = caps.get(5).unwrap().as_str().parse().unwrap();
+        //
+        // each octet is captured as `\d+`, which also matches out-of-range values such as
+        // "256.0.0.0-1"; parse fallibly so a bad octet becomes a returned error instead of a
+        // panic. Under the release profile's `panic = "abort"` such a panic aborts the whole
+        // process, and this parser is reachable from the unauthenticated REST/MCP API.
+        let octet = |m: regex::Match| -> Result<u8, Error> {
+            m.as_str().parse::<u8>().map_err(|_| {
+                format!("invalid IPv4 octet '{}' in target '{}'", m.as_str(), expression)
+            })
+        };
+        let a = octet(caps.get(1).unwrap())?;
+        let b = octet(caps.get(2).unwrap())?;
+        let c = octet(caps.get(3).unwrap())?;
+        let start = octet(caps.get(4).unwrap())?;
+        let stop = octet(caps.get(5).unwrap())?;
 
         if stop < start {
             return Err(format!(
@@ -140,6 +150,19 @@ mod tests {
     fn returns_error_for_wrong_filename() {
         let res = parse_multiple_targets("@i-do-not-exist.lol");
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn ipv4_range_out_of_range_octet_errors_without_panic() {
+        // regression: octets are captured as `\d+`, so values > 255 must return an error
+        // rather than panic (which aborts under the release `panic = "abort"` profile).
+        for target in ["256.0.0.0-1", "1.2.3.4-999", "1.2.3.300-1", "999.0.0.0-0"] {
+            assert!(
+                parse_multiple_targets(target).is_err(),
+                "expected an error for out-of-range range target {:?}",
+                target
+            );
+        }
     }
 
     #[test]

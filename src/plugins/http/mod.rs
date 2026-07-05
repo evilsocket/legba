@@ -278,13 +278,18 @@ impl HTTP {
                 continue;
             }
 
+            // header values may contain non-ASCII (obs-text, 0x80..=0xFF) bytes, which
+            // HeaderValue::to_str rejects; decode them lossily instead of unwrapping so a
+            // malicious or misbehaving server cannot abort the process (panic = "abort").
+            let header_value = String::from_utf8_lossy(value.as_bytes());
+
             if header_var_name == "content_type" {
                 content_type_set = true;
-                content_type = value.to_str().unwrap().to_owned();
+                content_type = header_value.to_string();
             }
 
             context
-                .set_value(header_var_name, Value::from(value.to_str().unwrap()))
+                .set_value(header_var_name, Value::from(header_value.as_ref()))
                 .map_err(|e| e.to_string())?;
         }
 
@@ -575,7 +580,8 @@ impl HTTP {
                 if status.is_redirection()
                     && let Some(relocation) = relocation
                 {
-                    let mut relocation = relocation.to_str().unwrap().to_owned();
+                    let mut relocation =
+                        String::from_utf8_lossy(relocation.as_bytes()).into_owned();
                     // redirect to a page
                     if relocation.starts_with("/") || relocation.contains(&creds.target) {
                         return Ok(());
@@ -717,7 +723,7 @@ impl HTTP {
             Err(e) => Err(fmt_request_error(e)),
             Ok(res) => {
                 let cookie = if let Some(cookie) = res.headers().get(COOKIE) {
-                    cookie.to_str().unwrap().to_owned()
+                    String::from_utf8_lossy(cookie.as_bytes()).into_owned()
                 } else {
                     "".to_owned()
                 };
