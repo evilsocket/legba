@@ -14,6 +14,11 @@ pub(crate) mod options;
 
 const PROTOCOL_HEADER_091: &[u8] = &[b'A', b'M', b'Q', b'P', 0, 0, 9, 1];
 
+/// Upper bound on the AMQP connection.start frame the server sends before negotiation. The AMQP
+/// 0-9-1 default frame-max is 128 KiB; 1 MiB is generous and prevents a malicious server's 4-GiB
+/// size field from driving an unbounded allocation.
+const MAX_CONN_START_FRAME: usize = 1024 * 1024; // 1 MiB
+
 super::manager::register_plugin! {
     "amqp" => AMQP::new()
 }
@@ -62,9 +67,17 @@ impl Plugin for AMQP {
             .await
             .map_err(|e| e.to_string())?;
         let size_raw: [u8; 4] = conn_start_header[3..].try_into().unwrap();
-        let payload_size = u32::from_be_bytes(size_raw) + 1;
-        // read connection.start body
-        let mut conn_start_body = vec![0_u8; payload_size as usize];
+        let frame_size = u32::from_be_bytes(size_raw) as usize;
+        // The server controls this frame-size field; cap it so it cannot drive a ~4 GiB
+        // allocation, which would abort the process under panic = "abort". Computing in usize
+        // also avoids the u32 overflow of the trailing frame-end byte (the + 1).
+        if frame_size > MAX_CONN_START_FRAME {
+            return Err(format!(
+                "AMQP connection.start frame size {frame_size} exceeds the {MAX_CONN_START_FRAME}-byte limit"
+            ));
+        }
+        // read connection.start body (frame payload + the trailing frame-end byte)
+        let mut conn_start_body = vec![0_u8; frame_size + 1];
         stream
             .read_exact(&mut conn_start_body)
             .await
