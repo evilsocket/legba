@@ -40,7 +40,12 @@ async fn read_reply(channel: &mut Channel) -> Result<(u16, String), Error> {
         if trimmed.len() < 3 {
             return Err(format!("smtp: malformed reply line {:?}", trimmed));
         }
-        let code: u16 = trimmed[..3]
+        // trimmed.len() >= 3 is a BYTE length, but trimmed[..3] is a byte-index slice that
+        // panics if byte 3 is not a UTF-8 char boundary (a multi-byte reply line from a
+        // malicious server). Use get(..3) so a bad boundary is a returned error, not a panic.
+        let code: u16 = trimmed
+            .get(..3)
+            .ok_or_else(|| format!("smtp: malformed reply line {:?}", trimmed))?
             .parse()
             .map_err(|e: std::num::ParseIntError| format!("smtp: bad reply code: {}", e))?;
         // RFC 5321 §4.2: a continuation line uses '-' as the fourth char, the
